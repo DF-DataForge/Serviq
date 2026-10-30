@@ -34,6 +34,7 @@ Een rondleiding langs de dagelijkse workflows voor een demo staat in
 | Installaties | 13 installaties: 9 uit de verkochte en geleverde pakketten met de serienummers van de levering, 4 oudere (2019-2022) zonder documenten; inbedrijfstellingen (afgerond, ingepland, nog in te plannen), onderhoud, herstellingen en een vervanging |
 | Herstellingen | Type *Herstellingen op locatie*: de unit blijft bij de klant, onderdelen van de plank of een servicewagen. 7 herstelorders (app Reparaties) op geïnstalleerde units, gekozen op serienummer: garantie en betalend, in elke fase (nieuw, bevestigd, in reparatie, hersteld, geannuleerd), offertes / verkooporders voor de betalende en opvolgactiviteiten |
 | Openstaand | Twee verkochte pakketten die nog geleverd en geplaatst moeten worden, en een offerte |
+| Portaal | Installateursportaal (`serviq_portal`) met de flow *Inbedrijfstelling*: technieker **Jens Verlinden**, contact van Frisair met een portaalgebruiker (login `technieker`, wachtwoord `technieker`), ziet de interventies van Frisair onder `/my/installations`, met de planning, en werkt ze daar af |
 
 Een herstelling opzoeken op serienummer: *Reparaties* > zoeken op
 *Lot/Serienummer*, of vanuit het serienummer (smart button met de

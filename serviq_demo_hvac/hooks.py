@@ -11,7 +11,9 @@
 #     their serial numbers, the installations at the customers with their
 #     commissioning, maintenance and repair interventions, and repair orders
 #     on installed units (warranty and paid, every stage);
-#   * sold packages still to be installed and a quotation.
+#   * sold packages still to be installed and a quotation;
+#   * a technician with a portal login, who follows the interventions in
+#     the installer portal.
 import logging
 from datetime import timedelta
 
@@ -41,6 +43,7 @@ def post_init_hook(env):
     installations.update(_setup_older_installations(env, partners, products, serviq))
     _run_open_orders(env, partners, products, wks)
     _run_repairs(env, products, serviq, wks, locations, installations)
+    _setup_portal(env, serviq)
     _logger.info('Frisair Klimaattechniek demo data installed')
 
 
@@ -766,3 +769,28 @@ def _run_repairs(env, products, serviq, wks, locations, installations):
     _task(env, serviq, garage, serviq['replacement'], 9,
           description='<p>Vervanging van de installatie na herstelling %s (geannuleerd).</p>'
           % ro.name)
+
+
+# ---------------------------------------------------------------------------
+# Installer portal
+# ---------------------------------------------------------------------------
+
+def _setup_portal(env, serviq):
+    """A technician of Frisair with a portal login. Its contact belongs to
+    the Frisair company, the installer of the installations, so the portal
+    shows it all the interventions of Frisair (/my/installations)."""
+    technician = _xmlid(env['res.partner'].create({
+        'name': 'Jens Verlinden',
+        'parent_id': serviq['installer'].id,
+        'type': 'contact',
+        'function': 'Technieker',
+        'email': 'jens.verlinden@frisair.example',
+        'phone': '+32 470 18 18 18',
+    }), 'partner_technician')
+    _xmlid(env['res.users'].with_context(no_reset_password=True).create({
+        'name': technician.name,
+        'login': 'technieker',
+        'password': 'technieker',
+        'partner_id': technician.id,
+        'group_ids': [Command.set(env.ref('base.group_portal').ids)],
+    }), 'user_technician')
