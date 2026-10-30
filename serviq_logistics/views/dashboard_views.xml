@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========== Client Actions ========== -->
+    <record id="action_home_dashboard" model="ir.actions.client">
+        <field name="name">Overzicht</field>
+        <field name="tag">serviq_logistics.home_dashboard</field>
+    </record>
+
+    <record id="action_stock_dashboard" model="ir.actions.client">
+        <field name="name">Voorraadoverzicht</field>
+        <field name="tag">serviq_logistics.stock_dashboard</field>
+    </record>
+
+    <record id="action_stock_cards" model="ir.actions.client">
+        <field name="name">Beschikbare voorraad</field>
+        <field name="tag">serviq_logistics.stock_cards</field>
+    </record>
+
+    <record id="action_sn_tracking_dashboard" model="ir.actions.client">
+        <field name="name">Serienummers</field>
+        <field name="tag">serviq_logistics.sn_tracking_dashboard</field>
+    </record>
+
+    <record id="action_incoming_dashboard" model="ir.actions.client">
+        <field name="name">Inkomende goederen</field>
+        <field name="tag">serviq_logistics.incoming_dashboard</field>
+    </record>
+
+    <record id="action_outgoing_dashboard" model="ir.actions.client">
+        <field name="name">Uitgaande goederen</field>
+        <field name="tag">serviq_logistics.outgoing_dashboard</field>
+    </record>
+
+    <record id="action_spare_parts_dashboard" model="ir.actions.client">
+        <field name="name">Reserveonderdelen</field>
+        <field name="tag">serviq_logistics.spare_parts_dashboard</field>
+    </record>
+
+    <!-- ========== Top-level menu ========== -->
+    <menuitem id="menu_logistics_root"
+              name="Logistiek"
+              web_icon="serviq_logistics,static/description/icon.png"
+              sequence="5"
+              groups="group_dashboard_stock,group_dashboard_sn,group_dashboard_incoming,group_dashboard_outgoing,group_dashboard_spare"/>
+
+    <menuitem id="menu_home_overview"
+              name="Overzicht"
+              parent="menu_logistics_root"
+              action="action_home_dashboard"
+              sequence="1"
+              groups="group_dashboard_stock,group_dashboard_sn,group_dashboard_incoming,group_dashboard_outgoing,group_dashboard_spare"/>
+
+    <menuitem id="menu_stock_overview"
+              name="Voorraadoverzicht"
+              parent="menu_logistics_root"
+              action="action_stock_dashboard"
+              sequence="10"
+              groups="group_dashboard_stock"/>
+
+    <menuitem id="menu_stock_cards"
+              name="Beschikbare voorraad"
+              parent="menu_logistics_root"
+              action="action_stock_cards"
+              sequence="12"
+              groups="group_dashboard_stock"/>
+
+    <menuitem id="menu_sn_tracking"
+              name="Serienummers"
+              parent="menu_logistics_root"
+              action="action_sn_tracking_dashboard"
+              sequence="15"
+              groups="group_dashboard_sn"/>
+
+    <menuitem id="menu_incoming_goods"
+              name="Inkomende goederen"
+              parent="menu_logistics_root"
+              action="action_incoming_dashboard"
+              sequence="20"
+              groups="group_dashboard_incoming"/>
+
+    <menuitem id="menu_outgoing_goods"
+              name="Uitgaande goederen"
+              parent="menu_logistics_root"
+              action="action_outgoing_dashboard"
+              sequence="30"
+              groups="group_dashboard_outgoing"/>
+
+    <menuitem id="menu_spare_parts"
+              name="Reserveonderdelen"
+              parent="menu_logistics_root"
+              action="action_spare_parts_dashboard"
+              sequence="40"
+              groups="group_dashboard_spare"/>
+
+    <!-- Also add under Inventory > Reporting -->
+    <menuitem id="menu_stock_dashboard_reporting"
+              name="Voorraadoverzicht"
+              parent="stock.menu_warehouse_report"
+              action="action_stock_dashboard"
+              sequence="100"
+              groups="group_dashboard_stock"/>
+</odoo>

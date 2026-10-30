@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_serviq_logistics" model="ir.ui.view">
+        <field name="name">res.users.form.serviq.logistics</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='access_rights']" position="inside">
+                <group string="Logistiek dashboards" name="serviq_logistics_dashboards">
+                    <field name="serviq_dash_stock"/>
+                    <field name="serviq_dash_sn"/>
+                    <field name="serviq_dash_incoming"/>
+                    <field name="serviq_dash_outgoing"/>
+                    <field name="serviq_dash_spare"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

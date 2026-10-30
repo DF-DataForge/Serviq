@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_installation.InterventionSlotPicker">
+        <div class="sq-in-dashboard sq-slot-picker o_action">
+            <div class="sq-in-body">
+                <t t-set="cal" t-value="state.cal"/>
+                <div class="sq-cal">
+                    <div class="sq-cal-toolbar">
+                        <div>
+                            <h1 class="mb-1">Inplannen via kalender</h1>
+                            <p class="text-muted mb-0">
+                                <strong t-esc="state.info.name"/>
+                                <t t-if="state.info.partner"> - <t t-esc="state.info.partner"/></t>
+                                · duur <t t-esc="durationLabel"/>.
+                                Kies een tijdslot in de week- of dagweergave.
+                            </p>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <select class="form-select form-select-sm sq-cal-installer"
+                                    t-on-change="onInstallerChange">
+                                <option value="" t-att-selected="!state.installerId">Alle installateurs</option>
+                                <option value="-1" t-att-selected="state.installerId === -1">Niet ingesteld</option>
+                                <option t-foreach="cal.installers" t-as="inst" t-key="inst[0]"
+                                        t-att-value="inst[0]" t-att-selected="state.installerId === inst[0]"
+                                        t-esc="inst[1]"/>
+                            </select>
+                            <div class="btn-group" role="group">
+                                <button t-attf-class="btn btn-sm {{ cal.scope === 'month' ? 'btn-primary' : 'btn-outline-primary' }}"
+                                        t-on-click="() => this.load('month', cal.anchor)">Maand</button>
+                                <button t-attf-class="btn btn-sm {{ cal.scope === 'week' ? 'btn-primary' : 'btn-outline-primary' }}"
+                                        t-on-click="() => this.load('week', cal.anchor)">Week</button>
+                                <button t-attf-class="btn btn-sm {{ cal.scope === 'day' ? 'btn-primary' : 'btn-outline-primary' }}"
+                                        t-on-click="() => this.load('day', cal.anchor)">Dag</button>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    t-on-click="() => this.load(cal.scope, cal.prev)">
+                                <i class="fa fa-chevron-left"/>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary"
+                                    t-on-click="() => this.load(cal.scope, cal.today)">Vandaag</button>
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    t-on-click="() => this.load(cal.scope, cal.next)">
+                                <i class="fa fa-chevron-right"/>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chosen slot -->
+                    <div class="sq-slot-bar">
+                        <t t-if="state.selected">
+                            <span>
+                                <i class="fa fa-calendar-check-o me-1"/>
+                                <strong t-esc="formatDate(state.selected.date)"/>,
+                                <t t-esc="state.selected.time"/> - <t t-esc="selectedEnd"/>
+                            </span>
+                            <button class="btn btn-primary btn-sm" t-att-disabled="state.saving"
+                                    t-on-click="confirm">
+                                <i class="fa fa-check me-1"/>Inplannen
+                            </button>
+                        </t>
+                        <span t-else="" class="text-muted">Nog geen tijdslot gekozen.</span>
+                        <button class="btn btn-secondary btn-sm ms-auto" t-on-click="backToTask">Annuleren</button>
+                    </div>
+
+                    <div t-attf-class="sq-cal-card {{ state.loading ? 'opacity-50' : '' }}">
+                        <div class="sq-cal-label">
+                            <h4 class="mb-0 text-capitalize" t-esc="cal.label"/>
+                        </div>
+
+                        <!-- Month: navigate, a day opens its day view -->
+                        <table t-if="cal.scope === 'month'" class="table sq-cal-grid mb-0">
+                            <thead>
+                                <tr>
+                                    <th t-foreach="weekdayLabels" t-as="wd" t-key="wd_index"
+                                        class="text-uppercase text-muted small text-center" t-esc="wd"/>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="cal.weeks" t-as="week" t-key="week_index">
+                                    <td t-foreach="week" t-as="day" t-key="day.date"
+                                        t-att-class="dayClass(day) + ' sq-slot-month-day'" style="height: 100px;"
+                                        t-on-click="() => this.load('day', day.date)">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small" t-esc="day.day"/>
+                                            <span t-if="tasksOf(day.date).length" class="badge text-bg-secondary"
+                                                  t-esc="tasksOf(day.date).length"/>
+                                        </div>
+                                        <div class="d-flex flex-column gap-1">
+                                            <div t-foreach="tasksOf(day.date)" t-as="t" t-key="t.id"
+                                                 t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'open' }} {{ t.current ? 'sq-slot-current' : '' }}">
+                                                <strong><t t-if="t.start" t-esc="t.start + ' '"/><t t-esc="t.name"/></strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Week / day: half-hour slots -->
+                        <div t-else="" class="sq-slot-scroll">
+                            <table class="table sq-slot-grid mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="sq-slot-time"/>
+                                        <th t-foreach="gridDays" t-as="day" t-key="day.date"
+                                            t-attf-class="text-center small {{ day.date === cal.today ? 'sq-slot-today' : '' }}">
+                                            <span class="text-uppercase text-muted" t-esc="weekdayLabels[day.weekday]"/>
+                                            <span class="ms-1 fw-bold" t-esc="day.day"/>
+                                            <div t-foreach="untimedTasks(day.date)" t-as="t" t-key="t.id"
+                                                 t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'open' }} {{ t.current ? 'sq-slot-current' : '' }} text-start mt-1">
+                                                <strong t-esc="t.name"/>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="slots" t-as="time" t-key="time">
+                                        <td class="sq-slot-time small text-muted" t-esc="time.endsWith(':00') ? time : ''"/>
+                                        <td t-foreach="gridDays" t-as="day" t-key="day.date"
+                                            t-attf-class="sq-slot {{ isSelected(day.date, time) ? 'sq-slot-selected' : '' }} {{ time.endsWith(':00') ? 'sq-slot-hour' : '' }}"
+                                            t-on-click="() => this.selectSlot(day.date, time)">
+                                            <div t-foreach="tasksAt(day.date, time)" t-as="t" t-key="t.id"
+                                                 t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'open' }} {{ t.current ? 'sq-slot-current' : '' }}">
+                                                <strong t-esc="t.start + (t.end ? ' - ' + t.end : '') + ' ' + t.name"/>
+                                                <small t-if="t.partner" class="d-block text-truncate">
+                                                    <t t-esc="t.partner"/><t t-if="t.city">, <t t-esc="t.city"/></t>
+                                                </small>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

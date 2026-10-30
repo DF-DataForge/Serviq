@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_logistics.IncomingGoodsDashboard">
+        <div class="sq-goods-dashboard sq-incoming o_action">
+            <!-- Header -->
+            <div class="sq-dashboard-header">
+                <div class="sq-header-title">
+                    <h2><i class="fa fa-truck me-2"/>Inkomende goederen</h2>
+                </div>
+                <div class="sq-header-controls">
+                    <t t-call="serviq_logistics.SegmentFilter"/>
+                    <button class="btn btn-sm btn-outline-success sq-export-btn"
+                            t-on-click="onExportExcel"
+                            t-att-disabled="state.loading"
+                            title="Download als Excel">
+                        <i class="fa fa-file-excel-o me-1"/>Exporteer naar Excel
+                    </button>
+                    <div class="sq-search-box">
+                        <i class="fa fa-search sq-search-icon"/>
+                        <input type="text"
+                               class="sq-search-input"
+                               placeholder="Zoek PO, leverancier of bron..."
+                               t-att-value="state.searchTerm"
+                               t-on-input="onSearchInput"/>
+                        <i t-if="state.searchTerm"
+                           class="fa fa-times sq-search-clear"
+                           t-on-click="onSearchClear"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="sq-summary-cards sq-summary-4">
+                <div class="sq-summary-card sq-card-total">
+                    <div class="sq-card-icon"><i class="fa fa-shopping-cart"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Inkooporders</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.total_orders || 0"/></div>
+                        <div class="sq-card-sub"><t t-esc="state.summary.supplier_count || 0"/> leveranciers</div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-done">
+                    <div class="sq-card-icon"><i class="fa fa-check-circle"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Volledig ontvangen</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.fully_received || 0"/></div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-partial">
+                    <div class="sq-card-icon"><i class="fa fa-adjust"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Deels ontvangen</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.partially_received || 0"/></div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-waiting">
+                    <div class="sq-card-icon"><i class="fa fa-clock-o"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Wachtend</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.waiting || 0"/></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product type filter (shared) -->
+            <t t-if="!state.loading" t-call="serviq_logistics.TypeChips">
+                <t t-set="options" t-value="typeOptions"/>
+            </t>
+
+            <!-- Content -->
+            <div class="sq-content-area">
+                <div t-if="state.loading" class="sq-loading">
+                    <i class="fa fa-spinner fa-spin fa-2x"/>
+                    <span class="ms-2">Inkooporders laden...</span>
+                </div>
+
+                <div t-elif="!visibleSuppliers.length" class="sq-empty-state">
+                    <i class="fa fa-inbox fa-3x mb-3"/>
+                    <h4>Geen inkooporders gevonden</h4>
+                    <p class="text-muted" t-if="state.searchTerm">
+                        Geen resultaten voor "<t t-esc="state.searchTerm"/>"
+                    </p>
+                </div>
+
+                <div t-else="" class="sq-scrollable-list">
+                    <t t-foreach="visibleSuppliers" t-as="supplier" t-key="supplier.partner_id">
+                        <!-- Supplier group header -->
+                        <div class="sq-group-header"
+                             t-on-click="() => this.toggleSupplier(supplier.partner_id)">
+                            <div class="sq-group-left">
+                                <i t-attf-class="fa {{ isSupplierExpanded(supplier.partner_id) ? 'fa-chevron-down' : 'fa-chevron-right' }} me-2"/>
+                                <i class="fa fa-building me-2 text-muted"/>
+                                <span class="sq-group-name"><t t-esc="supplier.partner_name"/></span>
+                            </div>
+                            <div class="sq-group-badges">
+                                <span class="badge bg-secondary me-1"><t t-esc="supplier.total_orders"/> PO's</span>
+                                <span t-if="supplier.fully_received" class="badge bg-success me-1"><t t-esc="supplier.fully_received"/> ontvangen</span>
+                                <span t-if="supplier.partially_received" class="badge bg-warning me-1"><t t-esc="supplier.partially_received"/> deels</span>
+                                <span t-if="supplier.waiting" class="badge bg-info me-1"><t t-esc="supplier.waiting"/> wachtend</span>
+                            </div>
+                        </div>
+
+                        <!-- Supplier expanded: PO list -->
+                        <div t-if="isSupplierExpanded(supplier.partner_id)" class="sq-group-content">
+                            <t t-foreach="supplier.purchase_orders" t-as="po" t-key="po.po_id">
+                                <!-- PO row -->
+                                <div class="sq-order-row"
+                                     t-on-click="() => this.toggleOrder(po.po_id)">
+                                    <div class="sq-order-info">
+                                        <span class="sq-order-name"
+                                              t-on-click.stop="() => this.openPurchaseOrder(po.po_id)"
+                                              title="Open de inkooporder">
+                                            <t t-esc="po.po_name"/>
+                                        </span>
+                                        <t t-foreach="po.product_types || []" t-as="pt" t-key="pt">
+                                            <span t-attf-class="badge ms-1 {{ getProductTypeClass(pt) }}" t-esc="getProductTypeLabel(pt)"/>
+                                        </t>
+                                        <span class="text-muted ms-2"><t t-esc="po.date_order"/></span>
+                                        <span t-if="po.origin" class="text-muted ms-2">
+                                            <i class="fa fa-link me-1"/><t t-esc="po.origin"/>
+                                        </span>
+                                    </div>
+                                    <div class="sq-order-right">
+                                        <span class="sq-order-amount">
+                                            <t t-esc="po.currency"/><t t-esc="po.amount_total.toFixed(2)"/>
+                                        </span>
+                                        <span t-attf-class="sq-status-badge {{ getStatusClass(po.reception_status) }}">
+                                            <t t-esc="getStatusLabel(po.reception_status)"/>
+                                        </span>
+                                        <span class="text-muted ms-2">
+                                            <t t-esc="po.done_picking_count"/>/<t t-esc="po.picking_count"/> ontvangsten
+                                        </span>
+                                        <i t-attf-class="fa ms-2 {{ isOrderExpanded(po.po_id) ? 'fa-chevron-up' : 'fa-chevron-down' }} text-muted"/>
+                                    </div>
+                                </div>
+
+                                <!-- PO expanded: picking details -->
+                                <div t-if="isOrderExpanded(po.po_id)" class="sq-pickings-detail">
+                                    <div t-if="!po.pickings.length" class="p-3 text-muted fst-italic">
+                                        <i class="fa fa-info-circle me-1"/>Nog geen ontvangsten aangemaakt.
+                                    </div>
+                                    <t t-foreach="po.pickings" t-as="pick" t-key="pick.picking_id">
+                                        <div class="sq-picking-card">
+                                            <div class="sq-picking-header">
+                                                <div class="sq-picking-info">
+                                                    <span class="sq-picking-name"
+                                                          t-on-click.stop="() => this.openPicking(pick.picking_id)"
+                                                          title="Open de ontvangst">
+                                                        <i class="fa fa-truck me-1"/>
+                                                        <t t-esc="pick.picking_name"/>
+                                                    </span>
+                                                    <span t-attf-class="badge ms-2 {{ getPickingStateClass(pick.state) }}">
+                                                        <t t-esc="pick.state_label"/>
+                                                    </span>
+                                                </div>
+                                                <div class="sq-picking-meta">
+                                                    <span t-if="pick.scheduled_date" class="text-muted me-3">
+                                                        <i class="fa fa-calendar me-1"/>Gepland: <t t-esc="pick.scheduled_date"/>
+                                                    </span>
+                                                    <span t-if="pick.date_done" class="text-muted me-3">
+                                                        <i class="fa fa-check me-1"/>Afgewerkt: <t t-esc="pick.date_done"/>
+                                                    </span>
+                                                    <span t-if="pick.carrier_tracking_ref" class="text-muted">
+                                                        <i class="fa fa-barcode me-1"/><t t-esc="pick.carrier_tracking_ref"/>
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Documents -->
+                                            <div t-if="pick.documents.length" class="sq-picking-docs">
+                                                <span class="sq-docs-label">
+                                                    <i class="fa fa-paperclip me-1"/>Documenten:
+                                                </span>
+                                                <t t-foreach="pick.documents" t-as="doc" t-key="doc.id">
+                                                    <span class="sq-doc-chip"
+                                                          t-on-click.stop="() => this.downloadDocument(doc.id)">
+                                                        <i class="fa fa-file-o me-1"/>
+                                                        <t t-esc="doc.name"/>
+                                                    </span>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

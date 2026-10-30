@@ -1,0 +1,342 @@
+/* ============================================
+   Logistiek Serial Number Tracking Dashboard
+   Builds on the base .sq-stock-dashboard styles.
+   ============================================ */
+
+/* ---------- Segment cards ---------- */
+.sq-sn-card {
+    position: relative;
+    border: 2px solid transparent;
+}
+
+.sq-sn-card.active {
+    border-color: #714B67;
+    box-shadow: 0 4px 12px rgba(113, 75, 103, 0.15);
+}
+
+.sq-sn-card-ordered .sq-card-icon {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.sq-sn-card-inhouse .sq-card-icon {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.sq-sn-card-customer .sq-card-icon {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+/* ---------- Progress bars ---------- */
+.sq-sn-progress {
+    height: 6px;
+    background: #eceff1;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.sq-sn-progress-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.sq-sn-bar-ordered { background: #e65100; }
+.sq-sn-bar-inhouse { background: #2e7d32; }
+.sq-sn-bar-customer { background: #1565c0; }
+
+.sq-sn-progress-label {
+    font-size: 0.72rem;
+    color: #95a5a6;
+    margin-top: 3px;
+}
+
+/* Inline row progress */
+.sq-sn-row-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 12px;
+}
+
+.sq-sn-progress-row {
+    flex: 1;
+    margin-top: 0;
+    max-width: 120px;
+}
+
+/* ---------- Row grids per segment ---------- */
+.sq-sn-grid-ordered {
+    grid-template-columns: 2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 1.2fr 40px;
+}
+
+.sq-sn-grid-inhouse {
+    grid-template-columns: 2fr 1fr 1fr 0.8fr 0.8fr 0.8fr 0.8fr 40px;
+}
+
+.sq-sn-grid-customer {
+    grid-template-columns: 2fr 1fr 1fr 0.9fr 0.9fr 1.2fr 40px;
+}
+
+/* ---------- Counters ---------- */
+.sq-sn-count {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.sq-sn-count-reserved { color: #e65100; }
+.sq-sn-count-available { color: #2e7d32; }
+.sq-sn-count-installed { color: #1565c0; }
+
+/* ---------- Status badges ---------- */
+.sq-badge-subgroup { background: #ede7f6; color: #4527a0; }
+.sq-badge-reserved { background: #fff3e0; color: #e65100; }
+.sq-badge-available { background: #e8f5e9; color: #2e7d32; }
+.sq-badge-installed { background: #e3f2fd; color: #1565c0; }
+.sq-badge-in-stock { background: #eceff1; color: #546e7a; }
+.sq-badge-ready { background: #e8f5e9; color: #2e7d32; }
+.sq-badge-waiting { background: #fff8e1; color: #b26a00; }
+
+/* ---------- Customer smart cards ---------- */
+.sq-sn-customer-cards {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: #f4f5f7;
+}
+
+.sq-sn-customer-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sq-sn-customer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 20px;
+    background: #fafbfc;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.sq-sn-customer-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sq-sn-customer-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e3f2fd;
+    color: #1565c0;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.sq-sn-customer-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.sq-sn-customer-loc {
+    font-size: 0.78rem;
+    color: #95a5a6;
+}
+
+.sq-sn-customer-stats {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.sq-sn-stat {
+    text-align: center;
+}
+
+.sq-sn-stat-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.sq-sn-stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #95a5a6;
+    margin-top: 2px;
+}
+
+.sq-sn-stat-progress {
+    min-width: 140px;
+}
+
+.sq-sn-stat-progress .sq-sn-progress {
+    margin-top: 0;
+}
+
+.sq-sn-customer-card-clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sq-sn-customer-card-clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #714B67;
+}
+
+/* Product type tiles on the card face */
+.sq-sn-type-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+    padding: 16px 20px;
+}
+
+.sq-sn-type-tile {
+    padding: 12px 14px;
+    background: #fafbfc;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+.sq-sn-type-tile-qty {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-top: 8px;
+}
+
+.sq-sn-type-tile-installed {
+    font-size: 0.78rem;
+    color: #1565c0;
+    margin-top: 2px;
+}
+
+.sq-sn-card-footer {
+    padding: 8px 20px;
+    border-top: 1px solid #f1f3f5;
+    font-size: 0.75rem;
+    color: #95a5a6;
+    text-align: right;
+}
+
+/* ---------- Distributor overview (drill-in) ---------- */
+.sq-sn-overview {
+    padding: 16px;
+    background: #f4f5f7;
+}
+
+.sq-sn-overview-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.sq-sn-overview-crumb {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #7f8c8d;
+}
+
+.sq-sn-overview-header {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.sq-sn-type-section {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.sq-sn-type-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: #fafbfc;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.sq-sn-type-section-header .sq-sn-progress-row {
+    max-width: 160px;
+}
+
+.sq-sn-type-section-info {
+    font-size: 0.85rem;
+    color: #495057;
+    font-weight: 500;
+}
+
+/* ---------- Serial chips (ordered detail) ---------- */
+.sq-sn-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    margin: 2px 4px 2px 0;
+    background: #f3eef2;
+    color: #714B67;
+    border: 1px solid #e0d3dc;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.sq-sn-chip:hover {
+    background: #714B67;
+    color: #fff;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 992px) {
+    .sq-sn-grid-ordered,
+    .sq-sn-grid-inhouse,
+    .sq-sn-grid-customer {
+        grid-template-columns: 2fr 1fr 1fr 40px;
+    }
+
+    .sq-sn-grid-ordered > div:nth-child(2),
+    .sq-sn-grid-ordered > div:nth-child(3),
+    .sq-sn-grid-ordered > div:nth-child(6),
+    .sq-sn-grid-ordered > div:nth-child(7),
+    .sq-sn-grid-inhouse > div:nth-child(2),
+    .sq-sn-grid-inhouse > div:nth-child(3),
+    .sq-sn-grid-inhouse > div:nth-child(6),
+    .sq-sn-grid-inhouse > div:nth-child(7),
+    .sq-sn-grid-customer > div:nth-child(2),
+    .sq-sn-grid-customer > div:nth-child(3),
+    .sq-sn-grid-customer > div:nth-child(6) {
+        display: none;
+    }
+
+    .sq-subgroup-filter {
+        width: 100%;
+    }
+}

@@ -1,0 +1,549 @@
+.o_action.sq-in-dashboard {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    background: #f9f9f9;
+}
+
+.sq-in-header {
+    padding: 16px 24px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.sq-in-header h2 {
+    margin-bottom: 12px;
+}
+
+.sq-in-links {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+/* ---------- Extra sections (interventions, repairs, returns, hours) ---------- */
+.sq-in-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.sq-in-sections .sq-in-section {
+    margin-bottom: 0;
+}
+
+.sq-in-mini-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.sq-in-mini-tile {
+    flex: 1 1 110px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.sq-in-mini-tile:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.sq-in-mini-value {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.sq-in-mini-label {
+    color: #6c757d;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.sq-in-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.sq-in-section-link {
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.sq-in-section-interventions { border-top: 3px solid #17a2b8; }
+.sq-in-section-repairs { border-top: 3px solid #fd7e14; }
+.sq-in-section-returns { border-top: 3px solid #dc3545; }
+.sq-in-section-hours { border-top: 3px solid #714b67; }
+
+.sq-in-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px 24px 24px;
+}
+
+.sq-in-loading {
+    padding: 32px;
+    text-align: center;
+    color: #6c757d;
+}
+
+/* ---------- Overall tiles ---------- */
+.sq-in-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.sq-in-tile {
+    flex: 1 1 160px;
+    min-width: 160px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    border-top: 3px solid #6c757d;
+}
+
+.sq-in-tile:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.sq-in-tile-total { border-top-color: #714b67; }
+.sq-in-tile-active { border-top-color: #28a745; }
+.sq-in-tile-commissioning { border-top-color: #17a2b8; }
+.sq-in-tile-service { border-top-color: #ffc107; }
+.sq-in-tile-not_registered { border-top-color: #dc3545; }
+
+.sq-in-tile-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.sq-in-tile-label {
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+/* ---------- Side-by-side tables ---------- */
+.sq-in-columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.sq-in-columns .sq-in-section {
+    flex: 1 1 480px;
+    min-width: 0;
+}
+
+.sq-in-section {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.sq-in-section h4 {
+    margin-bottom: 12px;
+}
+
+.sq-in-table {
+    margin-bottom: 0;
+}
+
+.sq-in-partner {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sq-in-cell {
+    display: inline-block;
+    min-width: 28px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.sq-in-cell:hover {
+    text-decoration: underline;
+}
+
+/* ---------- Drill-down record cards ---------- */
+.sq-in-records-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.sq-in-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.sq-in-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.sq-in-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.sq-in-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.sq-in-card-product {
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.sq-in-card-line {
+    color: #6c757d;
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sq-in-card-line .fa {
+    width: 16px;
+    text-align: center;
+    margin-right: 4px;
+}
+
+.sq-in-card-warn {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #dc3545;
+}
+
+/* ---------- Status badges ---------- */
+.sq-in-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    background: #e9ecef;
+    color: #495057;
+}
+
+.sq-in-badge-delivered { background: #e7f1ff; color: #0d6efd; }
+.sq-in-badge-installation { background: #e2f0fb; color: #0a58ca; }
+.sq-in-badge-commissioning { background: #d1ecf1; color: #0c5460; }
+.sq-in-badge-active { background: #d4edda; color: #155724; }
+.sq-in-badge-service { background: #fff3cd; color: #856404; }
+.sq-in-badge-offline { background: #ffe5d0; color: #a05a00; }
+.sq-in-badge-out_of_service { background: #f8d7da; color: #721c24; }
+
+/* ---------- Installation kanban: same cards as the overview ---------- */
+.sq-in-kanban .o_kanban_record {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.sq-in-kanban .o_kanban_record:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.sq-in-kanban .sq-in-card-top .o_field_widget,
+.sq-in-kanban .sq-in-card-product .o_field_widget,
+.sq-in-kanban .sq-in-card-line .o_field_widget {
+    display: inline;
+}
+
+/* ---------- Installation form: field tiles ---------- */
+/* 2x2 by default, 4 on a row when the form is wide enough, 1 column on
+   a narrow form; based on the width of the form, not of the window. */
+.sq-in-form-tiles-wrap {
+    container-type: inline-size;
+}
+
+.sq-in-form-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+@container (min-width: 1300px) {
+    .sq-in-form-tiles {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@container (max-width: 640px) {
+    .sq-in-form-tiles {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.sq-in-form-tile {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-top: 3px solid #6c757d;
+    border-radius: 8px;
+    padding: 12px 16px 4px;
+}
+
+.sq-in-form-tile h5 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.sq-in-form-tile > .o_group {
+    margin: 0;
+}
+
+.sq-in-form-tile-product { border-top-color: #714b67; }
+.sq-in-form-tile-contacts { border-top-color: #17a2b8; }
+.sq-in-form-tile-serials { border-top-color: #fd7e14; }
+.sq-in-form-tile-technical { border-top-color: #28a745; }
+
+/* ---------- Planning calendar (same layout as the installer portal) ---------- */
+.sq-cal-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.sq-cal-toolbar h1 {
+    font-weight: 700;
+}
+
+.sq-cal-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.sq-cal-label {
+    padding: 8px 16px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.sq-cal-grid {
+    table-layout: fixed;
+}
+
+.sq-cal-grid th {
+    width: 14.28%;
+}
+
+.sq-cal-grid td.sq-cal-day {
+    border: 1px solid #dee2e6;
+    background: #fff;
+    vertical-align: top;
+    padding: 6px;
+}
+
+.sq-cal-grid td.sq-cal-day.sq-cal-outside {
+    background: hsl(210, 20%, 98%);
+}
+
+.sq-cal-grid td.sq-cal-day.sq-cal-today {
+    background: rgba(36, 140, 148, 0.06);
+    box-shadow: inset 0 0 0 2px hsl(185, 60%, 35%);
+}
+
+.sq-cal-chip {
+    display: block;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    text-decoration: none !important;
+    color: inherit;
+    border-left: 3px solid transparent;
+}
+
+.sq-cal-chip strong {
+    font-weight: 600;
+}
+
+.sq-cal-chip-open {
+    background: rgba(255, 165, 0, 0.12);
+    border-left-color: hsl(38, 92%, 45%);
+}
+
+.sq-cal-chip-done {
+    background: rgba(36, 140, 148, 0.12);
+    border-left-color: hsl(185, 60%, 35%);
+}
+
+/* ---------- Slot picker ('Inplannen via kalender') ---------- */
+.sq-slot-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-left: 4px solid hsl(185, 60%, 35%);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+}
+
+.sq-slot-scroll {
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+}
+
+.sq-slot-grid {
+    table-layout: fixed;
+}
+
+.sq-slot-grid thead th {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
+    vertical-align: top;
+}
+
+.sq-slot-grid th.sq-slot-today {
+    background: rgba(36, 140, 148, 0.08);
+}
+
+.sq-slot-grid .sq-slot-time {
+    width: 56px;
+    border: none;
+    vertical-align: top;
+    padding: 0 6px;
+}
+
+.sq-slot-grid td.sq-slot {
+    height: 26px;
+    padding: 1px 3px;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    border-top: 1px dashed #eef0f2;
+    cursor: pointer;
+    vertical-align: top;
+}
+
+.sq-slot-grid td.sq-slot.sq-slot-hour {
+    border-top: 1px solid #dee2e6;
+}
+
+.sq-slot-grid td.sq-slot:hover {
+    background: rgba(36, 140, 148, 0.08);
+}
+
+.sq-slot-grid td.sq-slot.sq-slot-selected {
+    background: rgba(36, 140, 148, 0.25);
+}
+
+.sq-slot-picker .sq-slot-current {
+    outline: 2px solid hsl(185, 60%, 35%);
+}
+
+.sq-slot-month-day {
+    cursor: pointer;
+}
+
+/* ---------- Hours overview ('Urenoverzicht interventies') ---------- */
+.sq-hours-periods {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.sq-hours-range {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sq-hours-range input {
+    width: 150px;
+}
+
+.sq-hours-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 24px;
+}
+
+.sq-hours-groups .sq-in-section {
+    margin-bottom: 0;
+}
+
+.sq-hours-groups tbody tr[role="button"] {
+    cursor: pointer;
+}
+
+.sq-hours-share-col {
+    width: 140px;
+    white-space: nowrap;
+}
+
+.sq-hours-bar {
+    display: inline-block;
+    width: 90px;
+    height: 8px;
+    margin-right: 6px;
+    border-radius: 4px;
+    background: #e9ecef;
+    vertical-align: middle;
+    overflow: hidden;
+}
+
+.sq-hours-bar-fill {
+    height: 100%;
+    background: #714b67;
+}
+
+.sq-hours-group-installer { border-top: 3px solid #17a2b8; }
+.sq-hours-group-employee { border-top: 3px solid #714b67; }
+.sq-hours-group-distributor { border-top: 3px solid #fd7e14; }
+.sq-hours-group-type { border-top: 3px solid #28a745; }
+
+/* Installer filter of the planning calendars */
+.sq-cal-installer {
+    width: auto;
+    min-width: 200px;
+}

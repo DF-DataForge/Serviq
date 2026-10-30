@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Installation categories -->
+    <record id="installation_category_list_view" model="ir.ui.view">
+        <field name="name">serviq.installation.category.list</field>
+        <field name="model">serviq.installation.category</field>
+        <field name="arch" type="xml">
+            <list string="Installatiecategorieën">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="requires_commissioning"/>
+                <field name="active_after_first_installation"/>
+                <field name="auto_create_on_delivery"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+    <record id="installation_category_form_view" model="ir.ui.view">
+        <field name="name">serviq.installation.category.form</field>
+        <field name="model">serviq.installation.category</field>
+        <field name="arch" type="xml">
+            <form string="Installatiecategorie">
+                <sheet>
+                    <widget name="web_ribbon" title="Gearchiveerd" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Levenscyclus">
+                            <field name="requires_commissioning"/>
+                            <field name="active_after_first_installation"/>
+                        </group>
+                        <group string="Levering">
+                            <field name="auto_create_on_delivery"/>
+                            <field name="wrapper_product_tmpl_id"
+                                   invisible="not auto_create_on_delivery"/>
+                            <field name="delivery_intervention_type_id"
+                                   invisible="not auto_create_on_delivery"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="installation_category_action" model="ir.actions.act_window">
+        <field name="name">Installatiecategorieën</field>
+        <field name="res_model">serviq.installation.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Component roles -->
+    <record id="component_role_list_view" model="ir.ui.view">
+        <field name="name">serviq.component.role.list</field>
+        <field name="model">serviq.component.role</field>
+        <field name="arch" type="xml">
+            <list string="Componentrollen" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="is_installation_product"/>
+                <field name="is_replaceable"/>
+                <field name="is_spare_part"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="component_role_action" model="ir.actions.act_window">
+        <field name="name">Componentrollen</field>
+        <field name="res_model">serviq.component.role</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <!-- Intervention types -->
+    <record id="intervention_type_list_view" model="ir.ui.view">
+        <field name="name">serviq.intervention.type.list</field>
+        <field name="model">serviq.intervention.type</field>
+        <field name="arch" type="xml">
+            <list string="Types interventie">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="group"/>
+                <field name="counts_as_service"/>
+                <field name="is_first_installation"/>
+                <field name="is_commissioning"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="intervention_type_form_view" model="ir.ui.view">
+        <field name="name">serviq.intervention.type.form</field>
+        <field name="model">serviq.intervention.type</field>
+        <field name="arch" type="xml">
+            <form string="Type interventie">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="group"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group name="behaviour" string="Gedrag">
+                            <field name="counts_as_service"/>
+                            <field name="is_first_installation"/>
+                            <field name="is_commissioning"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="intervention_type_action" model="ir.actions.act_window">
+        <field name="name">Types interventie</field>
+        <field name="res_model">serviq.intervention.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+</odoo>

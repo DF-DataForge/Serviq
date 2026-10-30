@@ -1,0 +1,694 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_logistics.SnTrackingDashboard">
+        <div class="sq-stock-dashboard sq-sn-dashboard o_action">
+            <!-- Fixed Header -->
+            <div class="sq-dashboard-header">
+                <div class="sq-header-title">
+                    <h2>Serienummers</h2>
+                </div>
+                <div class="sq-header-controls">
+                    <t t-call="serviq_logistics.SegmentFilter"/>
+                    <!-- View: cards per product type or per product (ordered / in house) -->
+                    <div t-if="state.segment !== 'customer'" class="sq-view-toggle btn-group" role="group">
+                        <button t-attf-class="btn btn-sm {{ state.view === 'type' ? 'btn-primary' : 'btn-outline-secondary' }}"
+                                t-on-click="() => this.setView('type')" title="Kaarten per producttype">
+                            <i class="fa fa-th-large me-1"/>Per type
+                        </button>
+                        <button t-attf-class="btn btn-sm {{ state.view === 'product' ? 'btn-primary' : 'btn-outline-secondary' }}"
+                                t-on-click="() => this.setView('product')" title="Lijst per product">
+                            <i class="fa fa-cubes me-1"/>Per product
+                        </button>
+                    </div>
+                    <!-- Search -->
+                    <div class="sq-search-box">
+                        <i class="fa fa-search sq-search-icon"/>
+                        <input type="text"
+                               class="sq-search-input"
+                               placeholder="Zoek producten..."
+                               t-att-value="state.searchTerm"
+                               t-on-input="onSearchInput"/>
+                        <i t-if="state.searchTerm"
+                           class="fa fa-times sq-search-clear"
+                           t-on-click="onSearchClear"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Segment Cards -->
+            <div class="sq-summary-cards sq-sn-segment-cards">
+                <!-- Ordered items -->
+                <div t-attf-class="sq-summary-card sq-sn-card sq-sn-card-ordered {{ state.segment === 'ordered' ? 'active' : '' }}"
+                     t-on-click="() => this.onSegmentClick('ordered')">
+                    <div class="sq-card-icon">
+                        <i class="fa fa-shopping-cart"/>
+                    </div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Besteld</div>
+                        <div class="sq-card-value">
+                            <t t-esc="formatQty(state.summary.ordered.total_qty)"/> stuks
+                        </div>
+                        <div class="sq-card-sub">
+                            <t t-esc="state.summary.ordered.product_count || 0"/> producten
+                            <span class="mx-1">|</span>
+                            <t t-esc="formatQty(state.summary.ordered.pending_qty)"/> te ontvangen
+                        </div>
+                        <div class="sq-sn-progress" title="Ontvangen / besteld">
+                            <div class="sq-sn-progress-bar sq-sn-bar-ordered"
+                                 t-attf-style="width: {{ percent(state.summary.ordered.received_qty, state.summary.ordered.total_qty) }}%"/>
+                        </div>
+                        <div class="sq-sn-progress-label">
+                            <t t-esc="percent(state.summary.ordered.received_qty, state.summary.ordered.total_qty)"/>% ontvangen
+                        </div>
+                    </div>
+                </div>
+                <!-- In-house stock -->
+                <div t-attf-class="sq-summary-card sq-sn-card sq-sn-card-inhouse {{ state.segment === 'inhouse' ? 'active' : '' }}"
+                     t-on-click="() => this.onSegmentClick('inhouse')">
+                    <div class="sq-card-icon">
+                        <i class="fa fa-warehouse"/>
+                    </div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">In huis</div>
+                        <div class="sq-card-value">
+                            <t t-esc="formatQty(state.summary.inhouse.total_qty)"/> stuks
+                        </div>
+                        <div class="sq-card-sub">
+                            <t t-esc="state.summary.inhouse.product_count || 0"/> producten
+                            <span class="mx-1">|</span>
+                            <t t-esc="formatQty(state.summary.inhouse.reserved_qty)"/> gereserveerd
+                        </div>
+                        <div class="sq-sn-progress" title="Gereserveerd / op voorraad">
+                            <div class="sq-sn-progress-bar sq-sn-bar-inhouse"
+                                 t-attf-style="width: {{ percent(state.summary.inhouse.reserved_qty, state.summary.inhouse.total_qty) }}%"/>
+                        </div>
+                        <div class="sq-sn-progress-label">
+                            <t t-esc="percent(state.summary.inhouse.reserved_qty, state.summary.inhouse.total_qty)"/>% gereserveerd
+                        </div>
+                    </div>
+                </div>
+                <!-- Customer stock -->
+                <div t-attf-class="sq-summary-card sq-sn-card sq-sn-card-customer {{ state.segment === 'customer' ? 'active' : '' }}"
+                     t-on-click="() => this.onSegmentClick('customer')">
+                    <div class="sq-card-icon">
+                        <i class="fa fa-users"/>
+                    </div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Bij klanten</div>
+                        <div class="sq-card-value">
+                            <t t-esc="formatQty(state.summary.customer.total_qty)"/> stuks
+                        </div>
+                        <div class="sq-card-sub">
+                            <t t-esc="state.summary.customer.customer_count || 0"/> klanten
+                            <span class="mx-1">|</span>
+                            <t t-esc="state.summary.customer.installed_count || 0"/> geïnstalleerd
+                        </div>
+                        <div class="sq-sn-progress" title="Geïnstalleerd / bij klanten">
+                            <div class="sq-sn-progress-bar sq-sn-bar-customer"
+                                 t-attf-style="width: {{ percent(state.summary.customer.installed_count, state.summary.customer.serial_count) }}%"/>
+                        </div>
+                        <div class="sq-sn-progress-label">
+                            <t t-esc="percent(state.summary.customer.installed_count, state.summary.customer.serial_count)"/>% geïnstalleerd
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="sq-tabs">
+                <div t-attf-class="sq-tab {{ state.segment === 'ordered' ? 'active' : '' }}"
+                     t-on-click="() => this.onSegmentClick('ordered')">
+                    <i class="fa fa-shopping-cart me-1"/>
+                    Besteld
+                </div>
+                <div t-attf-class="sq-tab {{ state.segment === 'inhouse' ? 'active' : '' }}"
+                     t-on-click="() => this.onSegmentClick('inhouse')">
+                    <i class="fa fa-warehouse me-1"/>
+                    In huis
+                </div>
+                <div t-attf-class="sq-tab {{ state.segment === 'customer' ? 'active' : '' }}"
+                     t-on-click="() => this.onSegmentClick('customer')">
+                    <i class="fa fa-users me-1"/>
+                    Bij klanten
+                </div>
+            </div>
+
+            <!-- Product type filter (shared) -->
+            <t t-if="!showTypeCards and !state.loading" t-call="serviq_logistics.TypeChips">
+                <t t-set="options" t-value="typeOptions"/>
+            </t>
+
+            <!-- Scrollable Content Area -->
+            <div class="sq-tab-content">
+                <!-- Loading -->
+                <div t-if="state.loading" class="sq-loading">
+                    <i class="fa fa-spinner fa-spin fa-2x"/>
+                    <span class="ms-2">Serienummers laden...</span>
+                </div>
+
+                <!-- Empty state -->
+                <div t-elif="!hasData" class="sq-empty-state">
+                    <i class="fa fa-barcode fa-3x mb-3"/>
+                    <h4>Geen voorraad met serienummers gevonden</h4>
+                    <p class="text-muted">
+                        Er zijn geen gegevens voor <t t-esc="segmentLabel"/>
+                        <t t-if="state.searchTerm">
+                            die overeenkomen met "<t t-esc="state.searchTerm"/>"
+                        </t>
+                        <t t-if="state.subgroup !== 'all'">
+                            in het segment <t t-esc="getSubgroupLabel(state.subgroup)"/>
+                        </t>.
+                    </p>
+                </div>
+
+                <!-- ==================== TYPE CARDS (ordered / in house) ==================== -->
+                <div t-elif="showTypeCards" class="sq-type-cards">
+                    <div class="sq-cf-cards">
+                        <t t-foreach="typeCards" t-as="x" t-key="x.key">
+                            <div class="sq-cf-card sq-cf-card-type" t-on-click="() => this.openTypeCard(x)"
+                                 t-att-title="'Toon de producten van ' + x.label">
+                                <t t-call="serviq_logistics.TypeCardHead">
+                                    <t t-set="meta" t-value="countLabel(x.product_count, 'product', 'producten')"/>
+                                </t>
+                                <t t-if="state.segment === 'ordered'">
+                                    <div class="sq-cf-card-amount">
+                                        <t t-esc="formatQty(x.pending_qty)"/> <small class="text-muted">te ontvangen</small>
+                                    </div>
+                                    <div class="sq-cf-tile-split">
+                                        <div class="sq-cf-tile-split-bar" title="ontvangen / besteld">
+                                            <div class="sq-cf-tile-split-paid" t-attf-style="width: {{ percent(x.received_qty, x.ordered_qty) }}%"/>
+                                        </div>
+                                    </div>
+                                    <div class="sq-cf-card-rows">
+                                        <div class="sq-cf-card-row"><span><i class="fa fa-shopping-cart me-1 text-muted"/>Besteld</span><strong t-esc="formatQty(x.ordered_qty)"/></div>
+                                        <div class="sq-cf-card-row"><span><span class="sq-seg-dot sq-cf-tile-dot-paid me-1"/>Ontvangen</span><strong t-esc="formatQty(x.received_qty)"/></div>
+                                        <div class="sq-cf-card-row"><span><span class="sq-seg-dot sq-cf-tile-dot-unpaid me-1"/>Te ontvangen</span><strong t-esc="formatQty(x.pending_qty)"/></div>
+                                        <div class="sq-cf-card-row"><span><i class="fa fa-file-text-o me-1 text-muted"/>Inkooporders</span><strong t-esc="x.order_count"/></div>
+                                    </div>
+                                    <div class="sq-cf-card-foot">
+                                        <span class="text-muted sq-cf-card-docs"
+                                              t-esc="x.top.map((p) => p.product_name + ' ' + formatQty(p.pending_qty)).join(' · ')"/>
+                                        <span class="text-muted text-nowrap">bekijk producten <i class="fa fa-arrow-right"/></span>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="sq-cf-card-amount">
+                                        <t t-esc="formatQty(x.total_qty)"/> <small class="text-muted">stuks</small>
+                                    </div>
+                                    <div class="sq-cf-tile-split">
+                                        <div class="sq-cf-tile-split-bar" title="beschikbaar / gereserveerd">
+                                            <div class="sq-cf-tile-split-paid" t-attf-style="width: {{ percent(x.available_qty, x.total_qty) }}%"/>
+                                        </div>
+                                    </div>
+                                    <div class="sq-cf-card-rows">
+                                        <div class="sq-cf-card-row"><span><span class="sq-seg-dot sq-cf-tile-dot-paid me-1"/>Beschikbaar</span><strong t-esc="formatQty(x.available_qty)"/></div>
+                                        <div class="sq-cf-card-row"><span><span class="sq-seg-dot sq-cf-tile-dot-unpaid me-1"/>Gereserveerd</span><strong t-esc="formatQty(x.reserved_qty)"/></div>
+                                        <div class="sq-cf-card-row"><span><i class="fa fa-barcode me-1 text-muted"/>Serienummers</span><strong t-esc="x.serial_count"/></div>
+                                    </div>
+                                    <div class="sq-cf-card-foot">
+                                        <span class="text-muted sq-cf-card-docs"
+                                              t-esc="x.top.map((p) => p.product_name + ' ' + formatQty(p.total_qty)).join(' · ')"/>
+                                        <span class="text-muted text-nowrap">bekijk producten <i class="fa fa-arrow-right"/></span>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- ==================== ORDERED ITEMS ==================== -->
+                <div t-elif="state.segment === 'ordered'" class="sq-product-list">
+                    <div class="sq-product-table-header sq-sn-grid-ordered">
+                        <div>Product</div>
+                        <div>Interne ref.</div>
+                        <div>Subgroep</div>
+                        <div>Besteld</div>
+                        <div>Ontvangen</div>
+                        <div>Te ontvangen</div>
+                        <div>Ontvangst</div>
+                        <div class="sq-col-expand"/>
+                    </div>
+                    <div class="sq-scrollable-list">
+                        <t t-foreach="visibleRows" t-as="row" t-key="row.product_id">
+                            <div class="sq-product-row sq-sn-grid-ordered"
+                                 t-on-click="() => this.toggleRow(row.product_id)">
+                                <div>
+                                    <span class="sq-product-name"
+                                          t-on-click.stop="() => this.openProduct(row.product_id)"
+                                          title="Open de productfiche">
+                                        <t t-esc="row.product_name"/>
+                                    </span>
+                                    <span t-attf-class="badge ms-2 {{ getProductTypeClass(typeKey(row)) }}" t-esc="getProductTypeLabel(typeKey(row))"/>
+                                </div>
+                                <div><span class="text-muted"><t t-esc="row.default_code"/></span></div>
+                                <div>
+                                    <span t-if="row.subgroup" class="badge sq-badge-subgroup">
+                                        <t t-esc="row.subgroup_label"/>
+                                    </span>
+                                    <span t-else="" class="text-muted">-</span>
+                                </div>
+                                <div>
+                                    <span class="sq-qty-badge">
+                                        <t t-esc="formatQty(row.ordered_qty)"/>
+                                        <small class="ms-1 text-muted"><t t-esc="row.uom"/></small>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span t-attf-class="sq-sn-count {{ row.received_qty > 0 ? 'sq-sn-count-available' : 'text-muted' }}">
+                                        <t t-esc="formatQty(row.received_qty)"/>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span t-attf-class="sq-sn-count {{ row.pending_qty > 0 ? 'sq-sn-count-reserved' : 'text-muted' }}">
+                                        <t t-esc="formatQty(row.pending_qty)"/>
+                                    </span>
+                                </div>
+                                <div class="sq-sn-row-progress-wrap">
+                                    <div class="sq-sn-progress sq-sn-progress-row" title="Ontvangen / besteld">
+                                        <div class="sq-sn-progress-bar sq-sn-bar-ordered"
+                                             t-attf-style="width: {{ percent(row.received_qty, row.ordered_qty) }}%"/>
+                                    </div>
+                                    <small class="text-muted"><t t-esc="percent(row.received_qty, row.ordered_qty)"/>%</small>
+                                </div>
+                                <div class="sq-col-expand">
+                                    <i t-attf-class="fa {{ isExpanded(row.product_id) ? 'fa-chevron-up' : 'fa-chevron-down' }}"/>
+                                </div>
+                            </div>
+
+                            <!-- Expanded: open purchase orders -->
+                            <div t-if="isExpanded(row.product_id)" class="sq-product-detail">
+                                <h6 class="sq-detail-title">
+                                    <i class="fa fa-shopping-cart me-1"/>
+                                    Open inkooporders
+                                    <span class="badge bg-secondary ms-2"><t t-esc="row.order_count"/></span>
+                                </h6>
+                                <div class="sq-serial-scroll">
+                                    <table class="sq-serial-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Inkooporder</th>
+                                                <th>Leverancier</th>
+                                                <th>Verwacht</th>
+                                                <th>Status</th>
+                                                <th>Besteld</th>
+                                                <th>Ontvangen</th>
+                                                <th>Te ontvangen</th>
+                                                <th>Serienummers</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="row.orders" t-as="order" t-key="order_index">
+                                                <tr class="sq-serial-row"
+                                                    t-on-click.stop="() => this.openPurchaseOrder(order.order_id)">
+                                                    <td>
+                                                        <span class="sq-serial-link">
+                                                            <i class="fa fa-external-link me-1"/>
+                                                            <t t-esc="order.order_name"/>
+                                                        </span>
+                                                    </td>
+                                                    <td><t t-esc="order.supplier"/></td>
+                                                    <td><t t-esc="order.date_planned"/></td>
+                                                    <td>
+                                                        <span t-attf-class="badge {{ order.received_qty > 0 ? 'sq-badge-ready' : 'sq-badge-waiting' }}">
+                                                            <t t-esc="order.received_qty > 0 ? 'Deels ontvangen' : order.state_label"/>
+                                                        </span>
+                                                    </td>
+                                                    <td><t t-esc="formatQty(order.qty)"/></td>
+                                                    <td><t t-esc="formatQty(order.received_qty)"/></td>
+                                                    <td><t t-esc="formatQty(order.pending_qty)"/></td>
+                                                    <td>
+                                                        <t t-if="order.serial_numbers.length">
+                                                            <t t-foreach="order.serial_numbers" t-as="sn" t-key="sn.lot_id">
+                                                                <span class="sq-sn-chip"
+                                                                      t-on-click.stop="() => this.openSerialNumber(sn.lot_id)"
+                                                                      title="Open het serienummer">
+                                                                    <i class="fa fa-barcode me-1"/>
+                                                                    <t t-esc="sn.lot_name"/>
+                                                                </span>
+                                                            </t>
+                                                        </t>
+                                                        <span t-else="" class="text-muted fst-italic">nog niet toegewezen</span>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- ==================== IN-HOUSE STOCK ==================== -->
+                <div t-elif="state.segment === 'inhouse'" class="sq-product-list">
+                    <div class="sq-product-table-header sq-sn-grid-inhouse">
+                        <div>Product</div>
+                        <div>Interne ref.</div>
+                        <div>Subgroep</div>
+                        <div>Op voorraad</div>
+                        <div>Gereserveerd</div>
+                        <div>Beschikbaar</div>
+                        <div>Serienummers</div>
+                        <div class="sq-col-expand"/>
+                    </div>
+                    <div class="sq-scrollable-list">
+                        <t t-foreach="visibleRows" t-as="row" t-key="row.product_id">
+                            <div class="sq-product-row sq-sn-grid-inhouse"
+                                 t-on-click="() => this.toggleRow(row.product_id)">
+                                <div>
+                                    <span class="sq-product-name"
+                                          t-on-click.stop="() => this.openProduct(row.product_id)"
+                                          title="Open de productfiche">
+                                        <t t-esc="row.product_name"/>
+                                    </span>
+                                    <span t-attf-class="badge ms-2 {{ getProductTypeClass(typeKey(row)) }}" t-esc="getProductTypeLabel(typeKey(row))"/>
+                                </div>
+                                <div><span class="text-muted"><t t-esc="row.default_code"/></span></div>
+                                <div>
+                                    <span t-if="row.subgroup" class="badge sq-badge-subgroup">
+                                        <t t-esc="row.subgroup_label"/>
+                                    </span>
+                                    <span t-else="" class="text-muted">-</span>
+                                </div>
+                                <div>
+                                    <span class="sq-qty-badge">
+                                        <t t-esc="formatQty(row.total_qty)"/>
+                                        <small class="ms-1 text-muted"><t t-esc="row.uom"/></small>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span t-attf-class="sq-sn-count {{ row.reserved_qty > 0 ? 'sq-sn-count-reserved' : 'text-muted' }}">
+                                        <t t-esc="formatQty(row.reserved_qty)"/>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="sq-sn-count sq-sn-count-available">
+                                        <t t-esc="formatQty(row.available_qty)"/>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span t-if="row.serial_count > 0" class="text-primary">
+                                        <i class="fa fa-barcode me-1"/>
+                                        <t t-esc="row.serial_count"/>
+                                    </span>
+                                    <span t-else="" class="text-muted">-</span>
+                                </div>
+                                <div class="sq-col-expand">
+                                    <i t-attf-class="fa {{ isExpanded(row.product_id) ? 'fa-chevron-up' : 'fa-chevron-down' }}"/>
+                                </div>
+                            </div>
+
+                            <!-- Expanded: serial numbers -->
+                            <div t-if="isExpanded(row.product_id)" class="sq-product-detail">
+                                <h6 class="sq-detail-title">
+                                    <i class="fa fa-barcode me-1"/>
+                                    Serienummers
+                                    <span class="badge bg-secondary ms-2"><t t-esc="row.serial_count"/></span>
+                                </h6>
+                                <div class="sq-serial-scroll">
+                                    <table class="sq-serial-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Serienummer</th>
+                                                <th>Locatie</th>
+                                                <th>Eigenaar</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="row.serial_numbers" t-as="sn" t-key="sn.lot_id">
+                                                <tr class="sq-serial-row"
+                                                    t-on-click.stop="() => this.openSerialNumber(sn.lot_id)">
+                                                    <td>
+                                                        <span class="sq-serial-link">
+                                                            <i class="fa fa-external-link me-1"/>
+                                                            <t t-esc="sn.lot_name"/>
+                                                        </span>
+                                                    </td>
+                                                    <td><t t-esc="sn.location"/></td>
+                                                    <td><t t-esc="sn.owner"/></td>
+                                                    <td>
+                                                        <span t-if="sn.reserved" class="badge sq-badge-reserved">
+                                                            <i class="fa fa-lock me-1"/>Gereserveerd
+                                                        </span>
+                                                        <span t-else="" class="badge sq-badge-available">
+                                                            <i class="fa fa-check me-1"/>Beschikbaar
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- ==================== CUSTOMER STOCK ==================== -->
+                <div t-elif="state.segment === 'customer'" class="sq-product-list">
+                    <!-- ========== Distributor overview (drill-in) ========== -->
+                    <div t-if="selectedCustomer" class="sq-scrollable-list sq-sn-overview">
+                        <div class="sq-sn-overview-topbar">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    t-on-click="closeCustomerOverview">
+                                <i class="fa fa-arrow-left me-1"/>Alle klanten
+                            </button>
+                            <span class="sq-sn-overview-crumb">Overzicht distributeur</span>
+                        </div>
+
+                        <!-- Distributor identity + totals -->
+                        <div class="sq-sn-customer-header sq-sn-overview-header">
+                            <div class="sq-sn-customer-title">
+                                <div class="sq-sn-customer-avatar">
+                                    <i class="fa fa-user-circle-o"/>
+                                </div>
+                                <div>
+                                    <div class="sq-sn-customer-name"><t t-esc="selectedCustomer.customer_name"/></div>
+                                    <div class="sq-sn-customer-loc"><t t-esc="selectedCustomer.location_name"/></div>
+                                </div>
+                            </div>
+                            <div class="sq-sn-customer-stats">
+                                <div class="sq-sn-stat">
+                                    <div class="sq-sn-stat-value"><t t-esc="formatQty(selectedCustomer.total_qty)"/></div>
+                                    <div class="sq-sn-stat-label">Geleverd</div>
+                                </div>
+                                <div class="sq-sn-stat">
+                                    <div class="sq-sn-stat-value"><t t-esc="selectedCustomer.product_count"/></div>
+                                    <div class="sq-sn-stat-label">Producten</div>
+                                </div>
+                                <div class="sq-sn-stat">
+                                    <div class="sq-sn-stat-value sq-sn-count-installed">
+                                        <t t-esc="selectedCustomer.installed_count"/><small class="text-muted">/<t t-esc="selectedCustomer.serial_count"/></small>
+                                    </div>
+                                    <div class="sq-sn-stat-label">Geïnstalleerd</div>
+                                </div>
+                                <div class="sq-sn-stat sq-sn-stat-progress">
+                                    <div class="sq-sn-progress sq-sn-progress-row" title="Geïnstalleerde / geleverde serienummers">
+                                        <div class="sq-sn-progress-bar sq-sn-bar-customer"
+                                             t-attf-style="width: {{ percent(selectedCustomer.installed_count, selectedCustomer.serial_count) }}%"/>
+                                    </div>
+                                    <div class="sq-sn-stat-label">
+                                        <t t-esc="percent(selectedCustomer.installed_count, selectedCustomer.serial_count)"/>% geïnstalleerd
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- One section per product type -->
+                        <t t-foreach="selectedCustomer.types" t-as="tp" t-key="tp.ptype">
+                            <div class="sq-sn-type-section">
+                                <div class="sq-sn-type-section-header">
+                                    <span t-attf-class="badge {{ getProductTypeClass(tp.ptype) }}">
+                                        <t t-esc="getProductTypeLabel(tp.ptype)"/>
+                                    </span>
+                                    <span class="sq-sn-type-section-info">
+                                        <t t-esc="formatQty(tp.qty)"/> stuks
+                                        <span class="mx-1">|</span>
+                                        <t t-esc="tp.installed_count"/> / <t t-esc="tp.serial_count"/> geïnstalleerd
+                                    </span>
+                                    <div class="sq-sn-progress sq-sn-progress-row" title="Geïnstalleerd / geleverd">
+                                        <div class="sq-sn-progress-bar sq-sn-bar-customer"
+                                             t-attf-style="width: {{ percent(tp.installed_count, tp.serial_count) }}%"/>
+                                    </div>
+                                    <small class="text-muted"><t t-esc="percent(tp.installed_count, tp.serial_count)"/>%</small>
+                                </div>
+
+                                <div class="sq-product-table-header sq-sn-grid-customer">
+                                    <div>Product</div>
+                                    <div>Interne ref.</div>
+                                    <div>Subgroep</div>
+                                    <div>Geleverd</div>
+                                    <div>Geïnstalleerd</div>
+                                    <div>Installatie</div>
+                                    <div class="sq-col-expand"/>
+                                </div>
+                                <t t-foreach="tp.products" t-as="row" t-key="row.product_id">
+                                    <div class="sq-product-row sq-sn-grid-customer"
+                                         t-on-click="() => this.toggleRow(selectedCustomer.location_id + '-' + row.product_id)">
+                                        <div>
+                                            <span class="sq-product-name"
+                                                  t-on-click.stop="() => this.openProduct(row.product_id)"
+                                                  title="Open de productfiche">
+                                                <t t-esc="row.product_name"/>
+                                            </span>
+                                        </div>
+                                        <div><span class="text-muted"><t t-esc="row.default_code"/></span></div>
+                                        <div>
+                                            <span t-if="row.subgroup" class="badge sq-badge-subgroup">
+                                                <t t-esc="row.subgroup_label"/>
+                                            </span>
+                                            <span t-else="" class="text-muted">-</span>
+                                        </div>
+                                        <div>
+                                            <span class="sq-qty-badge">
+                                                <t t-esc="formatQty(row.qty)"/>
+                                                <small class="ms-1 text-muted"><t t-esc="row.uom"/></small>
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span t-attf-class="sq-sn-count {{ row.installed_count > 0 ? 'sq-sn-count-installed' : 'text-muted' }}">
+                                                <t t-esc="row.installed_count"/>
+                                                <small class="text-muted"> / <t t-esc="row.serial_count"/></small>
+                                            </span>
+                                        </div>
+                                        <div class="sq-sn-row-progress-wrap">
+                                            <div class="sq-sn-progress sq-sn-progress-row" title="Geïnstalleerd / geleverd">
+                                                <div class="sq-sn-progress-bar sq-sn-bar-customer"
+                                                     t-attf-style="width: {{ percent(row.installed_count, row.serial_count) }}%"/>
+                                            </div>
+                                            <small class="text-muted"><t t-esc="percent(row.installed_count, row.serial_count)"/>%</small>
+                                        </div>
+                                        <div class="sq-col-expand">
+                                            <i t-attf-class="fa {{ isExpanded(selectedCustomer.location_id + '-' + row.product_id) ? 'fa-chevron-up' : 'fa-chevron-down' }}"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expanded: serial numbers at this customer -->
+                                    <div t-if="isExpanded(selectedCustomer.location_id + '-' + row.product_id)" class="sq-product-detail">
+                                        <h6 class="sq-detail-title">
+                                            <i class="fa fa-barcode me-1"/>
+                                            Serienummers
+                                            <span class="badge bg-secondary ms-2"><t t-esc="row.serial_count"/></span>
+                                        </h6>
+                                        <div class="sq-serial-scroll">
+                                            <table class="sq-serial-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Serienummer</th>
+                                                        <th>Status</th>
+                                                        <th>Installatie</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="row.serial_numbers" t-as="sn" t-key="sn.lot_id">
+                                                        <tr class="sq-serial-row"
+                                                            t-on-click.stop="() => this.openSerialNumber(sn.lot_id)">
+                                                            <td>
+                                                                <span class="sq-serial-link">
+                                                                    <i class="fa fa-external-link me-1"/>
+                                                                    <t t-esc="sn.lot_name"/>
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <span t-if="sn.installed" class="badge sq-badge-installed">
+                                                                    <i class="fa fa-plug me-1"/>Geïnstalleerd
+                                                                </span>
+                                                                <span t-else="" class="badge sq-badge-in-stock">
+                                                                    <i class="fa fa-cube me-1"/>Op voorraad
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <span t-if="sn.installed" class="sq-serial-link"
+                                                                      t-on-click.stop="() => this.openInstallation(sn.system_id)"
+                                                                      title="Open de installatie">
+                                                                    <i class="fa fa-cogs me-1"/>
+                                                                    <t t-esc="sn.system_name"/>
+                                                                </span>
+                                                                <span t-else="" class="text-muted">-</span>
+                                                            </td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- ========== Smart card list ========== -->
+                    <div t-else="" class="sq-scrollable-list sq-sn-customer-cards">
+                        <t t-foreach="visibleRows" t-as="cust" t-key="cust.location_id">
+                            <div class="sq-sn-customer-card sq-sn-customer-card-clickable"
+                                 t-on-click="() => this.openCustomerOverview(cust.location_id)"
+                                 title="Open het overzicht van de distributeur">
+                                <!-- Card header: distributor identity + installation stats -->
+                                <div class="sq-sn-customer-header">
+                                    <div class="sq-sn-customer-title">
+                                        <div class="sq-sn-customer-avatar">
+                                            <i class="fa fa-user-circle-o"/>
+                                        </div>
+                                        <div>
+                                            <div class="sq-sn-customer-name"><t t-esc="cust.customer_name"/></div>
+                                            <div class="sq-sn-customer-loc"><t t-esc="cust.location_name"/></div>
+                                        </div>
+                                    </div>
+                                    <div class="sq-sn-customer-stats">
+                                        <div class="sq-sn-stat">
+                                            <div class="sq-sn-stat-value"><t t-esc="formatQty(cust.total_qty)"/></div>
+                                            <div class="sq-sn-stat-label">Geleverd</div>
+                                        </div>
+                                        <div class="sq-sn-stat">
+                                            <div class="sq-sn-stat-value sq-sn-count-installed">
+                                                <t t-esc="cust.installed_count"/><small class="text-muted">/<t t-esc="cust.serial_count"/></small>
+                                            </div>
+                                            <div class="sq-sn-stat-label">Geïnstalleerd</div>
+                                        </div>
+                                        <div class="sq-sn-stat sq-sn-stat-progress">
+                                            <div class="sq-sn-progress sq-sn-progress-row" title="Geïnstalleerde / geleverde serienummers">
+                                                <div class="sq-sn-progress-bar sq-sn-bar-customer"
+                                                     t-attf-style="width: {{ percent(cust.installed_count, cust.serial_count) }}%"/>
+                                            </div>
+                                            <div class="sq-sn-stat-label">
+                                                <t t-esc="percent(cust.installed_count, cust.serial_count)"/>% geïnstalleerd
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Per product type: number of items + installed -->
+                                <div class="sq-sn-type-tiles">
+                                    <t t-foreach="cust.types" t-as="tp" t-key="tp.ptype">
+                                        <div class="sq-sn-type-tile">
+                                            <span t-attf-class="badge {{ getProductTypeClass(tp.ptype) }}">
+                                                <t t-esc="getProductTypeLabel(tp.ptype)"/>
+                                            </span>
+                                            <div class="sq-sn-type-tile-qty">
+                                                <t t-esc="formatQty(tp.qty)"/> <small class="text-muted">stuks</small>
+                                            </div>
+                                            <div class="sq-sn-type-tile-installed">
+                                                <i class="fa fa-plug me-1"/>
+                                                <t t-esc="tp.installed_count"/> / <t t-esc="tp.serial_count"/> geïnstalleerd
+                                            </div>
+                                            <div class="sq-sn-progress" title="Geïnstalleerd / geleverd">
+                                                <div class="sq-sn-progress-bar sq-sn-bar-customer"
+                                                     t-attf-style="width: {{ percent(tp.installed_count, tp.serial_count) }}%"/>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+
+                                <div class="sq-sn-card-footer">
+                                    <i class="fa fa-search-plus me-1"/>
+                                    Klik voor het overzicht van de distributeur
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

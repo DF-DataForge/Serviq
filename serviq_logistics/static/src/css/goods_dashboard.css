@@ -1,0 +1,395 @@
+/* ============================================
+   Incoming & Outgoing Goods Dashboard Styles
+   ============================================ */
+
+.sq-goods-dashboard {
+    display: flex;
+    flex-direction: column;
+    /* Fill the action area exactly (100vh would hide the bottom strip
+       behind the navbar); max-height bounds the container even when the
+       parent provides no height, so inner bodies always scroll. */
+    height: 100%;
+    max-height: 100vh;
+    background: #f8f9fa;
+    overflow: hidden;
+}
+
+/* Reuse header styles from stock dashboard */
+.sq-goods-dashboard .sq-dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px 0;
+    flex-shrink: 0;
+}
+
+.sq-goods-dashboard .sq-header-title h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+/* ---------- Summary Cards (4-column) ---------- */
+.sq-summary-4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+}
+
+.sq-summary-5 {
+    grid-template-columns: repeat(5, 1fr) !important;
+}
+
+.sq-card-total .sq-card-icon {
+    background: #e8eaf6;
+    color: #283593;
+}
+
+.sq-card-done .sq-card-icon {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.sq-card-partial .sq-card-icon {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.sq-card-waiting .sq-card-icon {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.sq-card-picks .sq-card-icon {
+    background: #f3e5f5;
+    color: #6a1b9a;
+}
+
+/* ---------- Content area ---------- */
+.sq-content-area {
+    flex: 1;
+    margin: 0 24px 16px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sq-goods-dashboard .sq-scrollable-list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* ---------- Group Headers (Supplier / Customer) ---------- */
+.sq-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.sq-group-header:hover {
+    background: #eef0f2;
+}
+
+.sq-group-left {
+    display: flex;
+    align-items: center;
+}
+
+.sq-group-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #2c3e50;
+}
+
+.sq-group-badges {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sq-group-content {
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* ---------- Order Rows (PO / SO) ---------- */
+.sq-order-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px 12px 44px;
+    border-bottom: 1px solid #f1f3f5;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.sq-order-row:hover {
+    background: #fafbfc;
+}
+
+.sq-order-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.sq-order-name {
+    color: #714B67;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.sq-order-name:hover {
+    text-decoration: underline;
+}
+
+.sq-order-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.sq-order-amount {
+    font-weight: 600;
+    color: #2c3e50;
+    white-space: nowrap;
+}
+
+/* Status badges */
+.sq-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.sq-status-done {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.sq-status-partial {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.sq-status-waiting {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+/* ---------- Picking Details ---------- */
+.sq-pickings-detail {
+    background: #fafbfc;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.sq-picking-card {
+    margin: 8px 20px 8px 60px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.sq-picking-header {
+    padding: 12px 16px;
+}
+
+.sq-picking-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.sq-picking-name {
+    color: #714B67;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.sq-picking-name:hover {
+    text-decoration: underline;
+}
+
+.sq-picking-meta {
+    font-size: 0.8rem;
+}
+
+.sq-toggle-moves {
+    font-size: 0.8rem;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #f1f3f5;
+}
+
+.sq-toggle-moves:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+/* ---------- Stock Moves Table ---------- */
+.sq-moves-table-wrap {
+    border-top: 1px solid #e9ecef;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.sq-moves-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.sq-moves-table thead th {
+    padding: 8px 12px;
+    background: #f1f3f5;
+    font-weight: 600;
+    color: #495057;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.sq-moves-table td {
+    padding: 6px 12px;
+    border-bottom: 1px solid #f1f3f5;
+    color: #495057;
+}
+
+/* ---------- Documents ---------- */
+.sq-picking-docs {
+    padding: 8px 16px 12px;
+    border-top: 1px solid #f1f3f5;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.sq-docs-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #7f8c8d;
+}
+
+.sq-doc-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 14px;
+    background: #eef0f2;
+    font-size: 0.78rem;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.sq-doc-chip:hover {
+    background: #714B67;
+    color: #fff;
+}
+
+/* ---------- Incoming accent ---------- */
+.sq-incoming .sq-group-header {
+    border-left: 3px solid #1565c0;
+}
+
+/* ---------- Outgoing accent ---------- */
+.sq-outgoing .sq-group-header {
+    border-left: 3px solid #e65100;
+}
+
+/* ---------- Picking type kind badges & accents ---------- */
+.sq-picking-pick {
+    border-left: 3px solid #6a1b9a;
+}
+
+.sq-picking-delivery {
+    border-left: 3px solid #e65100;
+}
+
+.sq-picking-kind {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+}
+
+.sq-picking-kind-pick {
+    background: #f3e5f5;
+    color: #6a1b9a;
+}
+
+.sq-picking-kind-delivery {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 992px) {
+    .sq-summary-4,
+    .sq-summary-5 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .sq-order-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .sq-order-right {
+        flex-wrap: wrap;
+    }
+
+    .sq-picking-card {
+        margin-left: 30px;
+        margin-right: 12px;
+    }
+
+    .sq-goods-dashboard .sq-dashboard-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 576px) {
+    .sq-summary-4,
+    .sq-summary-5 {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* shared product type filter (product_types.xml) above the content area */
+.sq-goods-dashboard .sq-type-filter {
+    margin: 0 24px 12px;
+    border-top: 1px solid #dee2e6;
+    border-radius: 12px;
+}

@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_installation_user,serviq.installation user,model_serviq_installation,group_installation_user,1,1,1,0
+access_installation_manager,serviq.installation manager,model_serviq_installation,group_installation_manager,1,1,1,1
+access_installation_line_user,serviq.installation.line user,model_serviq_installation_line,group_installation_user,1,1,1,1
+access_installation_category_internal,serviq.installation.category internal,model_serviq_installation_category,base.group_user,1,0,0,0
+access_installation_category_manager,serviq.installation.category manager,model_serviq_installation_category,group_installation_manager,1,1,1,1
+access_component_role_internal,serviq.component.role internal,model_serviq_component_role,base.group_user,1,0,0,0
+access_component_role_manager,serviq.component.role manager,model_serviq_component_role,group_installation_manager,1,1,1,1
+access_intervention_type_internal,serviq.intervention.type internal,model_serviq_intervention_type,base.group_user,1,0,0,0
+access_intervention_type_manager,serviq.intervention.type manager,model_serviq_intervention_type,group_installation_manager,1,1,1,1
+access_sn_registration_wizard_user,serviq.sn.registration.wizard user,model_serviq_sn_registration_wizard,group_installation_user,1,1,1,1

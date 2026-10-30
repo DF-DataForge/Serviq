@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_logistics.HomeDashboard">
+        <div class="sq-stock-dashboard sq-home-dashboard o_action">
+            <!-- Header -->
+            <div class="sq-dashboard-header">
+                <div class="sq-header-title sq-header-brand">
+                    <h2><i class="fa fa-truck me-2"/>Logistiek</h2>
+                </div>
+                <div class="sq-header-controls">
+                    <t t-call="serviq_logistics.SegmentFilter"/>
+                    <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.reload(true)"
+                            title="Vernieuwen (herberekenen)">
+                        <i class="fa fa-refresh"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollable body -->
+            <div class="sq-home-body">
+            <!-- Loading -->
+            <div t-if="state.loading" class="sq-loading">
+                <i class="fa fa-spinner fa-spin fa-2x"/>
+                <span class="ms-2">Dashboards laden...</span>
+            </div>
+
+            <div t-elif="state.data" class="sq-home-content">
+                <!-- ================= OPERATIONEEL ================= -->
+                <t t-if="hasOperational">
+                <div class="sq-home-section-title">
+                    <i class="fa fa-cogs me-2"/>Operationeel
+                </div>
+                <div t-if="can('stock') or can('sn') or can('incoming') or can('outgoing')" class="sq-home-group-title">
+                    <i class="fa fa-warehouse me-2"/>Interne Voorraad
+                </div>
+                <div class="sq-home-tiles">
+                    <!-- Stock Overview -->
+                    <div class="sq-home-tile" t-if="can('stock')"
+                         t-on-click="() => this.openDashboard('serviq_logistics.action_stock_dashboard')">
+                        <div class="sq-home-tile-header">
+                            <div class="sq-card-icon sq-home-icon-stock">
+                                <i class="fa fa-cubes"/>
+                            </div>
+                            <div class="sq-home-tile-title">Voorraadoverzicht</div>
+                            <i class="fa fa-chevron-right sq-home-tile-arrow"/>
+                        </div>
+                        <div class="sq-home-kpis">
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Eigen voorraad</span>
+                                <span class="sq-home-kpi-value">
+                                    <t t-esc="formatQty(state.data.stock.own.total_qty)"/> stuks
+                                </span>
+                            </div>
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Consignatie</span>
+                                <span class="sq-home-kpi-value">
+                                    <t t-esc="formatQty(state.data.stock.consignment.total_qty)"/> stuks
+                                </span>
+                            </div>
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Bij klanten</span>
+                                <span class="sq-home-kpi-value">
+                                    <t t-esc="formatQty(state.data.stock.customer.total_qty)"/> stuks
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SN Tracking -->
+                    <div class="sq-home-tile" t-if="can('sn')"
+                         t-on-click="() => this.openDashboard('serviq_logistics.action_sn_tracking_dashboard')">
+                        <div class="sq-home-tile-header">
+                            <div class="sq-card-icon sq-home-icon-sn">
+                                <i class="fa fa-barcode"/>
+                            </div>
+                            <div class="sq-home-tile-title">Serienummers</div>
+                            <i class="fa fa-chevron-right sq-home-tile-arrow"/>
+                        </div>
+                        <div class="sq-home-kpis">
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">In huis</span>
+                                <span class="sq-home-kpi-value">
+                                    <t t-esc="formatQty(state.data.sn.inhouse.total_qty)"/> stuks
+                                </span>
+                            </div>
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Gereserveerd</span>
+                                <span class="sq-home-kpi-value">
+                                    <t t-esc="formatQty(state.data.sn.inhouse.reserved_qty)"/>
+                                </span>
+                            </div>
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Geïnstalleerd bij klanten</span>
+                                <span class="sq-home-kpi-value">
+                                    <t t-esc="state.data.sn.customer.installed_count"/> / <t t-esc="state.data.sn.customer.serial_count"/>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Incoming Goods -->
+                    <div class="sq-home-tile" t-if="can('incoming')"
+                         t-on-click="() => this.openDashboard('serviq_logistics.action_incoming_dashboard')">
+                        <div class="sq-home-tile-header">
+                            <div class="sq-card-icon sq-home-icon-incoming">
+                                <i class="fa fa-sign-in"/>
+                            </div>
+                            <div class="sq-home-tile-title">Inkomende goederen</div>
+                            <i class="fa fa-chevron-right sq-home-tile-arrow"/>
+                        </div>
+                        <div class="sq-home-kpis">
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Inkooporders</span>
+                                <span class="sq-home-kpi-value"><t t-esc="state.data.incoming.total_orders"/></span>
+                            </div>
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Wachtend op levering</span>
+                                <span class="sq-home-kpi-value sq-home-kpi-warn"><t t-esc="state.data.incoming.waiting"/></span>
+                            </div>
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Deels ontvangen</span>
+                                <span class="sq-home-kpi-value"><t t-esc="state.data.incoming.partially_received"/></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Outgoing Goods -->
+                    <div class="sq-home-tile" t-if="can('outgoing')"
+                         t-on-click="() => this.openDashboard('serviq_logistics.action_outgoing_dashboard')">
+                        <div class="sq-home-tile-header">
+                            <div class="sq-card-icon sq-home-icon-outgoing">
+                                <i class="fa fa-sign-out"/>
+                            </div>
+                            <div class="sq-home-tile-title">Uitgaande goederen</div>
+                            <i class="fa fa-chevron-right sq-home-tile-arrow"/>
+                        </div>
+                        <div class="sq-home-kpis">
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Verkooporders</span>
+                                <span class="sq-home-kpi-value"><t t-esc="state.data.outgoing.total_orders"/></span>
+                            </div>
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Wachtend op verzending</span>
+                                <span class="sq-home-kpi-value sq-home-kpi-warn"><t t-esc="state.data.outgoing.waiting"/></span>
+                            </div>
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Open picks</span>
+                                <span class="sq-home-kpi-value"><t t-esc="state.data.outgoing.open_picks"/></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ Externe voorraad ============ -->
+                <div t-if="can('spare')" class="sq-home-group-title">
+                    <i class="fa fa-wrench me-2"/>Reserveonderdelen
+                </div>
+                <div class="sq-home-tiles">
+                    <div class="sq-home-tile" t-if="can('spare')"
+                         t-on-click="() => this.openDashboard('serviq_logistics.action_spare_parts_dashboard')">
+                        <div class="sq-home-tile-header">
+                            <div class="sq-card-icon sq-home-icon-spare">
+                                <i class="fa fa-wrench"/>
+                            </div>
+                            <div class="sq-home-tile-title">Reserveonderdelen</div>
+                            <i class="fa fa-chevron-right sq-home-tile-arrow"/>
+                        </div>
+                        <div class="sq-home-kpis">
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Leveringen</span>
+                                <span class="sq-home-kpi-value"><t t-esc="state.data.spare.total_pickings"/></span>
+                            </div>
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Nog te leveren</span>
+                                <span class="sq-home-kpi-value sq-home-kpi-warn"><t t-esc="state.data.spare.pending_pickings"/></span>
+                            </div>
+                            <div class="sq-home-kpi">
+                                <span class="sq-home-kpi-label">Klanten</span>
+                                <span class="sq-home-kpi-value"><t t-esc="state.data.spare.client_count"/></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                </t>
+
+                <div t-if="!hasOperational" class="sq-fin-empty">
+                    Je hebt nog geen toegang tot een dashboard. Vraag een beheerder om de dashboards aan te vinken op je gebruiker.
+                </div>
+            </div>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Default types; they can be renamed, archived or extended in
+     Installaties > Configuratie > Types interventie. -->
+<odoo noupdate="1">
+    <record id="intervention_type_first_installation" model="serviq.intervention.type">
+        <field name="name">Eerste installatie</field>
+        <field name="code">first_installation</field>
+        <field name="sequence">10</field>
+        <field name="counts_as_service" eval="False"/>
+        <field name="is_first_installation" eval="True"/>
+    </record>
+    <record id="intervention_type_commissioning" model="serviq.intervention.type">
+        <field name="name">Inbedrijfstelling</field>
+        <field name="code">commissioning</field>
+        <field name="sequence">20</field>
+        <field name="counts_as_service" eval="False"/>
+        <field name="is_commissioning" eval="True"/>
+    </record>
+    <record id="intervention_type_repair" model="serviq.intervention.type">
+        <field name="name">Herstelling</field>
+        <field name="code">repair</field>
+        <field name="sequence">30</field>
+        <field name="group">repair</field>
+    </record>
+    <record id="intervention_type_replacement" model="serviq.intervention.type">
+        <field name="name">Vervanging</field>
+        <field name="code">replacement</field>
+        <field name="sequence">40</field>
+        <field name="group">replacement</field>
+    </record>
+    <record id="intervention_type_maintenance" model="serviq.intervention.type">
+        <field name="name">Periodiek onderhoud</field>
+        <field name="code">periodic_maintenance</field>
+        <field name="sequence">50</field>
+    </record>
+    <record id="intervention_type_other" model="serviq.intervention.type">
+        <field name="name">Andere</field>
+        <field name="code">other</field>
+        <field name="sequence">90</field>
+    </record>
+</odoo>

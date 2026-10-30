@@ -1,0 +1,176 @@
+/* ============================================
+   Logistiek Dashboard Landing Page
+   Builds on the base .sq-stock-dashboard styles.
+   ============================================ */
+
+/* Fixed header + scrollable body (same pattern as the list dashboards:
+   the body is the flex remainder and scrolls internally). */
+.sq-home-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.sq-home-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sq-home-body::-webkit-scrollbar-track {
+    background: #f1f3f5;
+}
+
+.sq-home-body::-webkit-scrollbar-thumb {
+    background: #c4c8cc;
+    border-radius: 4px;
+}
+
+.sq-home-content {
+    padding: 8px 24px 24px;
+}
+
+.sq-home-group-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #7f8c8d;
+    margin: 16px 0 10px;
+}
+
+.sq-home-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.sq-home-tile {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sq-home-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #714B67;
+}
+
+.sq-home-tile-wide {
+    grid-column: 1 / -1;
+}
+
+.sq-home-tile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.sq-home-tile-header .sq-card-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+    margin-right: 0;
+}
+
+.sq-home-tile-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    flex: 1;
+}
+
+.sq-home-tile-arrow {
+    color: #bdc3c7;
+}
+
+.sq-home-tile:hover .sq-home-tile-arrow {
+    color: #714B67;
+}
+
+/* Tile icons */
+.sq-home-icon-stock { background: #e8f5e9; color: #2e7d32; }
+.sq-home-icon-sn { background: #ede7f6; color: #4527a0; }
+.sq-home-icon-incoming { background: #e3f2fd; color: #1565c0; }
+.sq-home-icon-outgoing { background: #fff3e0; color: #e65100; }
+.sq-home-icon-spare { background: #e0f2f1; color: #00695c; }
+.sq-home-icon-financial { background: #fce4ec; color: #ad1457; }
+
+/* KPI rows inside a tile */
+.sq-home-kpis {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sq-home-kpis-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 24px;
+}
+
+.sq-home-kpis-row .sq-home-kpi {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.sq-home-kpi {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.sq-home-kpi-label {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+.sq-home-kpi-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #2c3e50;
+    white-space: nowrap;
+}
+
+.sq-home-kpi-warn {
+    color: #e65100;
+}
+
+@media (max-width: 992px) {
+    .sq-home-tiles {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Operationeel / Financieel split */
+.sq-home-section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 20px 0 4px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #714B67;
+}
+
+.sq-home-section-title:first-child {
+    margin-top: 4px;
+}
+
+/* Dashboard header title with icon / subtitle */
+.sq-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sq-home-tile-loading {
+    font-size: 0.85rem;
+    color: #95a5a6;
+    padding: 8px 0;
+}

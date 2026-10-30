@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Intervention (task) -->
+    <record id="project_task_form_inherit" model="ir.ui.view">
+        <field name="name">project.task.form.serviq.installation</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <header position="inside">
+                <button name="action_serviq_plan_in_calendar" type="object"
+                        string="Inplannen via kalender" icon="fa-calendar"
+                        invisible="not serviq_installation_id"/>
+            </header>
+            <field name="partner_id" position="after">
+                <field name="serviq_installation_id"
+                       context="{'serviq_customer_id': partner_id}"/>
+                <field name="serviq_intervention_type_id"
+                       invisible="not serviq_installation_id"
+                       options="{'no_create': True}"/>
+                <field name="serviq_installer_id"
+                       invisible="not serviq_installation_id"/>
+                <field name="serviq_distributor_id"
+                       invisible="not serviq_installation_id"/>
+            </field>
+        </field>
+    </record>
+    <record id="project_task_list_inherit" model="ir.ui.view">
+        <field name="name">project.task.list.serviq.installation</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_tree2"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="serviq_installation_id" optional="show"/>
+                <field name="serviq_intervention_type_id" optional="show"/>
+                <field name="serviq_installer_id" optional="hide"/>
+            </field>
+        </field>
+    </record>
+    <record id="project_task_search_inherit" model="ir.ui.view">
+        <field name="name">project.task.search.serviq.installation</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_search_form"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="serviq_installation_id"/>
+                <field name="serviq_installer_id"/>
+                <field name="serviq_intervention_type_id"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Contacts -->
+    <record id="res_partner_form_inherit" model="ir.ui.view">
+        <field name="name">res.partner.form.serviq.installation</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_view_serviq_installations" type="object"
+                        class="oe_stat_button" icon="fa-cubes"
+                        invisible="serviq_installation_count == 0">
+                    <field name="serviq_installation_count" widget="statinfo"
+                           string="Installaties"/>
+                </button>
+            </div>
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="serviq_is_distributor"/>
+                <field name="serviq_is_installer"/>
+                <field name="serviq_can_install_for_ids" widget="many2many_tags"
+                       invisible="not serviq_is_installer"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Products -->
+    <record id="product_template_form_inherit" model="ir.ui.view">
+        <field name="name">product.template.form.serviq.installation</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="serviq_category_id"/>
+                <field name="serviq_role_id"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="product_template_search_inherit" model="ir.ui.view">
+        <field name="name">product.template.search.serviq.installation</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="serviq_category_id"/>
+                <field name="serviq_role_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Serial numbers -->
+    <record id="stock_lot_form_inherit" model="ir.ui.view">
+        <field name="name">stock.lot.form.serviq.installation</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="stock.view_production_lot_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_view_serviq_installation" type="object"
+                        class="oe_stat_button" icon="fa-cubes"
+                        string="Installatie"
+                        invisible="not serviq_installation_id"/>
+            </div>
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="serviq_installation_id" readonly="1"
+                       invisible="not serviq_installation_id"/>
+                <field name="serviq_sn_photo" widget="image" options="{'size': [0, 90]}"
+                       invisible="not serviq_sn_photo"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Locations -->
+    <record id="stock_location_form_inherit" model="ir.ui.view">
+        <field name="name">stock.location.form.serviq.installation</field>
+        <field name="model">stock.location</field>
+        <field name="inherit_id" ref="stock.view_location_form"/>
+        <field name="arch" type="xml">
+            <field name="usage" position="after">
+                <field name="serviq_partner_id"/>
+                <field name="serviq_is_spare_parts_location"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Deliveries -->
+    <record id="stock_picking_form_inherit" model="ir.ui.view">
+        <field name="name">stock.picking.form.serviq.installation</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_view_serviq_installations" type="object"
+                        class="oe_stat_button" icon="fa-cubes"
+                        invisible="serviq_installation_count == 0">
+                    <field name="serviq_installation_count" widget="statinfo"
+                           string="Installaties"/>
+                </button>
+            </div>
+        </field>
+    </record>
+</odoo>

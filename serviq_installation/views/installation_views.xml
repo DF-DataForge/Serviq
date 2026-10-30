@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List -->
+    <record id="installation_list_view" model="ir.ui.view">
+        <field name="name">serviq.installation.list</field>
+        <field name="model">serviq.installation</field>
+        <field name="arch" type="xml">
+            <list string="Installaties" duplicate="0">
+                <field name="code"/>
+                <field name="product_tmpl_id"/>
+                <field name="category_id" optional="show"/>
+                <field name="customer_id" optional="show"/>
+                <field name="distributor_id" optional="show"/>
+                <field name="installer_id" optional="hide"/>
+                <field name="lot_id" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('delivered', 'installation', 'commissioning')"
+                       decoration-success="state == 'active'"
+                       decoration-warning="state == 'service'"
+                       decoration-danger="state in ('offline', 'out_of_service')"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Actions to open the kanban grouped per distributor / installer -->
+    <record id="installation_action_per_distributor" model="ir.actions.act_window">
+        <field name="name">Installaties per distributeur</field>
+        <field name="res_model">serviq.installation</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('parent_line_id', '=', False)]</field>
+        <field name="context">{'group_by': 'distributor_id'}</field>
+    </record>
+    <record id="installation_action_per_installer" model="ir.actions.act_window">
+        <field name="name">Installaties per installateur</field>
+        <field name="res_model">serviq.installation</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('parent_line_id', '=', False)]</field>
+        <field name="context">{'group_by': 'installer_id'}</field>
+    </record>
+
+    <!-- Kanban -->
+    <record id="installation_kanban_view" model="ir.ui.view">
+        <field name="name">serviq.installation.kanban</field>
+        <field name="model">serviq.installation</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column sq-in-kanban">
+                <header>
+                    <button name="%(installation_action_per_distributor)d"
+                            type="action" string="Per distributeur"
+                            display="always"/>
+                    <button name="%(installation_action_per_installer)d"
+                            type="action" string="Per installateur"
+                            display="always"/>
+                </header>
+                <field name="sn_registration_count"/>
+                <templates>
+                    <!-- Same look as the cards of the overview dashboard -->
+                    <t t-name="card">
+                        <div class="sq-in-card-top">
+                            <strong><field name="code"/></strong>
+                            <span t-attf-class="sq-in-badge sq-in-badge-{{ record.state.raw_value or 'none' }}">
+                                <field name="state"/>
+                            </span>
+                        </div>
+                        <div class="sq-in-card-product">
+                            <field name="product_tmpl_id"/>
+                        </div>
+                        <div class="sq-in-card-line" title="Klant">
+                            <i class="fa fa-user"/>
+                            <field t-if="record.customer_id.raw_value" name="customer_id"/>
+                            <t t-else="">-</t>
+                        </div>
+                        <div class="sq-in-card-line" title="Distributeur">
+                            <i class="fa fa-truck"/>
+                            <field t-if="record.distributor_id.raw_value" name="distributor_id"/>
+                            <t t-else="">-</t>
+                        </div>
+                        <div class="sq-in-card-line" title="Installateur">
+                            <i class="fa fa-wrench"/>
+                            <field t-if="record.installer_id.raw_value" name="installer_id"/>
+                            <t t-else="">-</t>
+                        </div>
+                        <div t-if="record.sn_registration_count.raw_value" class="sq-in-card-warn">
+                            <i class="fa fa-exclamation-triangle me-1"/>
+                            <t t-esc="record.sn_registration_count.raw_value"/> SN te registreren
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Search -->
+    <record id="installation_search_view" model="ir.ui.view">
+        <field name="name">serviq.installation.search</field>
+        <field name="model">serviq.installation</field>
+        <field name="arch" type="xml">
+            <search string="Installaties">
+                <field name="code"/>
+                <field name="product_tmpl_id"/>
+                <field name="lot_id"/>
+                <field name="line_ids" string="Serienummer component"
+                       filter_domain="[('line_ids.lot_id.name', 'ilike', self)]"/>
+                <field name="customer_id"/>
+                <field name="distributor_id"/>
+                <field name="installer_id"/>
+                <field name="category_id"/>
+                <separator/>
+                <filter string="Geleverd" name="filter_delivered"
+                        domain="[('state', '=', 'delivered')]"/>
+                <filter string="Installatie bezig" name="filter_installation"
+                        domain="[('state', '=', 'installation')]"/>
+                <filter string="Inbedrijfstelling gepland" name="filter_commissioning"
+                        domain="[('state', '=', 'commissioning')]"/>
+                <filter string="Actief" name="filter_active"
+                        domain="[('state', '=', 'active')]"/>
+                <filter string="Service" name="filter_service"
+                        domain="[('state', '=', 'service')]"/>
+                <filter string="Offline" name="filter_offline"
+                        domain="[('state', '=', 'offline')]"/>
+                <filter string="Buiten dienst" name="filter_out_of_service"
+                        domain="[('state', '=', 'out_of_service')]"/>
+                <separator/>
+                <filter string="SN te registreren" name="filter_sn_registration"
+                        domain="[('sn_registration_count', '>', 0)]"/>
+                <filter string="Subinstallaties" name="filter_sub"
+                        domain="[('parent_line_id', '!=', False)]"/>
+                <group name="groupby">
+                    <filter string="Status" name="group_by_state"
+                            context="{'group_by': 'state'}"/>
+                    <filter string="Categorie" name="group_by_category"
+                            context="{'group_by': 'category_id'}"/>
+                    <filter string="Distributeur" name="group_by_distributor"
+                            context="{'group_by': 'distributor_id'}"/>
+                    <filter string="Installateur" name="group_by_installer"
+                            context="{'group_by': 'installer_id'}"/>
+                    <filter string="Klant" name="group_by_customer"
+                            context="{'group_by': 'customer_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Form -->
+    <record id="installation_form_view" model="ir.ui.view">
+        <field name="name">serviq.installation.form</field>
+        <field name="model">serviq.installation</field>
+        <field name="arch" type="xml">
+            <form string="Installatie" duplicate="0">
+                <header>
+                    <field name="state" widget="statusbar"
+                           options="{'clickable': True}"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_plan_intervention" type="object"
+                                class="oe_stat_button" icon="fa-calendar-plus-o"
+                                string="Interventie plannen"
+                                invisible="intervention_count or repair_count or replacement_count"/>
+                        <button name="action_open_interventions" type="object"
+                                class="oe_stat_button" icon="fa-calendar-check-o"
+                                context="{'serviq_intervention_group': 'intervention'}"
+                                invisible="intervention_count == 0">
+                            <field name="intervention_count" widget="statinfo"
+                                   string="Interventies"/>
+                        </button>
+                        <button name="action_open_interventions" type="object"
+                                class="oe_stat_button" icon="fa-wrench"
+                                context="{'serviq_intervention_group': 'repair'}"
+                                invisible="repair_count == 0">
+                            <field name="repair_count" widget="statinfo"
+                                   string="Herstellingen"/>
+                        </button>
+                        <button name="action_open_interventions" type="object"
+                                class="oe_stat_button" icon="fa-exchange"
+                                context="{'serviq_intervention_group': 'replacement'}"
+                                invisible="replacement_count == 0">
+                            <field name="replacement_count" widget="statinfo"
+                                   string="Vervangingen"/>
+                        </button>
+                        <button name="action_view_related_sale_orders" type="object"
+                                class="oe_stat_button" icon="fa-usd"
+                                invisible="sale_order_count == 0">
+                            <field name="sale_order_count" widget="statinfo"
+                                   string="Verkooporders"/>
+                        </button>
+                        <button name="action_view_related_purchase_orders" type="object"
+                                class="oe_stat_button" icon="fa-shopping-cart"
+                                invisible="purchase_order_count == 0">
+                            <field name="purchase_order_count" widget="statinfo"
+                                   string="Inkooporders"/>
+                        </button>
+                        <button name="action_open_sn_registration" type="object"
+                                class="oe_stat_button" icon="fa-barcode"
+                                invisible="sn_registration_count == 0">
+                            <field name="sn_registration_count" widget="statinfo"
+                                   string="SN-registratie"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <!-- Tiles in the style of the overview dashboard -->
+                    <div class="sq-in-form-tiles-wrap">
+                    <div class="sq-in-form-tiles">
+                        <div class="sq-in-form-tile sq-in-form-tile-product">
+                            <h5><i class="fa fa-cube me-2"/>Productgegevens</h5>
+                            <group name="product_info">
+                                <field name="product_tmpl_id" readonly="is_locked"/>
+                                <field name="product_qty" invisible="1"/>
+                                <field name="code" readonly="is_locked"/>
+                                <field name="category_id" readonly="is_locked"
+                                       options="{'no_create_edit': True}"/>
+                                <field name="parent_line_id" invisible="not parent_line_id"
+                                       readonly="1"/>
+                                <field name="delivery_picking_id" invisible="not delivery_picking_id"/>
+                                <field name="company_id" groups="base.group_multi_company"/>
+                                <field name="is_locked" widget="boolean_toggle"/>
+                            </group>
+                        </div>
+                        <div class="sq-in-form-tile sq-in-form-tile-contacts">
+                            <h5><i class="fa fa-users me-2"/>Contacten</h5>
+                            <group name="contacts">
+                                <field name="customer_id" readonly="is_locked"/>
+                                <field name="distributor_id" readonly="is_locked"/>
+                                <field name="installer_id" readonly="is_locked"/>
+                                <field name="contact_person_name" readonly="is_locked"/>
+                                <field name="contact_person_phone" widget="phone" readonly="is_locked"/>
+                            </group>
+                        </div>
+                        <div class="sq-in-form-tile sq-in-form-tile-serials">
+                            <h5><i class="fa fa-barcode me-2"/>Serienummers</h5>
+                            <group name="serial_numbers">
+                                <field name="lot_id" readonly="is_locked"
+                                       context="{'serviq_distributor': distributor_id, 'serviq_product_tmpl': product_tmpl_id}"/>
+                            </group>
+                        </div>
+                    </div>
+                    </div>
+
+                    <notebook>
+                        <page string="Componenten" name="components">
+                            <field name="line_ids" readonly="is_locked">
+                                <list string="Componenten" editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="sub_installation_id" column_invisible="True"/>
+                                    <field name="rack_number" optional="hide"/>
+                                    <field name="product_tmpl_id"/>
+                                    <field name="role_id" optional="show"/>
+                                    <field name="distributor_id" optional="hide"/>
+                                    <field name="product_qty" column_invisible="True"/>
+                                    <field name="lot_id"
+                                           context="{'serviq_distributor': distributor_id, 'serviq_product_tmpl': product_tmpl_id, 'serviq_outside_stock': search_outside_stock, 'default_product_id': product_variant_id, 'serviq_create_lot_in_stock': True}"/>
+                                    <!-- Always loaded so the lot_id context above can read
+                                         it; the toggle itself lives in the Details popup. -->
+                                    <field name="search_outside_stock" column_invisible="1"/>
+                                    <field name="product_variant_id" column_invisible="1"/>
+                                    <field name="product_uom" optional="hide"
+                                           options="{'no_open': True, 'no_create': True}"/>
+                                    <field name="serial_photo" widget="image" string="SN foto"
+                                           options="{'zoom': true, 'preview_image': 'serial_photo', 'size': [0, 45]}"/>
+                                    <field name="note" optional="hide"/>
+                                    <button name="action_open_details" type="object"
+                                            string="Details" icon="fa-pencil"/>
+                                    <button name="action_open_sub_installation" type="object"
+                                            string="Open" icon="fa-external-link"
+                                            invisible="not sub_installation_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Interventies" name="interventions">
+                            <field name="task_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="serviq_intervention_type_id"/>
+                                    <field name="serviq_installer_id"/>
+                                    <field name="date_deadline"/>
+                                    <field name="stage_id"/>
+                                    <field name="state" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Serienummers" name="lots">
+                            <field name="lot_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="product_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notities" name="notes">
+                            <field name="note"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Component detail popup -->
+    <record id="installation_line_detail_form" model="ir.ui.view">
+        <field name="name">serviq.installation.line.detail.form</field>
+        <field name="model">serviq.installation.line</field>
+        <field name="arch" type="xml">
+            <form string="Component">
+                <group>
+                    <group>
+                        <field name="installation_id" readonly="1"/>
+                        <field name="product_tmpl_id"/>
+                        <field name="role_id"/>
+                        <field name="product_variant_id" invisible="1"/>
+                        <field name="distributor_id" invisible="1"/>
+                        <field name="search_outside_stock" widget="boolean_toggle"/>
+                        <field name="lot_id"
+                               context="{'serviq_distributor': distributor_id, 'serviq_product_tmpl': product_tmpl_id, 'serviq_outside_stock': search_outside_stock, 'default_product_id': product_variant_id, 'serviq_create_lot_in_stock': True}"/>
+                        <field name="rack_number"/>
+                        <field name="note"/>
+                    </group>
+                    <group>
+                        <field name="serial_photo_filename" invisible="1"/>
+                        <field name="serial_photo" widget="image"
+                               options="{'zoom': true}"/>
+                        <button name="action_download_serial_photo" type="object"
+                                string="Foto downloaden" icon="fa-download"
+                                class="btn-link" invisible="not serial_photo"/>
+                    </group>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="installation_action" model="ir.actions.act_window">
+        <field name="name">Installaties</field>
+        <field name="res_model">serviq.installation</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('parent_line_id', '=', False)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Registreer een eerste installatie</p>
+            <p>Een installatie is een geplaatst systeem bij een klant, met zijn componenten,
+               serienummers en interventies.</p>
+        </field>
+    </record>
+
+    <record id="overview_dashboard_action" model="ir.actions.client">
+        <field name="name">Overzicht</field>
+        <field name="tag">serviq_installation.overview_dashboard</field>
+    </record>
+
+    <record id="hours_overview_action" model="ir.actions.client">
+        <field name="name">Urenoverzicht interventies</field>
+        <field name="tag">serviq_installation.hours_overview</field>
+    </record>
+
+    <record id="intervention_action" model="ir.actions.act_window">
+        <field name="name">Interventies</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,kanban,form,calendar</field>
+        <field name="domain">[('serviq_installation_id', '!=', False)]</field>
+        <field name="search_view_id" ref="project.view_task_search_form"/>
+    </record>
+</odoo>

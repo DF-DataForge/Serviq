@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Segment filter (installation categories), shared by all
+         dashboards. The component provides state.subgroup,
+         onSubgroupClick(), segmentOptions() and hasSegments()
+         (subgroup_filter.js). Hidden when no category is defined. -->
+    <t t-name="serviq_logistics.SegmentFilter">
+        <div t-if="hasSegments()" class="sq-subgroup-filter btn-group" role="group">
+            <t t-foreach="segmentOptions()" t-as="opt" t-key="opt.value">
+                <button t-attf-class="btn btn-sm {{ state.subgroup === opt.value ? 'btn-primary' : 'btn-outline-secondary' }}"
+                        t-on-click="() => this.onSubgroupClick(opt.value)">
+                    <i t-if="opt.icon" t-attf-class="fa {{ opt.icon }} me-1"/><t t-esc="opt.label"/>
+                </button>
+            </t>
+        </div>
+    </t>
+
+    <!-- Product type filter chips, shared by all dashboards.
+         Expects: options ([{key, label, count}]); the component provides
+         state.typeFilter, onTypeFilter() and getProductTypeClass()
+         (product_types.js). -->
+    <t t-name="serviq_logistics.TypeChips">
+        <div t-if="options.length" class="sq-type-filter">
+            <span class="sq-type-filter-label">Producttype</span>
+            <button t-attf-class="sq-type-chip {{ !state.typeFilter ? 'active' : '' }}"
+                    t-on-click="() => this.onTypeFilter('')">Alle</button>
+            <t t-foreach="options" t-as="opt" t-key="opt.key">
+                <button t-attf-class="sq-type-chip {{ state.typeFilter === opt.key ? 'active' : '' }}"
+                        t-on-click="() => this.onTypeFilter(opt.key)">
+                    <span t-attf-class="sq-type-chip-dot {{ getProductTypeClass(opt.key) }}"/>
+                    <t t-esc="opt.label"/> <small t-esc="opt.count"/>
+                </button>
+            </t>
+        </div>
+    </t>
+
+    <!-- Head of a product type card. Expects: x ({key, label}), meta (text). -->
+    <t t-name="serviq_logistics.TypeCardHead">
+        <div class="sq-cf-card-head">
+            <span t-attf-class="badge {{ getProductTypeClass(x.key) }}" t-esc="x.label"/>
+            <span class="sq-cf-card-meta" t-esc="meta"/>
+        </div>
+    </t>
+</templates>

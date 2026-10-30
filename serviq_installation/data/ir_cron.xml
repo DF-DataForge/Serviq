@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Installations go to 'Service' when a planned intervention comes
+         within the lead time, and back once nothing is planned. -->
+    <record id="ir_cron_installation_service_state" model="ir.cron">
+        <field name="name">Installaties: status service voor geplande interventies</field>
+        <field name="model_id" ref="model_serviq_installation"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_sync_service_state()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

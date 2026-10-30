@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_logistics.OutgoingGoodsDashboard">
+        <div class="sq-goods-dashboard sq-outgoing o_action">
+            <!-- Header -->
+            <div class="sq-dashboard-header">
+                <div class="sq-header-title">
+                    <h2><i class="fa fa-share-square-o me-2"/>Uitgaande goederen</h2>
+                </div>
+                <div class="sq-header-controls">
+                    <t t-call="serviq_logistics.SegmentFilter"/>
+                    <button class="btn btn-sm btn-outline-success sq-export-btn"
+                            t-on-click="onExportExcel"
+                            t-att-disabled="state.loading"
+                            title="Download als Excel">
+                        <i class="fa fa-file-excel-o me-1"/>Exporteer naar Excel
+                    </button>
+                    <div class="sq-search-box">
+                        <i class="fa fa-search sq-search-icon"/>
+                        <input type="text"
+                               class="sq-search-input"
+                               placeholder="Zoek SO, klant of referentie..."
+                               t-att-value="state.searchTerm"
+                               t-on-input="onSearchInput"/>
+                        <i t-if="state.searchTerm"
+                           class="fa fa-times sq-search-clear"
+                           t-on-click="onSearchClear"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="sq-summary-cards sq-summary-5">
+                <div class="sq-summary-card sq-card-total">
+                    <div class="sq-card-icon"><i class="fa fa-file-text-o"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Verkooporders</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.total_orders || 0"/></div>
+                        <div class="sq-card-sub"><t t-esc="state.summary.customer_count || 0"/> klanten</div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-done">
+                    <div class="sq-card-icon"><i class="fa fa-check-circle"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Volledig geleverd</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.fully_delivered || 0"/></div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-partial">
+                    <div class="sq-card-icon"><i class="fa fa-adjust"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Deels geleverd</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.partially_delivered || 0"/></div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-waiting">
+                    <div class="sq-card-icon"><i class="fa fa-clock-o"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Wachtend</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.waiting || 0"/></div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-picks">
+                    <div class="sq-card-icon"><i class="fa fa-tasks"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Picks</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.total_picks || 0"/></div>
+                        <div class="sq-card-sub">
+                            <t t-esc="state.summary.done_picks || 0"/> afgewerkt /
+                            <t t-esc="state.summary.open_picks || 0"/> open
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product type filter (shared) -->
+            <t t-if="!state.loading" t-call="serviq_logistics.TypeChips">
+                <t t-set="options" t-value="typeOptions"/>
+            </t>
+
+            <!-- Content -->
+            <div class="sq-content-area">
+                <div t-if="state.loading" class="sq-loading">
+                    <i class="fa fa-spinner fa-spin fa-2x"/>
+                    <span class="ms-2">Verkooporders laden...</span>
+                </div>
+
+                <div t-elif="!visibleCustomers.length" class="sq-empty-state">
+                    <i class="fa fa-inbox fa-3x mb-3"/>
+                    <h4>Geen verkooporders gevonden</h4>
+                    <p class="text-muted" t-if="state.searchTerm">
+                        Geen resultaten voor "<t t-esc="state.searchTerm"/>"
+                    </p>
+                </div>
+
+                <div t-else="" class="sq-scrollable-list">
+                    <t t-foreach="visibleCustomers" t-as="customer" t-key="customer.partner_id">
+                        <!-- Customer group header -->
+                        <div class="sq-group-header"
+                             t-on-click="() => this.toggleCustomer(customer.partner_id)">
+                            <div class="sq-group-left">
+                                <i t-attf-class="fa {{ isCustomerExpanded(customer.partner_id) ? 'fa-chevron-down' : 'fa-chevron-right' }} me-2"/>
+                                <i class="fa fa-user me-2 text-muted"/>
+                                <span class="sq-group-name"><t t-esc="customer.partner_name"/></span>
+                            </div>
+                            <div class="sq-group-badges">
+                                <span class="badge bg-secondary me-1"><t t-esc="customer.total_orders"/> SO's</span>
+                                <span t-if="customer.fully_delivered" class="badge bg-success me-1"><t t-esc="customer.fully_delivered"/> geleverd</span>
+                                <span t-if="customer.partially_delivered" class="badge bg-warning me-1"><t t-esc="customer.partially_delivered"/> deels</span>
+                                <span t-if="customer.waiting" class="badge bg-info me-1"><t t-esc="customer.waiting"/> wachtend</span>
+                            </div>
+                        </div>
+
+                        <!-- Customer expanded: SO list -->
+                        <div t-if="isCustomerExpanded(customer.partner_id)" class="sq-group-content">
+                            <t t-foreach="customer.sale_orders" t-as="so" t-key="so.so_id">
+                                <!-- SO row -->
+                                <div class="sq-order-row"
+                                     t-on-click="() => this.toggleOrder(so.so_id)">
+                                    <div class="sq-order-info">
+                                        <span class="sq-order-name"
+                                              t-on-click.stop="() => this.openSaleOrder(so.so_id)"
+                                              title="Open de verkooporder">
+                                            <t t-esc="so.so_name"/>
+                                        </span>
+                                        <t t-foreach="so.product_types || []" t-as="pt" t-key="pt">
+                                            <span t-attf-class="badge ms-1 {{ getProductTypeClass(pt) }}" t-esc="getProductTypeLabel(pt)"/>
+                                        </t>
+                                        <span class="text-muted ms-2"><t t-esc="so.date_order"/></span>
+                                        <span t-if="so.client_order_ref" class="text-muted ms-2">
+                                            <i class="fa fa-tag me-1"/><t t-esc="so.client_order_ref"/>
+                                        </span>
+                                    </div>
+                                    <div class="sq-order-right">
+                                        <span class="sq-order-amount">
+                                            <t t-esc="so.currency"/><t t-esc="so.amount_total.toFixed(2)"/>
+                                        </span>
+                                        <span t-attf-class="sq-status-badge {{ getStatusClass(so.delivery_status) }}">
+                                            <t t-esc="getStatusLabel(so.delivery_status)"/>
+                                        </span>
+                                        <span class="text-muted ms-2">
+                                            <t t-esc="so.done_picking_count"/>/<t t-esc="so.picking_count"/> leveringen
+                                        </span>
+                                        <span t-if="so.pick_count" class="text-muted ms-2">
+                                            <i class="fa fa-tasks me-1"/>
+                                            <t t-esc="so.done_pick_count"/>/<t t-esc="so.pick_count"/> picks
+                                        </span>
+                                        <i t-attf-class="fa ms-2 {{ isOrderExpanded(so.so_id) ? 'fa-chevron-up' : 'fa-chevron-down' }} text-muted"/>
+                                    </div>
+                                </div>
+
+                                <!-- SO expanded: picking details with stock moves -->
+                                <div t-if="isOrderExpanded(so.so_id)" class="sq-pickings-detail">
+                                    <div t-if="!so.pickings.length" class="p-3 text-muted fst-italic">
+                                        <i class="fa fa-info-circle me-1"/>Nog geen transfers aangemaakt.
+                                    </div>
+                                    <t t-foreach="so.pickings" t-as="pick" t-key="pick.picking_id">
+                                        <div t-attf-class="sq-picking-card sq-picking-{{ pick.kind }}">
+                                            <div class="sq-picking-header">
+                                                <div class="sq-picking-info">
+                                                    <span t-attf-class="sq-picking-kind sq-picking-kind-{{ pick.kind }} me-2"
+                                                          t-att-title="pick.picking_type_label">
+                                                        <i t-attf-class="fa me-1 {{ pick.kind === 'pick' ? 'fa-tasks' : 'fa-truck' }}"/>
+                                                        <t t-esc="pick.picking_type_label"/>
+                                                    </span>
+                                                    <span class="sq-picking-name"
+                                                          t-on-click.stop="() => this.openPicking(pick.picking_id)"
+                                                          title="Open de transfer">
+                                                        <t t-esc="pick.picking_name"/>
+                                                    </span>
+                                                    <span t-attf-class="badge ms-2 {{ getPickingStateClass(pick.state) }}">
+                                                        <t t-esc="pick.state_label"/>
+                                                    </span>
+                                                    <!-- Toggle stock moves -->
+                                                    <span t-if="pick.moves.length"
+                                                          class="sq-toggle-moves ms-2"
+                                                          t-on-click.stop="() => this.togglePicking(pick.picking_id)">
+                                                        <i class="fa fa-list me-1"/>
+                                                        <t t-esc="pick.moves.length"/> bewegingen
+                                                        <i t-attf-class="fa ms-1 {{ isPickingExpanded(pick.picking_id) ? 'fa-chevron-up' : 'fa-chevron-down' }}"/>
+                                                    </span>
+                                                </div>
+                                                <div class="sq-picking-meta">
+                                                    <span t-if="pick.scheduled_date" class="text-muted me-3">
+                                                        <i class="fa fa-calendar me-1"/>Gepland: <t t-esc="pick.scheduled_date"/>
+                                                    </span>
+                                                    <span t-if="pick.date_done" class="text-muted me-3">
+                                                        <i class="fa fa-check me-1"/>Afgewerkt: <t t-esc="pick.date_done"/>
+                                                    </span>
+                                                    <span t-if="pick.carrier_tracking_ref" class="text-muted">
+                                                        <i class="fa fa-barcode me-1"/><t t-esc="pick.carrier_tracking_ref"/>
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Stock moves table (toggled) -->
+                                            <div t-if="pick.moves.length and isPickingExpanded(pick.picking_id)" class="sq-moves-table-wrap">
+                                                <table class="sq-moves-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Product</th>
+                                                            <th>Gevraagd</th>
+                                                            <th>Afgewerkt</th>
+                                                            <th>Eenheid</th>
+                                                            <th>Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="pick.moves" t-as="move" t-key="move_index">
+                                                            <tr>
+                                                                <td><t t-esc="move.product_name"/></td>
+                                                                <td><t t-esc="move.product_uom_qty"/></td>
+                                                                <td><t t-esc="move.quantity"/></td>
+                                                                <td><t t-esc="move.uom"/></td>
+                                                                <td>
+                                                                    <span t-attf-class="badge {{ getPickingStateClass(move.state) }}">
+                                                                        <t t-esc="getMoveStateLabel(move.state)"/>
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <!-- Documents -->
+                                            <div t-if="pick.documents.length" class="sq-picking-docs">
+                                                <span class="sq-docs-label">
+                                                    <i class="fa fa-paperclip me-1"/>Documenten:
+                                                </span>
+                                                <t t-foreach="pick.documents" t-as="doc" t-key="doc.id">
+                                                    <span class="sq-doc-chip"
+                                                          t-on-click.stop="() => this.downloadDocument(doc.id)">
+                                                        <i class="fa fa-file-o me-1"/>
+                                                        <t t-esc="doc.name"/>
+                                                    </span>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

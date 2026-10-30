@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- One group per dashboard. They are set per user with the
+         checkboxes on the user form (Toegangsrechten). -->
+    <record id="group_dashboard_stock" model="res.groups">
+        <field name="name">Logistiek: Voorraadoverzicht</field>
+        <field name="comment">Logistiek dashboard Voorraadoverzicht (met beschikbare voorraad)</field>
+    </record>
+    <record id="group_dashboard_sn" model="res.groups">
+        <field name="name">Logistiek: Serienummers</field>
+        <field name="comment">Logistiek dashboard Serienummers</field>
+    </record>
+    <record id="group_dashboard_incoming" model="res.groups">
+        <field name="name">Logistiek: Inkomende goederen</field>
+        <field name="comment">Logistiek dashboard Inkomende goederen</field>
+    </record>
+    <record id="group_dashboard_outgoing" model="res.groups">
+        <field name="name">Logistiek: Uitgaande goederen</field>
+        <field name="comment">Logistiek dashboard Uitgaande goederen</field>
+    </record>
+    <record id="group_dashboard_spare" model="res.groups">
+        <field name="name">Logistiek: Reserveonderdelen</field>
+        <field name="comment">Logistiek dashboard Reserveonderdelen (leveringen van reserveonderdelen)</field>
+    </record>
+</odoo>

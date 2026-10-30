@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_logistics.StockDashboard">
+        <div class="sq-stock-dashboard o_action">
+            <!-- Fixed Header -->
+            <div class="sq-dashboard-header">
+                <div class="sq-header-title">
+                    <h2>Voorraadoverzicht</h2>
+                </div>
+                <div class="sq-header-controls">
+                    <t t-call="serviq_logistics.SegmentFilter"/>
+                    <!-- View mode toggle -->
+                    <div class="sq-view-toggle btn-group" role="group">
+                        <button t-attf-class="btn btn-sm {{ state.viewMode === 'type' ? 'btn-primary' : 'btn-outline-secondary' }}"
+                                t-on-click="() => this.onViewModeChange('type')"
+                                title="Kaarten per producttype">
+                            <i class="fa fa-th-large me-1"/>Per type
+                        </button>
+                        <button t-attf-class="btn btn-sm {{ state.viewMode === 'product' ? 'btn-primary' : 'btn-outline-secondary' }}"
+                                t-on-click="() => this.onViewModeChange('product')"
+                                title="Groepeer per product">
+                            <i class="fa fa-cubes me-1"/>Per product
+                        </button>
+                        <button t-attf-class="btn btn-sm {{ state.viewMode === 'location' ? 'btn-primary' : 'btn-outline-secondary' }}"
+                                t-on-click="() => this.onViewModeChange('location')"
+                                title="Groepeer per locatie">
+                            <i class="fa fa-map-marker me-1"/>Per locatie
+                        </button>
+                    </div>
+                    <!-- Available stock cards -->
+                    <button class="btn btn-sm btn-outline-secondary"
+                            t-on-click="onOpenStockCards"
+                            title="Beschikbare eigen voorraad als kaarten per producttype">
+                        <i class="fa fa-th me-1"/>Beschikbare voorraad
+                    </button>
+                    <!-- Export to Excel -->
+                    <button class="btn btn-sm btn-outline-success sq-export-btn"
+                            t-on-click="onExportExcel"
+                            t-att-disabled="state.loading"
+                            title="Download het huidige tabblad als Excel">
+                        <i class="fa fa-file-excel-o me-1"/>Exporteer naar Excel
+                    </button>
+                    <!-- Search -->
+                    <div class="sq-search-box">
+                        <i class="fa fa-search sq-search-icon"/>
+                        <input type="text"
+                               class="sq-search-input"
+                               t-att-placeholder="state.viewMode === 'location' ? 'Zoek producten of locaties...' : 'Zoek producten...'"
+                               t-att-value="state.searchTerm"
+                               t-on-input="onSearchInput"/>
+                        <i t-if="state.searchTerm"
+                           class="fa fa-times sq-search-clear"
+                           t-on-click="onSearchClear"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scrollable Summary Cards -->
+            <div class="sq-summary-cards">
+                <div class="sq-summary-card sq-card-own"
+                     t-on-click="() => this.onTabClick('own')">
+                    <div class="sq-card-icon">
+                        <i class="fa fa-warehouse"/>
+                    </div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Eigen voorraad</div>
+                        <div class="sq-card-value">
+                            <t t-esc="formatQty(state.summary.own.total_qty)"/> stuks
+                        </div>
+                        <div class="sq-card-sub">
+                            <t t-esc="state.summary.own.product_count || 0"/> producten
+                            <span class="mx-1">|</span>
+                            <t t-esc="state.summary.own.serial_count || 0"/> serienummers
+                        </div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-consignment"
+                     t-on-click="() => this.onTabClick('consignment')">
+                    <div class="sq-card-icon">
+                        <i class="fa fa-handshake-o"/>
+                    </div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Consignatievoorraad</div>
+                        <div class="sq-card-value">
+                            <t t-esc="formatQty(state.summary.consignment.total_qty)"/> stuks
+                        </div>
+                        <div class="sq-card-sub">
+                            <t t-esc="state.summary.consignment.product_count || 0"/> producten
+                            <span class="mx-1">|</span>
+                            <t t-esc="state.summary.consignment.serial_count || 0"/> serienummers
+                        </div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-customer"
+                     t-on-click="() => this.onTabClick('customer')">
+                    <div class="sq-card-icon">
+                        <i class="fa fa-users"/>
+                    </div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Bij klanten</div>
+                        <div class="sq-card-value">
+                            <t t-esc="formatQty(state.summary.customer.total_qty)"/> stuks
+                        </div>
+                        <div class="sq-card-sub">
+                            <t t-esc="state.summary.customer.product_count || 0"/> producten
+                            <span class="mx-1">|</span>
+                            <t t-esc="state.summary.customer.serial_count || 0"/> serienummers
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="sq-tabs">
+                <div t-attf-class="sq-tab {{ state.activeTab === 'own' ? 'active' : '' }}"
+                     t-on-click="() => this.onTabClick('own')">
+                    <i class="fa fa-home me-1"/>
+                    Eigen voorraad
+                </div>
+                <div t-attf-class="sq-tab {{ state.activeTab === 'consignment' ? 'active' : '' }}"
+                     t-on-click="() => this.onTabClick('consignment')">
+                    <i class="fa fa-handshake-o me-1"/>
+                    Consignatievoorraad
+                </div>
+                <div t-attf-class="sq-tab {{ state.activeTab === 'customer' ? 'active' : '' }}"
+                     t-on-click="() => this.onTabClick('customer')">
+                    <i class="fa fa-users me-1"/>
+                    Voorraad bij klanten
+                </div>
+            </div>
+
+            <!-- Product type filter (product and location views) -->
+            <t t-if="state.viewMode !== 'type' and !state.loading" t-call="serviq_logistics.TypeChips">
+                <t t-set="options" t-value="typeOptions"/>
+            </t>
+
+            <!-- Scrollable Content Area -->
+            <div class="sq-tab-content">
+                <!-- Loading -->
+                <div t-if="state.loading" class="sq-loading">
+                    <i class="fa fa-spinner fa-spin fa-2x"/>
+                    <span class="ms-2">Voorraad laden...</span>
+                </div>
+
+                <!-- Empty state -->
+                <div t-elif="!hasData" class="sq-empty-state">
+                    <i class="fa fa-cubes fa-3x mb-3"/>
+                    <h4>Geen voorraad gevonden</h4>
+                    <p class="text-muted">
+                        Er zijn geen gegevens voor <t t-esc="tabLabel"/>
+                        <t t-if="state.searchTerm">
+                            die overeenkomen met "<t t-esc="state.searchTerm"/>"
+                        </t>.
+                    </p>
+                </div>
+
+                <!-- ==================== TYPE CARDS ==================== -->
+                <div t-elif="state.viewMode === 'type'" class="sq-type-cards">
+                    <div class="sq-cf-cards">
+                        <t t-foreach="typeCards" t-as="x" t-key="x.key">
+                            <div class="sq-cf-card sq-cf-card-type" t-on-click="() => this.openTypeCard(x)"
+                                 t-att-title="'Toon de producten van ' + x.label">
+                                <div class="sq-cf-card-head">
+                                    <span t-attf-class="badge {{ getProductTypeClass(x.key) }}" t-esc="x.label"/>
+                                    <span class="sq-cf-card-meta" t-esc="countLabel(x.product_count, 'product', 'producten')"/>
+                                </div>
+                                <div class="sq-cf-card-amount">
+                                    <t t-esc="formatQty(x.total_qty)"/> <small class="text-muted">stuks</small>
+                                </div>
+                                <div t-if="state.activeTab !== 'customer'" class="sq-cf-tile-split">
+                                    <div class="sq-cf-tile-split-bar" title="beschikbaar / gereserveerd">
+                                        <div class="sq-cf-tile-split-paid" t-attf-style="width: {{ availablePct(x) }}%"/>
+                                    </div>
+                                </div>
+                                <div class="sq-cf-card-rows">
+                                    <t t-if="state.activeTab !== 'customer'">
+                                        <div class="sq-cf-card-row">
+                                            <span><span class="sq-seg-dot sq-cf-tile-dot-paid me-1"/>Beschikbaar</span>
+                                            <strong t-esc="formatQty(x.available_qty)"/>
+                                        </div>
+                                        <div class="sq-cf-card-row">
+                                            <span><span class="sq-seg-dot sq-cf-tile-dot-unpaid me-1"/>Gereserveerd</span>
+                                            <strong t-esc="formatQty(x.reserved_qty)"/>
+                                        </div>
+                                    </t>
+                                    <div class="sq-cf-card-row">
+                                        <span><i class="fa fa-barcode me-1 text-muted"/>Serienummers</span>
+                                        <strong t-esc="x.serial_count"/>
+                                    </div>
+                                </div>
+                                <div class="sq-cf-card-foot">
+                                    <span class="text-muted sq-cf-card-docs"
+                                          t-esc="x.top.map((p) => p.product_name + ' ' + formatQty(p.total_qty)).join(' · ')"/>
+                                    <span class="text-muted text-nowrap">bekijk producten <i class="fa fa-arrow-right"/></span>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- ==================== PRODUCT VIEW ==================== -->
+                <div t-elif="state.viewMode === 'product'" class="sq-product-list">
+                    <div class="sq-product-table-header">
+                        <div class="sq-col-product">Product</div>
+                        <div class="sq-col-code">Interne ref.</div>
+                        <div class="sq-col-type">Type</div>
+                        <div class="sq-col-qty">Aantal</div>
+                        <div class="sq-col-serials">Serienummers</div>
+                        <div class="sq-col-expand"/>
+                    </div>
+
+                    <div class="sq-scrollable-list">
+                        <t t-foreach="visibleProducts" t-as="product" t-key="product.product_id">
+                            <!-- Product row -->
+                            <div class="sq-product-row"
+                                 t-on-click="() => this.toggleProduct(product.product_id)">
+                                <div class="sq-col-product">
+                                    <span class="sq-product-name"
+                                          t-on-click.stop="() => this.openProduct(product.product_id)"
+                                          title="Open de productfiche">
+                                        <t t-esc="product.product_name"/>
+                                    </span>
+                                </div>
+                                <div class="sq-col-code">
+                                    <span class="text-muted"><t t-esc="product.default_code"/></span>
+                                </div>
+                                <div class="sq-col-type">
+                                    <span t-if="product.product_type"
+                                          t-attf-class="badge {{ getProductTypeClass(product.product_type) }}">
+                                        <t t-esc="getProductTypeLabel(product.product_type)"/>
+                                    </span>
+                                </div>
+                                <div class="sq-col-qty">
+                                    <span class="sq-qty-badge">
+                                        <t t-esc="formatQty(product.total_qty)"/>
+                                        <small class="ms-1 text-muted"><t t-esc="product.uom"/></small>
+                                    </span>
+                                </div>
+                                <div class="sq-col-serials">
+                                    <span t-if="product.serial_count > 0" class="text-primary">
+                                        <i class="fa fa-barcode me-1"/>
+                                        <t t-esc="product.serial_count"/>
+                                    </span>
+                                    <span t-else="" class="text-muted">-</span>
+                                </div>
+                                <div class="sq-col-expand">
+                                    <i t-attf-class="fa {{ isExpanded(product.product_id) ? 'fa-chevron-up' : 'fa-chevron-down' }}"/>
+                                </div>
+                            </div>
+
+                            <!-- Expanded detail -->
+                            <div t-if="isExpanded(product.product_id)" class="sq-product-detail">
+                                <!-- Location breakdown -->
+                                <div t-if="product.locations.length" class="sq-detail-section">
+                                    <h6 class="sq-detail-title">
+                                        <i class="fa fa-map-marker me-1"/>
+                                        Verdeling per locatie
+                                    </h6>
+                                    <div class="sq-location-grid">
+                                        <t t-foreach="product.locations" t-as="loc" t-key="loc.name">
+                                            <div class="sq-location-item">
+                                                <span class="sq-location-name"><t t-esc="loc.name"/></span>
+                                                <span class="sq-location-qty"><t t-esc="formatQty(loc.qty)"/> <t t-esc="product.uom"/></span>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+
+                                <!-- Serial numbers table -->
+                                <div t-if="product.serial_numbers.length" class="sq-detail-section">
+                                    <h6 class="sq-detail-title">
+                                        <i class="fa fa-barcode me-1"/>
+                                        Serienummers
+                                        <span class="badge bg-secondary ms-2"><t t-esc="product.serial_numbers.length"/></span>
+                                    </h6>
+                                    <div class="sq-serial-scroll">
+                                        <table class="sq-serial-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Serienummer</th>
+                                                    <th>Aantal</th>
+                                                    <th>Locatie</th>
+                                                    <th t-if="state.activeTab === 'consignment'">Eigenaar</th>
+                                                    <th t-if="state.activeTab === 'customer'">Klant</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="product.serial_numbers" t-as="sn" t-key="sn.lot_id">
+                                                    <tr class="sq-serial-row"
+                                                        t-on-click.stop="() => this.openSerialNumber(sn.lot_id)">
+                                                        <td>
+                                                            <span class="sq-serial-link">
+                                                                <i class="fa fa-external-link me-1"/>
+                                                                <t t-esc="sn.lot_name"/>
+                                                            </span>
+                                                        </td>
+                                                        <td><t t-esc="formatQty(sn.quantity)"/></td>
+                                                        <td><t t-esc="sn.location"/></td>
+                                                        <td t-if="state.activeTab === 'consignment'">
+                                                            <t t-esc="sn.owner"/>
+                                                        </td>
+                                                        <td t-if="state.activeTab === 'customer'">
+                                                            <t t-esc="sn.partner"/>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- No serials message -->
+                                <div t-if="!product.serial_numbers.length" class="sq-detail-section">
+                                    <p class="text-muted fst-italic">
+                                        <i class="fa fa-info-circle me-1"/>
+                                        Dit product wordt niet met serienummers opgevolgd.
+                                    </p>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- ==================== LOCATION VIEW ==================== -->
+                <div t-elif="state.viewMode === 'location' and !state.locationGroup" class="sq-type-cards">
+                    <t t-foreach="locationSections" t-as="sec" t-key="sec.key">
+                        <div class="sq-loc-section-title">
+                            <i t-attf-class="fa {{ sec.key ? 'fa-building' : 'fa-users' }} me-2"/>
+                            <t t-esc="sec.title"/>
+                            <span t-if="sec.is_main" class="sq-loc-section-badge">eigen magazijn</span>
+                            <small class="text-muted ms-2"><t t-esc="sec.cards.length"/> <t t-esc="sec.cards.length === 1 ? 'groep' : 'groepen'"/></small>
+                        </div>
+                        <div class="sq-cf-cards">
+                            <t t-foreach="sec.cards" t-as="x" t-key="x.key">
+                                <div class="sq-cf-card sq-cf-card-type" t-on-click="() => this.openLocationGroup(x)"
+                                     t-att-title="'Toon de locaties en producten van ' + x.full">
+                                    <div class="sq-cf-card-head">
+                                        <span class="sq-loc-card-name">
+                                            <i t-attf-class="fa {{ x.is_aisle ? 'fa-th' : 'fa-map-marker' }} me-1"/>
+                                            <t t-if="x.is_aisle">Gang </t><t t-esc="x.name"/>
+                                        </span>
+                                        <span class="sq-cf-card-meta"><t t-esc="x.location_count"/> <t t-esc="x.location_count === 1 ? 'locatie' : 'locaties'"/></span>
+                                    </div>
+                                    <div class="sq-cf-card-meta" t-esc="x.full"/>
+                                    <div class="sq-cf-card-amount">
+                                        <t t-esc="formatQty(x.total_qty)"/> <small class="text-muted">stuks</small>
+                                    </div>
+                                    <div class="sq-cf-card-rows">
+                                        <div class="sq-cf-card-row">
+                                            <span><i class="fa fa-cubes me-1 text-muted"/>Producten</span>
+                                            <strong t-esc="x.product_count"/>
+                                        </div>
+                                        <div class="sq-cf-card-row">
+                                            <span><i class="fa fa-barcode me-1 text-muted"/>Serienummers</span>
+                                            <strong t-esc="x.serial_count"/>
+                                        </div>
+                                    </div>
+                                    <div class="sq-loc-card-types">
+                                        <t t-foreach="x.types.slice(0, 4)" t-as="tp" t-key="tp.key">
+                                            <span class="sq-type-chip sq-type-chip-static">
+                                                <span t-attf-class="sq-type-chip-dot {{ getProductTypeClass(tp.key) }}"/>
+                                                <t t-esc="tp.label"/> <small t-esc="formatQty(tp.qty)"/>
+                                            </span>
+                                        </t>
+                                    </div>
+                                    <div class="sq-cf-card-foot">
+                                        <span/>
+                                        <span class="text-muted text-nowrap">bekijk producten <i class="fa fa-arrow-right"/></span>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+
+                <div t-elif="state.viewMode === 'location'" class="sq-location-list">
+                    <div class="sq-loc-crumb">
+                        <button class="sq-type-chip" t-on-click="closeLocationGroup">
+                            <i class="fa fa-arrow-left me-1"/>Alle gangen
+                        </button>
+                        <t t-if="openLocationCard">
+                            <strong class="ms-2">
+                                <t t-if="openLocationCard.is_aisle">Gang </t><t t-esc="openLocationCard.name"/>
+                            </strong>
+                            <span class="text-muted ms-2">
+                                <t t-esc="openLocationCard.full"/> · <t t-esc="formatQty(openLocationCard.total_qty)"/> stuks
+                            </span>
+                        </t>
+                    </div>
+                    <div class="sq-location-table-header">
+                        <div class="sq-col-loc-name">Locatie</div>
+                        <div class="sq-col-loc-partner">Relatie</div>
+                        <div class="sq-col-loc-products">Producten</div>
+                        <div class="sq-col-loc-qty">Totaal aantal</div>
+                        <div class="sq-col-loc-serials">Serienummers</div>
+                        <div class="sq-col-expand"/>
+                    </div>
+
+                    <div class="sq-scrollable-list">
+                        <t t-foreach="shownLocations" t-as="loc" t-key="loc.location_id">
+                            <!-- Location row -->
+                            <div class="sq-location-row"
+                                 t-on-click="() => this.toggleLocation(loc.location_id)">
+                                <div class="sq-col-loc-name">
+                                    <i class="fa fa-map-marker me-1 text-muted"/>
+                                    <span class="sq-loc-name-text">
+                                        <t t-esc="loc.location_name"/>
+                                    </span>
+                                </div>
+                                <div class="sq-col-loc-partner">
+                                    <span t-if="loc.partner" class="text-muted">
+                                        <i class="fa fa-user me-1"/>
+                                        <t t-esc="loc.partner"/>
+                                    </span>
+                                    <span t-else="" class="text-muted">-</span>
+                                </div>
+                                <div class="sq-col-loc-products">
+                                    <span class="badge bg-info">
+                                        <t t-esc="loc.product_count"/>
+                                    </span>
+                                </div>
+                                <div class="sq-col-loc-qty">
+                                    <span class="sq-qty-badge">
+                                        <t t-esc="formatQty(loc.total_qty)"/>
+                                    </span>
+                                </div>
+                                <div class="sq-col-loc-serials">
+                                    <span t-if="loc.serial_count > 0" class="text-primary">
+                                        <i class="fa fa-barcode me-1"/>
+                                        <t t-esc="loc.serial_count"/>
+                                    </span>
+                                    <span t-else="" class="text-muted">-</span>
+                                </div>
+                                <div class="sq-col-expand">
+                                    <i t-attf-class="fa {{ isLocationExpanded(loc.location_id) ? 'fa-chevron-up' : 'fa-chevron-down' }}"/>
+                                </div>
+                            </div>
+
+                            <!-- Expanded location detail: products inside -->
+                            <div t-if="isLocationExpanded(loc.location_id)" class="sq-loc-detail">
+                                <t t-foreach="loc.products" t-as="prod" t-key="prod.product_id">
+                                    <div class="sq-loc-product-row">
+                                        <div class="sq-loc-prod-info">
+                                            <span class="sq-product-name"
+                                                  t-on-click.stop="() => this.openProduct(prod.product_id)"
+                                                  title="Open de productfiche">
+                                                <t t-esc="prod.product_name"/>
+                                            </span>
+                                            <span t-if="prod.default_code" class="text-muted ms-2">
+                                                [<t t-esc="prod.default_code"/>]
+                                            </span>
+                                            <span t-if="prod.product_type"
+                                                  t-attf-class="badge ms-2 {{ getProductTypeClass(prod.product_type) }}">
+                                                <t t-esc="getProductTypeLabel(prod.product_type)"/>
+                                            </span>
+                                        </div>
+                                        <div class="sq-loc-prod-qty">
+                                            <t t-esc="formatQty(prod.qty)"/>
+                                            <small class="ms-1 text-muted"><t t-esc="prod.uom"/></small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Serial numbers under product in location view -->
+                                    <div t-if="prod.serial_numbers.length" class="sq-loc-serials">
+                                        <div class="sq-serial-scroll">
+                                            <table class="sq-serial-table sq-serial-table-compact">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Serienummer</th>
+                                                        <th>Aantal</th>
+                                                        <th t-if="state.activeTab === 'consignment'">Eigenaar</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="prod.serial_numbers" t-as="sn" t-key="sn.lot_id">
+                                                        <tr t-on-click.stop="() => this.openSerialNumber(sn.lot_id)"
+                                                            class="sq-serial-row">
+                                                            <td>
+                                                                <span class="sq-serial-link">
+                                                                    <i class="fa fa-external-link me-1"/>
+                                                                    <t t-esc="sn.lot_name"/>
+                                                                </span>
+                                                            </td>
+                                                            <td><t t-esc="formatQty(sn.quantity)"/></td>
+                                                            <td t-if="state.activeTab === 'consignment'">
+                                                                <t t-esc="sn.owner"/>
+                                                            </td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

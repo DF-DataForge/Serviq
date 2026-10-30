@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.serviq.installation</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="60"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Installaties" string="Installaties" name="serviq_installation"
+                     groups="serviq_installation.group_installation_manager">
+                    <block title="Modules" name="serviq_modules">
+                        <setting id="serviq_logistics" string="Logistieke dashboards"
+                                 help="Voorraad, serienummers, inkomende en uitgaande goederen en reserveonderdelen.">
+                            <field name="module_serviq_logistics"/>
+                        </setting>
+                        <setting id="serviq_portal" string="Portaal"
+                                 help="Portaal waarin installateurs en distributeurs hun installaties en interventies opvolgen.">
+                            <field name="module_serviq_portal"/>
+                        </setting>
+                    </block>
+                    <block title="Flows in het portaal" name="serviq_flows"
+                           help="Elke flow is een aparte module: aanvinken installeert ze, uitvinken verwijdert ze. Nieuwe flows verschijnen in Installaties > Configuratie > Flows zodra hun module geïnstalleerd is.">
+                        <setting id="serviq_flow_first_installation" string="Eerste installatie"
+                                 help="De installateur registreert de installatie met product en serienummer bij de eerste installatie.">
+                            <field name="module_serviq_flow_first_installation"/>
+                        </setting>
+                        <setting id="serviq_flow_commissioning" string="Inbedrijfstelling"
+                                 help="De installateur vult de gegevens per component aan en rondt de inbedrijfstelling af.">
+                            <field name="module_serviq_flow_commissioning"/>
+                        </setting>
+                        <setting id="serviq_flow_replacement" string="Vervanging"
+                                 help="De installateur vervangt componenten en registreert het nieuwe serienummer.">
+                            <field name="module_serviq_flow_replacement"/>
+                        </setting>
+                    </block>
+                    <block title="Interventies" name="serviq_interventions">
+                        <setting id="serviq_intervention_project" string="Project interventies"
+                                 help="Project waarin nieuwe interventies aangemaakt worden.">
+                            <field name="serviq_intervention_project_id"/>
+                        </setting>
+                        <setting id="serviq_service_lead_days" string="Service vooraf"
+                                 help="Aantal dagen voor een geplande interventie dat de installatie in service gaat.">
+                            <field name="serviq_service_lead_days"/>
+                        </setting>
+                    </block>
+                    <block title="Serienummers en voorraad" name="serviq_stock">
+                        <setting id="serviq_check_distributor_stock" string="Controle distributeur-stock"
+                                 help="Een serienummer kan enkel op een installatie als het in de klantlocatie van de distributeur staat.">
+                            <field name="serviq_check_distributor_stock"/>
+                        </setting>
+                        <setting id="serviq_distributor_locations" string="Klantlocatie per distributeur"
+                                 help="Elke distributeur (en zijn contacten) krijgt een eigen klantlocatie.">
+                            <field name="serviq_distributor_locations"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_serviq_installation_config" model="ir.actions.act_window">
+        <field name="name">Instellingen</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'serviq_installation', 'bin_size': False}</field>
+    </record>
+</odoo>

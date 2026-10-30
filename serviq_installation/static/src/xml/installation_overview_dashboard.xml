@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_installation.OverviewDashboard">
+        <div class="sq-in-dashboard o_action">
+            <div class="sq-in-header">
+                <h2>Overzicht installaties</h2>
+                <div class="sq-in-links">
+                    <button t-if="state.view === 'overview'"
+                            class="btn btn-outline-primary"
+                            t-on-click="() => this.loadCalendar('month')">
+                        <i class="fa fa-calendar me-1"/>Planningskalender
+                    </button>
+                    <button t-else="" class="btn btn-outline-secondary"
+                            t-on-click="showOverview">
+                        <i class="fa fa-arrow-left me-1"/>Overzicht
+                    </button>
+                </div>
+            </div>
+
+            <div class="sq-in-body">
+                <t t-if="state.loading">
+                    <div class="sq-in-loading">
+                        <i class="fa fa-spinner fa-spin me-2"/>Laden...
+                    </div>
+                </t>
+
+                <!-- Planning calendar: same layout as the installer portal -->
+                <t t-elif="state.view === 'planning'">
+                    <t t-set="cal" t-value="state.calendar"/>
+                    <div t-if="!cal" class="sq-in-loading">
+                        <i class="fa fa-spinner fa-spin me-2"/>Laden...
+                    </div>
+                    <div t-else="" class="sq-cal">
+                        <div class="sq-cal-toolbar">
+                            <div>
+                                <h1 class="mb-1">Planning</h1>
+                                <p class="text-muted mb-0">Overzicht van de interventies.</p>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <select class="form-select form-select-sm sq-cal-installer"
+                                    t-on-change="onCalendarInstallerChange">
+                                <option value="" t-att-selected="!state.calendarInstaller">Alle installateurs</option>
+                                <option value="-1" t-att-selected="state.calendarInstaller === -1">Niet ingesteld</option>
+                                <option t-foreach="cal.installers" t-as="inst" t-key="inst[0]"
+                                        t-att-value="inst[0]" t-att-selected="state.calendarInstaller === inst[0]"
+                                        t-esc="inst[1]"/>
+                            </select>
+                                <div class="btn-group" role="group">
+                                    <button t-attf-class="btn btn-sm {{ cal.scope === 'month' ? 'btn-primary' : 'btn-outline-primary' }}"
+                                            t-on-click="() => this.loadCalendar('month', cal.anchor)">Maand</button>
+                                    <button t-attf-class="btn btn-sm {{ cal.scope === 'week' ? 'btn-primary' : 'btn-outline-primary' }}"
+                                            t-on-click="() => this.loadCalendar('week', cal.anchor)">Week</button>
+                                    <button t-attf-class="btn btn-sm {{ cal.scope === 'day' ? 'btn-primary' : 'btn-outline-primary' }}"
+                                            t-on-click="() => this.loadCalendar('day', cal.anchor)">Dag</button>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        t-on-click="() => this.loadCalendar(cal.scope, cal.prev)">
+                                    <i class="fa fa-chevron-left"/>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary"
+                                        t-on-click="() => this.loadCalendar(cal.scope, cal.today)">Vandaag</button>
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        t-on-click="() => this.loadCalendar(cal.scope, cal.next)">
+                                    <i class="fa fa-chevron-right"/>
+                                </button>
+                                <button class="btn btn-sm btn-link" t-on-click="openTaskList">
+                                    <i class="fa fa-list me-1"/>Lijst
+                                </button>
+                            </div>
+                        </div>
+
+                        <div t-attf-class="sq-cal-card {{ state.calendarLoading ? 'opacity-50' : '' }}">
+                            <div class="sq-cal-label">
+                                <h4 class="mb-0 text-capitalize" t-esc="cal.label"/>
+                            </div>
+
+                            <!-- Month and week share the 7-column grid -->
+                            <table t-if="cal.scope !== 'day'" class="table sq-cal-grid mb-0">
+                                <thead>
+                                    <tr>
+                                        <th t-foreach="weekdayLabels" t-as="wd" t-key="wd_index"
+                                            class="text-uppercase text-muted small text-center"
+                                            t-esc="wd"/>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="cal.weeks" t-as="week" t-key="week_index">
+                                        <td t-foreach="week" t-as="day" t-key="day.date"
+                                            t-att-class="dayClass(day)"
+                                            t-attf-style="height: {{ cal.scope === 'week' ? '150px' : '110px' }};">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <a href="#" t-attf-class="small text-decoration-none {{ day.date === cal.today ? 'fw-bold' : (cal.scope === 'month' &amp;&amp; day.month !== cal.anchor_month ? 'text-muted' : '') }}"
+                                                   t-on-click.prevent="() => this.loadCalendar('day', day.date)">
+                                                    <span t-if="cal.scope === 'week'" class="me-1" t-esc="weekdayLabels[day.weekday]"/>
+                                                    <span t-esc="day.day"/>
+                                                </a>
+                                                <span t-if="calendarTasks(day.date).length"
+                                                      class="badge text-bg-secondary"
+                                                      t-esc="calendarTasks(day.date).length"/>
+                                            </div>
+                                            <div class="d-flex flex-column gap-1">
+                                                <a t-foreach="calendarTasks(day.date)" t-as="t" t-key="t.id"
+                                                   href="#" t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'open' }}"
+                                                   t-on-click.prevent="() => this.openTask(t.id)">
+                                                    <strong t-esc="t.name"/>
+                                                    <small t-if="t.partner" class="d-block text-truncate">
+                                                        <i class="fa fa-user me-1"/><t t-esc="t.partner"/><t t-if="t.city">, <t t-esc="t.city"/></t>
+                                                    </small>
+                                                    <small t-if="t.type" class="d-block text-truncate" t-esc="t.type"/>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- Day view: single-column agenda -->
+                            <div t-else="" class="p-3">
+                                <a t-foreach="calendarTasks(cal.day)" t-as="t" t-key="t.id"
+                                   href="#" t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'open' }} d-block mb-2 p-2"
+                                   t-on-click.prevent="() => this.openTask(t.id)">
+                                    <div class="d-flex justify-content-between">
+                                        <strong t-esc="t.name"/>
+                                        <span t-if="t.done" class="badge text-bg-success">Afgerond</span>
+                                        <span t-else="" class="badge text-bg-warning">Open</span>
+                                    </div>
+                                    <small t-if="t.type" class="d-block" t-esc="t.type"/>
+                                    <small t-if="t.installation" class="d-block text-muted">
+                                        <i class="fa fa-cubes me-1"/><t t-esc="t.installation"/>
+                                    </small>
+                                    <small t-if="t.partner" class="d-block text-muted">
+                                        <i class="fa fa-user me-1"/><t t-esc="t.partner"/><t t-if="t.city">, <t t-esc="t.city"/></t>
+                                    </small>
+                                </a>
+                                <div t-if="!calendarTasks(cal.day).length" class="text-muted text-center py-4">
+                                    <i class="fa fa-calendar-o fa-2x mb-2 d-block"/>
+                                    Geen interventies op deze dag.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div t-if="cal.without_date.length" class="sq-in-section mt-3">
+                            <h5 class="mb-2">Zonder geplande datum</h5>
+                            <ul class="list-unstyled mb-0">
+                                <li t-foreach="cal.without_date" t-as="t" t-key="t.id" class="mb-1">
+                                    <a href="#" t-on-click.prevent="() => this.openTask(t.id)" t-esc="t.name"/>
+                                    <small class="text-muted" t-if="t.partner"> - <t t-esc="t.partner"/><t t-if="t.city">, <t t-esc="t.city"/></t></small>
+                                    <small class="text-muted" t-if="t.type"> - <t t-esc="t.type"/></small>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Drill-down: installations of the clicked number -->
+                <t t-elif="state.selection">
+                    <div class="sq-in-section">
+                        <div class="sq-in-records-header">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    t-on-click="closeRecords">
+                                <i class="fa fa-arrow-left me-1"/>Terug
+                            </button>
+                            <h4 class="mb-0 ms-2">
+                                <t t-esc="state.selection.title"/>
+                            </h4>
+                            <span class="text-muted ms-2"
+                                  t-if="!state.recordsLoading">
+                                <t t-esc="state.records.length"/> systemen
+                            </span>
+                            <button class="btn btn-sm btn-outline-primary ms-auto"
+                                    t-on-click="openList">
+                                <i class="fa fa-list me-1"/>Open in lijstweergave
+                            </button>
+                        </div>
+
+                        <div t-if="state.recordsLoading" class="sq-in-loading">
+                            <i class="fa fa-spinner fa-spin me-2"/>Laden...
+                        </div>
+                        <div t-else="" class="sq-in-cards">
+                            <div t-foreach="state.records" t-as="rec"
+                                 t-key="rec.id"
+                                 class="sq-in-card" role="button"
+                                 t-on-click="() => this.openRecord(rec.id)">
+                                <div class="sq-in-card-top">
+                                    <strong t-esc="rec.code"/>
+                                    <span t-attf-class="sq-in-badge sq-in-badge-{{ rec.state || 'none' }}"
+                                          t-esc="stateLabel(rec.state)"/>
+                                </div>
+                                <div class="sq-in-card-product"
+                                     t-esc="m2oName(rec.product_tmpl_id)"/>
+                                <div class="sq-in-card-line">
+                                    <i class="fa fa-user"/>
+                                    <t t-esc="m2oName(rec.customer_id)"/>
+                                </div>
+                                <div class="sq-in-card-line">
+                                    <i class="fa fa-truck"/>
+                                    <t t-esc="m2oName(rec.distributor_id)"/>
+                                </div>
+                                <div class="sq-in-card-line">
+                                    <i class="fa fa-wrench"/>
+                                    <t t-esc="m2oName(rec.installer_id)"/>
+                                </div>
+                                <div t-if="rec.sn_registration_count"
+                                     class="sq-in-card-warn">
+                                    <i class="fa fa-exclamation-triangle me-1"/>
+                                    <t t-esc="rec.sn_registration_count"/> SN te registreren
+                                </div>
+                            </div>
+                            <div t-if="!state.records.length"
+                                 class="text-muted p-3">
+                                Geen installaties gevonden.
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Overview: tiles + tables -->
+                <t t-else="">
+                    <div class="sq-in-tiles">
+                        <t t-foreach="metrics" t-as="m" t-key="m.key">
+                            <div t-attf-class="sq-in-tile sq-in-tile-{{ m.key }}"
+                                 role="button"
+                                 t-on-click="() => this.showRecords(m.key, null, null, m.label)">
+                                <div class="sq-in-tile-value">
+                                    <t t-esc="state.data.overall[m.key] || 0"/>
+                                </div>
+                                <div class="sq-in-tile-label">
+                                    <t t-esc="m.label"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- Panels added by other modules (atlas map, ...) -->
+                    <t t-foreach="overviewPanels" t-as="panel" t-key="panel[0]">
+                        <t t-component="panel[1]"/>
+                    </t>
+
+                    <!-- Extra sections: interventions, repairs, returns, hours -->
+                    <div class="sq-in-sections" t-if="state.data.sections and state.data.sections.length">
+                        <div t-foreach="state.data.sections" t-as="section"
+                             t-key="section.key"
+                             t-attf-class="sq-in-section sq-in-section-{{ section.key }}">
+                            <div class="sq-in-section-header">
+                                <h4>
+                                    <i t-attf-class="fa {{ section.icon }} me-2"/>
+                                    <t t-esc="section.title"/>
+                                </h4>
+                                <a t-if="section.action" href="#" class="sq-in-section-link"
+                                   t-on-click.prevent="() => this.openTile(section)">
+                                    Bekijken <i class="fa fa-arrow-right ms-1"/>
+                                </a>
+                            </div>
+                            <div class="sq-in-mini-tiles">
+                                <div t-foreach="section.tiles" t-as="tile"
+                                     t-key="tile.key"
+                                     class="sq-in-mini-tile" role="button"
+                                     t-on-click="() => this.openTile(tile)">
+                                    <div class="sq-in-mini-value" t-esc="tile.value"/>
+                                    <div class="sq-in-mini-label" t-esc="tile.label"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sq-in-columns">
+                        <!-- Per distributor -->
+                        <div class="sq-in-section">
+                            <h4><i class="fa fa-truck me-2"/>Per distributeur</h4>
+                            <table class="table table-sm table-hover sq-in-table">
+                                <thead>
+                                    <tr>
+                                        <th>Distributeur</th>
+                                        <t t-foreach="metrics" t-as="m" t-key="m.key">
+                                            <th class="text-end"><t t-esc="m.short"/></th>
+                                        </t>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.data.per_distributor" t-as="row"
+                                        t-key="row.id || 0">
+                                        <td class="sq-in-partner" t-esc="row.name"/>
+                                        <t t-foreach="metrics" t-as="m" t-key="m.key">
+                                            <td class="text-end">
+                                                <a href="#" class="sq-in-cell"
+                                                   t-on-click.prevent="() => this.showRecords(m.key, 'distributor_id', row.id, row.name + ' - ' + m.label)">
+                                                    <t t-esc="row[m.key] || 0"/>
+                                                </a>
+                                            </td>
+                                        </t>
+                                    </tr>
+                                    <tr t-if="!state.data.per_distributor.length">
+                                        <td colspan="6" class="text-muted">
+                                            Geen installaties gevonden.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Per installer -->
+                        <div class="sq-in-section">
+                            <h4><i class="fa fa-wrench me-2"/>Per installateur</h4>
+                            <table class="table table-sm table-hover sq-in-table">
+                                <thead>
+                                    <tr>
+                                        <th>Installateur</th>
+                                        <t t-foreach="metrics" t-as="m" t-key="m.key">
+                                            <th class="text-end"><t t-esc="m.short"/></th>
+                                        </t>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.data.per_installer" t-as="row"
+                                        t-key="row.id || 0">
+                                        <td class="sq-in-partner" t-esc="row.name"/>
+                                        <t t-foreach="metrics" t-as="m" t-key="m.key">
+                                            <td class="text-end">
+                                                <a href="#" class="sq-in-cell"
+                                                   t-on-click.prevent="() => this.showRecords(m.key, 'installer_id', row.id, row.name + ' - ' + m.label)">
+                                                    <t t-esc="row[m.key] || 0"/>
+                                                </a>
+                                            </td>
+                                        </t>
+                                    </tr>
+                                    <tr t-if="!state.data.per_installer.length">
+                                        <td colspan="6" class="text-muted">
+                                            Geen installaties gevonden.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>

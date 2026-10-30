@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Stock figures shared by the type and the product cards. Expects: x -->
+    <t t-name="serviq_logistics.StockCardRows">
+        <div class="sq-cf-tile-split">
+            <div class="sq-cf-tile-split-bar" title="beschikbaar / gereserveerd">
+                <div class="sq-cf-tile-split-paid" t-attf-style="width: {{ availablePct(x) }}%"/>
+            </div>
+        </div>
+        <div class="sq-cf-card-rows">
+            <div class="sq-cf-card-row">
+                <span><span class="sq-seg-dot sq-cf-tile-dot-paid me-1"/>Beschikbaar</span>
+                <strong t-esc="formatQty(x.available_qty)"/>
+            </div>
+            <div class="sq-cf-card-row">
+                <span><span class="sq-seg-dot sq-cf-tile-dot-unpaid me-1"/>Gereserveerd</span>
+                <strong t-esc="formatQty(x.reserved_qty)"/>
+            </div>
+            <div class="sq-cf-card-row">
+                <span><i class="fa fa-cubes me-1 text-muted"/>Op voorraad</span>
+                <strong t-esc="formatQty(x.qty)"/>
+            </div>
+            <div class="sq-cf-card-row">
+                <span><i class="fa fa-shopping-cart me-1 text-muted"/>Verkocht, niet geleverd</span>
+                <strong t-esc="formatQty(x.committed_qty)"/>
+            </div>
+            <div class="sq-cf-card-row">
+                <span><i class="fa fa-truck me-1 text-muted"/>Nog binnen te komen</span>
+                <strong t-esc="formatQty(x.incoming_qty)"/>
+            </div>
+            <div class="sq-cf-card-row sq-cf-card-row-strong">
+                <span><i class="fa fa-check-circle-o me-1 text-muted"/>Vrij verkoopbaar</span>
+                <strong t-attf-class="{{ x.free_qty !== null and x.free_qty &lt; 0 ? 'sq-fin-negative' : '' }}" t-esc="formatQty(x.free_qty)"/>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="serviq_logistics.StockCards">
+        <div class="sq-stock-dashboard sq-fin-dashboard sq-cf-dashboard o_action">
+            <div class="sq-dashboard-header">
+                <div class="sq-header-title sq-header-brand">
+                    <div>
+                        <h2>Beschikbare voorraad</h2>
+                        <div class="sq-header-subtitle">
+                            <t t-if="state.view === 'type'">Kaarten per producttype</t>
+                            <t t-else="">Kaarten per product<t t-if="state.ptype"> — <t t-esc="typeLabel"/></t></t>
+                        </div>
+                    </div>
+                </div>
+                <div class="sq-header-controls">
+                    <t t-call="serviq_logistics.SegmentFilter"/>
+                    <div class="sq-flow-period" title="Huidige voorraad of de voorraad op het einde van een vorige maand">
+                        <label class="sq-flow-period-label"><i class="fa fa-calendar me-1"/>Situatie per</label>
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.stepPeriod(-1)" title="Vorige maand">
+                            <i class="fa fa-chevron-left"/>
+                        </button>
+                        <select class="sq-flow-period-select" t-on-change="onPeriodChange">
+                            <option value="" t-att-selected="!state.asOf">Vandaag (live)</option>
+                            <t t-foreach="periodOptions" t-as="opt" t-key="opt.value">
+                                <option t-att-value="opt.value" t-att-selected="state.asOf === opt.value" t-esc="'Einde maand: ' + opt.label"/>
+                            </t>
+                        </select>
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.stepPeriod(1)"
+                                t-att-disabled="!state.asOf" title="Volgende maand">
+                            <i class="fa fa-chevron-right"/>
+                        </button>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" t-on-click="() => this.reload(true)" title="Vernieuwen (herberekenen)">
+                        <i class="fa fa-refresh"/>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sq-fin-body">
+            <div t-if="state.loading" class="sq-loading">
+                <i class="fa fa-spinner fa-spin fa-2x"/><span class="ms-2">Voorraad laden...</span>
+            </div>
+
+            <div t-elif="state.data" class="sq-flow-content">
+                <div t-if="isHistorical" class="sq-flow-history-banner">
+                    <i class="fa fa-history me-2"/>
+                    <strong>Situatie per <t t-esc="formatDay(state.data.as_of)"/></strong>
+                    — voorraad teruggerekend uit de voorraadbewegingen. Gereserveerd, verkocht en binnen te komen zijn enkel voor vandaag gekend.
+                </div>
+
+                <div class="sq-cf-cards-summary">
+                    <div class="sq-cf-cards-sum"><span>Producten</span><strong t-esc="totals.products"/></div>
+                    <div class="sq-cf-cards-sum"><span>Op voorraad</span><strong t-esc="formatQty(totals.qty)"/></div>
+                    <div class="sq-cf-cards-sum"><span>Beschikbaar</span><strong t-esc="formatQty(totals.available)"/></div>
+                    <div class="sq-cf-cards-sum"><span>Waarde</span><strong t-esc="formatCurrency(totals.value)"/></div>
+                    <div class="sq-cf-cards-tools">
+                        <div class="btn-group" role="group">
+                            <button t-attf-class="btn btn-sm {{ state.view === 'type' ? 'btn-primary' : 'btn-outline-secondary' }}"
+                                    t-on-click="() => this.setView('type')"><i class="fa fa-th-large me-1"/>Per producttype</button>
+                            <button t-attf-class="btn btn-sm {{ state.view === 'product' ? 'btn-primary' : 'btn-outline-secondary' }}"
+                                    t-on-click="() => this.setView('product')"><i class="fa fa-cube me-1"/>Per product</button>
+                        </div>
+                        <input type="text" class="sq-search-input sq-cf-cards-search" placeholder="Zoek product..."
+                               t-att-value="state.search" t-on-input="onSearch"/>
+                        <select class="sq-flow-period-select sq-cf-cards-sort" t-on-change="onSort">
+                            <option value="value" t-att-selected="state.sort === 'value'">Sorteer: waarde</option>
+                            <option value="available" t-att-selected="state.sort === 'available'">Sorteer: beschikbaar</option>
+                            <option value="free" t-att-selected="state.sort === 'free'">Sorteer: vrij verkoopbaar</option>
+                            <option value="qty" t-att-selected="state.sort === 'qty'">Sorteer: op voorraad</option>
+                            <option value="name" t-att-selected="state.sort === 'name'">Sorteer: naam</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div t-if="state.view === 'product' and state.ptype" class="sq-fin-chips mb-0">
+                    <span class="sq-fin-chip sq-flow-chip-active">
+                        <span t-attf-class="badge {{ typeClass(state.ptype) }} me-1">&#160;</span><t t-esc="typeLabel"/>
+                        <a href="#" class="ms-2 text-white" t-on-click.prevent="clearType" title="Filter wissen"><i class="fa fa-times"/></a>
+                    </span>
+                    <button class="sq-fin-chip sq-flow-chip" t-on-click="() => this.setView('type')">
+                        <i class="fa fa-arrow-left me-1"/>Terug naar de producttypes
+                    </button>
+                </div>
+
+                <!-- ===== per product type ===== -->
+                <div t-if="state.view === 'type'" class="sq-cf-cards">
+                    <t t-foreach="types" t-as="x" t-key="x.ptype">
+                        <div class="sq-cf-card sq-cf-card-type" t-on-click="() => this.openType(x)"
+                             t-att-title="'Toon de producten van ' + x.label">
+                            <div class="sq-cf-card-head">
+                                <span t-attf-class="badge {{ typeClass(x.ptype) }}" t-esc="x.label"/>
+                                <span class="sq-cf-card-meta"><t t-esc="x.product_count"/> producten</span>
+                            </div>
+                            <div class="sq-cf-card-amount" t-esc="formatCurrency(x.value)"/>
+                            <div class="sq-cf-card-meta">voorraadwaarde</div>
+                            <t t-call="serviq_logistics.StockCardRows"/>
+                            <div class="sq-cf-card-foot">
+                                <span t-if="x.out_of_stock" class="sq-flow-badge sq-flow-badge-warning">
+                                    <t t-esc="x.out_of_stock"/> zonder voorraad
+                                </span>
+                                <span t-else="" class="sq-flow-badge sq-flow-badge-success">alles op voorraad</span>
+                                <span class="text-muted">bekijk producten <i class="fa fa-arrow-right"/></span>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- ===== per product ===== -->
+                <div t-else="" class="sq-cf-cards">
+                    <t t-foreach="products" t-as="x" t-key="x.product_id">
+                        <div class="sq-cf-card" t-on-click="() => this.openProduct(x)" title="Open het product">
+                            <div class="sq-cf-card-head">
+                                <span t-attf-class="badge {{ typeClass(x.ptype) }}" t-esc="x.ptype_label"/>
+                                <a href="#" class="sq-fin-inline-link" t-on-click.prevent.stop="() => this.openProductStock(x)"
+                                   title="Open de voorraad van dit product"><i class="fa fa-cubes"/></a>
+                            </div>
+                            <div class="sq-cf-card-partner" t-att-title="x.name" t-esc="x.name"/>
+                            <div class="sq-cf-card-meta">
+                                <t t-if="x.code"><t t-esc="x.code"/> · </t>kostprijs <t t-esc="formatCurrency(x.unit_cost)"/>/st.
+                            </div>
+                            <div class="sq-cf-card-amount" t-esc="formatCurrency(x.value)"/>
+                            <t t-call="serviq_logistics.StockCardRows"/>
+                            <div class="sq-cf-card-foot">
+                                <span class="text-muted sq-cf-card-docs">
+                                    <t t-if="x.warehouses.length">
+                                        <t t-esc="x.warehouses.slice(0, 3).map((w) => w.name + ' ' + formatQty(w.qty)).join(' · ')"/>
+                                    </t>
+                                    <t t-else="">geen voorraad</t>
+                                </span>
+                                <span t-if="x.free_qty !== null and x.free_qty &lt; 0" class="sq-flow-badge sq-flow-badge-danger">tekort</span>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <div t-if="(state.view === 'type' ? types : products).length === 0" class="sq-fin-empty">Geen voorraad voor deze selectie.</div>
+                <div class="sq-fin-note">
+                    Eigen voorraad (consignatie van derden niet meegeteld), waarde aan kostprijs.
+                    Beschikbaar = op voorraad − gereserveerd; vrij verkoopbaar = op voorraad − het hoogste van gereserveerd en verkocht-niet-geleverd.
+                </div>
+            </div>
+            </div>
+        </div>
+    </t>
+</templates>

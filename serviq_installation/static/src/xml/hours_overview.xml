@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_installation.HoursOverview">
+        <div class="sq-in-dashboard o_action">
+            <div class="sq-in-header">
+                <h2>Urenoverzicht interventies</h2>
+                <div class="sq-hours-periods">
+                    <div class="btn-group" role="group">
+                        <button t-foreach="periods" t-as="p" t-key="p.key"
+                                t-attf-class="btn btn-sm {{ state.data and state.data.period === p.key ? 'btn-primary' : 'btn-outline-primary' }}"
+                                t-on-click="() => this.load(p.key)"
+                                t-esc="p.label"/>
+                    </div>
+                    <div class="sq-hours-range">
+                        <input type="date" class="form-control form-control-sm"
+                               t-att-value="state.dateFrom" t-on-change="onDateFrom"/>
+                        <span>-</span>
+                        <input type="date" class="form-control form-control-sm"
+                               t-att-value="state.dateTo" t-on-change="onDateTo"/>
+                    </div>
+                </div>
+            </div>
+
+            <div t-attf-class="sq-in-body {{ state.loading ? 'opacity-50' : '' }}">
+                <t t-set="data" t-value="state.data"/>
+                <div class="sq-in-tiles">
+                    <div class="sq-in-tile sq-in-tile-total" role="button"
+                         t-on-click="() => this.open(data.action)">
+                        <div class="sq-in-tile-value" t-esc="data.total"/>
+                        <div class="sq-in-tile-label">Uren - <t t-esc="data.label"/></div>
+                    </div>
+                    <div class="sq-in-tile sq-in-tile-active">
+                        <div class="sq-in-tile-value" t-esc="data.interventions"/>
+                        <div class="sq-in-tile-label">Interventies met uren</div>
+                    </div>
+                    <div class="sq-in-tile sq-in-tile-commissioning">
+                        <div class="sq-in-tile-value" t-esc="data.average"/>
+                        <div class="sq-in-tile-label">Gemiddeld per interventie</div>
+                    </div>
+                </div>
+
+                <div class="sq-hours-groups">
+                    <div t-foreach="data.groups" t-as="group" t-key="group.key"
+                         t-attf-class="sq-in-section sq-hours-group-{{ group.key }}">
+                        <h4><i t-attf-class="fa {{ group.icon }} me-2"/><t t-esc="group.title"/></h4>
+                        <table class="table table-sm table-hover sq-in-table">
+                            <thead>
+                                <tr>
+                                    <th/>
+                                    <th class="text-end">Uren</th>
+                                    <th class="text-end">Interventies</th>
+                                    <th class="sq-hours-share-col"/>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="group.rows" t-as="row" t-key="row.key"
+                                    role="button" t-on-click="() => this.open(row.action)">
+                                    <td class="sq-in-partner" t-esc="row.name"/>
+                                    <td class="text-end fw-semibold" t-esc="row.hours_label"/>
+                                    <td class="text-end" t-esc="row.interventions"/>
+                                    <td class="sq-hours-share-col">
+                                        <div class="sq-hours-bar">
+                                            <div class="sq-hours-bar-fill" t-attf-style="width: {{ row.share }}%;"/>
+                                        </div>
+                                        <small class="text-muted"><t t-esc="row.share"/>%</small>
+                                    </td>
+                                </tr>
+                                <tr t-if="!group.rows.length">
+                                    <td colspan="4" class="text-muted">Geen uren in deze periode.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

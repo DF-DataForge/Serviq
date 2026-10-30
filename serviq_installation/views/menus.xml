@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_installation_root" name="Installaties"
+              web_icon="serviq_installation,static/description/icon.png"
+              groups="group_installation_user" sequence="40"/>
+    <menuitem id="menu_installation_overview" parent="menu_installation_root"
+              name="Overzicht" action="overview_dashboard_action" sequence="1"/>
+    <menuitem id="menu_installation" parent="menu_installation_root"
+              name="Installaties" action="installation_action" sequence="10"/>
+    <menuitem id="menu_intervention" parent="menu_installation_root"
+              name="Interventies" action="intervention_action" sequence="20"/>
+    <menuitem id="menu_hours_overview" parent="menu_installation_root"
+              name="Urenoverzicht" action="hours_overview_action" sequence="30"/>
+    <menuitem id="menu_installation_config" parent="menu_installation_root"
+              name="Configuratie" sequence="100"
+              groups="group_installation_manager"/>
+    <menuitem id="menu_installation_settings" parent="menu_installation_config"
+              name="Instellingen" action="action_serviq_installation_config" sequence="1"/>
+    <menuitem id="menu_installation_category" parent="menu_installation_config"
+              name="Installatiecategorieën" action="installation_category_action" sequence="10"/>
+    <menuitem id="menu_component_role" parent="menu_installation_config"
+              name="Componentrollen" action="component_role_action" sequence="20"/>
+    <menuitem id="menu_intervention_type" parent="menu_installation_config"
+              name="Types interventie" action="intervention_type_action" sequence="30"/>
+</odoo>

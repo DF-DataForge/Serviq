@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_logistics.SparePartsDashboard">
+        <div class="sq-goods-dashboard sq-spare-stock o_action">
+            <!-- Header -->
+            <div class="sq-dashboard-header">
+                <div class="sq-header-title">
+                    <h2><i class="fa fa-wrench me-2"/>Reserveonderdelen</h2>
+                </div>
+                <div class="sq-header-controls">
+                    <t t-call="serviq_logistics.SegmentFilter"/>
+                    <div class="sq-date-range" title="Filter op geplande vertrekdatum">
+                        <i class="fa fa-calendar me-1 text-muted"/>
+                        <input type="date"
+                               class="form-control form-control-sm sq-date-input"
+                               t-att-value="state.dateFrom"
+                               t-att-max="state.dateTo or ''"
+                               t-on-change="onDateFromChange"
+                               aria-label="Vanaf datum"/>
+                        <span class="mx-1 text-muted">–</span>
+                        <input type="date"
+                               class="form-control form-control-sm sq-date-input"
+                               t-att-value="state.dateTo"
+                               t-att-min="state.dateFrom or ''"
+                               t-on-change="onDateToChange"
+                               aria-label="Tot datum"/>
+                        <button t-if="state.dateFrom or state.dateTo"
+                                class="btn btn-sm btn-link sq-date-clear"
+                                t-on-click="onDateRangeClear"
+                                title="Datumbereik wissen">
+                            <i class="fa fa-times"/>
+                        </button>
+                    </div>
+                    <button class="btn btn-sm btn-outline-success sq-export-btn"
+                            t-on-click="onExportExcel"
+                            t-att-disabled="state.loading"
+                            title="Download de verzendlijst als Excel">
+                        <i class="fa fa-file-excel-o me-1"/>Exporteer verzendlijst
+                    </button>
+                    <div class="sq-search-box">
+                        <i class="fa fa-search sq-search-icon"/>
+                        <input type="text"
+                               class="sq-search-input"
+                               placeholder="Zoek levering, klant, tracking of product..."
+                               t-att-value="state.searchTerm"
+                               t-on-input="onSearchInput"/>
+                        <i t-if="state.searchTerm"
+                           class="fa fa-times sq-search-clear"
+                           t-on-click="onSearchClear"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="sq-summary-cards sq-summary-4">
+                <div class="sq-summary-card sq-card-total">
+                    <div class="sq-card-icon"><i class="fa fa-truck"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Leveringen</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.total_pickings || 0"/></div>
+                        <div class="sq-card-sub">
+                            <t t-esc="state.summary.client_count || 0"/> klanten
+                            <span class="mx-1">|</span>
+                            <t t-esc="state.summary.product_count || 0"/> producten
+                        </div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-done">
+                    <div class="sq-card-icon"><i class="fa fa-check-circle"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Verzonden</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.done_pickings || 0"/></div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-waiting">
+                    <div class="sq-card-icon"><i class="fa fa-clock-o"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">In afwachting</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.pending_pickings || 0"/></div>
+                    </div>
+                </div>
+                <div class="sq-summary-card sq-card-partial">
+                    <div class="sq-card-icon"><i class="fa fa-users"/></div>
+                    <div class="sq-card-content">
+                        <div class="sq-card-label">Klanten</div>
+                        <div class="sq-card-value"><t t-esc="state.summary.client_count || 0"/></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product type filter (shared) -->
+            <t t-if="!state.loading" t-call="serviq_logistics.TypeChips">
+                <t t-set="options" t-value="typeOptions"/>
+            </t>
+
+            <!-- Content -->
+            <div class="sq-content-area">
+                <div t-if="state.loading" class="sq-loading">
+                    <i class="fa fa-spinner fa-spin fa-2x"/>
+                    <span class="ms-2">Leveringen reserveonderdelen laden...</span>
+                </div>
+
+                <div t-elif="!visibleCustomers.length" class="sq-empty-state">
+                    <i class="fa fa-inbox fa-3x mb-3"/>
+                    <h4>Geen leveringen van reserveonderdelen gevonden</h4>
+                    <p class="text-muted" t-if="state.searchTerm">
+                        Geen resultaten voor "<t t-esc="state.searchTerm"/>"
+                    </p>
+                </div>
+
+                <div t-else="" class="sq-scrollable-list">
+                    <t t-foreach="visibleCustomers" t-as="customer" t-key="customer.partner_id">
+                        <!-- Client group header -->
+                        <div class="sq-group-header"
+                             t-on-click="() => this.toggleCustomer(customer.partner_id)">
+                            <div class="sq-group-left">
+                                <i t-attf-class="fa {{ isCustomerExpanded(customer.partner_id) ? 'fa-chevron-down' : 'fa-chevron-right' }} me-2"/>
+                                <i class="fa fa-user me-2 text-muted"/>
+                                <span class="sq-group-name"><t t-esc="customer.partner_name"/></span>
+                                <span t-if="customer.country" class="text-muted ms-2">
+                                    <i class="fa fa-globe me-1"/><t t-esc="customer.country"/>
+                                </span>
+                            </div>
+                            <div class="sq-group-badges">
+                                <span class="badge bg-secondary me-1">
+                                    <t t-esc="customer.total_pickings"/> leveringen
+                                </span>
+                                <span t-if="customer.done_pickings" class="badge bg-success me-1">
+                                    <t t-esc="customer.done_pickings"/> verzonden
+                                </span>
+                                <span t-if="customer.pending_pickings" class="badge bg-info me-1">
+                                    <t t-esc="customer.pending_pickings"/> in afwachting
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Picking list -->
+                        <div t-if="isCustomerExpanded(customer.partner_id)" class="sq-group-content">
+                            <t t-foreach="customer.pickings" t-as="pick" t-key="pick.picking_id">
+                                <div class="sq-picking-card">
+                                    <div class="sq-picking-header">
+                                        <div class="sq-picking-info">
+                                            <span class="sq-picking-name"
+                                                  t-on-click.stop="() => this.openPicking(pick.picking_id)"
+                                                  title="Open de levering">
+                                                <i class="fa fa-truck me-1"/>
+                                                <t t-esc="pick.picking_name"/>
+                                            </span>
+                                            <span t-attf-class="badge ms-2 {{ getPickingStateClass(pick.state) }}">
+                                                <t t-esc="pick.state_label"/>
+                                            </span>
+                                            <t t-foreach="pick.product_types || []" t-as="pt" t-key="pt">
+                                                <span t-attf-class="badge ms-1 {{ getProductTypeClass(pt) }}" t-esc="getProductTypeLabel(pt)"/>
+                                            </t>
+                                            <span t-if="pick.move_count"
+                                                  class="sq-toggle-moves ms-2"
+                                                  t-on-click.stop="() => this.togglePicking(pick.picking_id)">
+                                                <i class="fa fa-list me-1"/>
+                                                <t t-esc="pick.move_count"/> producten
+                                                <i t-attf-class="fa ms-1 {{ isPickingExpanded(pick.picking_id) ? 'fa-chevron-up' : 'fa-chevron-down' }}"/>
+                                            </span>
+                                        </div>
+                                        <div class="sq-picking-meta">
+                                            <span t-if="pick.carrier" class="text-muted me-3">
+                                                <i class="fa fa-plane me-1"/>Koerier: <t t-esc="pick.carrier"/>
+                                            </span>
+                                            <span t-if="pick.tracking_ref" class="text-muted me-3">
+                                                <i class="fa fa-barcode me-1"/><t t-esc="pick.tracking_ref"/>
+                                            </span>
+                                            <span t-if="pick.departure_time" class="text-muted me-3">
+                                                <i class="fa fa-calendar me-1"/>Vertrek: <t t-esc="pick.departure_time"/>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div t-if="isPickingExpanded(pick.picking_id) and pick.moves.length" class="sq-moves-table-wrap">
+                                        <table class="sq-moves-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Interne ref.</th>
+                                                    <th>Product</th>
+                                                    <th>Omschrijving</th>
+                                                    <th>Aantal verzonden</th>
+                                                    <th>Eenheid</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="pick.moves" t-as="move" t-key="move_index">
+                                                    <tr>
+                                                        <td><t t-esc="move.default_code"/></td>
+                                                        <td><t t-esc="move.product_name"/></td>
+                                                        <td><t t-esc="move.description"/></td>
+                                                        <td><t t-esc="move.qty_shipped"/></td>
+                                                        <td><t t-esc="move.uom"/></td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>
