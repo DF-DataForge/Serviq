@@ -340,6 +340,21 @@ def _setup_warehouses(env, company):
     sqf.lot_stock_id.df_is_webship_location = True
     # Sales are shipped by Stoqflow by default, also when entered in the backend
     env.ref('base.user_admin').property_warehouse_id = sqf
+
+    # Repairs are done on site by the workshop: the unit stays at the
+    # customer, parts come from the spare parts shelf (or a van, chosen on
+    # the repair order). Stoqflow does not repair: new repair orders take the
+    # operation type of the user's default warehouse (Stoqflow), so that
+    # warehouse points to the workshop's type and its own is archived.
+    wks.repair_type_id.write({
+        'name': 'Herstellingen op locatie',
+        'default_location_src_id': spare.id,
+        'default_product_location_src_id': env.ref('stock.stock_location_customers').id,
+        'default_product_location_dest_id': env.ref('stock.stock_location_customers').id,
+    })
+    sqf_repair_type = sqf.repair_type_id
+    sqf.repair_type_id = wks.repair_type_id
+    sqf_repair_type.active = False
     return wks, sqf, dict(vans, spare=spare)
 
 
@@ -854,8 +869,7 @@ def _run_open_orders(env, partners, products, sqf):
 # ---------------------------------------------------------------------------
 
 def _run_repairs(env, partners, products, serviq, wks, locations, installations):
-    spare, services, units = products['spare'], products['services'], products['units']
-    customers_location = env.ref('stock.stock_location_customers')
+    spare, services = products['spare'], products['services']
     admin = env.ref('base.user_admin')
     Tag = env['repair.tags']
     tags = {key: Tag.create({'name': name}) for key, name in [
@@ -874,10 +888,9 @@ def _run_repairs(env, partners, products, serviq, wks, locations, installations)
             'lot_id': lot.id,
             'partner_id': installation.customer_id.id,
             'user_id': admin.id,
+            # On-site repair (see the operation type): the unit stays at
+            # the customer, the parts come from `parts_location`.
             'picking_type_id': wks.repair_type_id.id,
-            # On-site repair: the unit stays at the customer
-            'product_location_src_id': customers_location.id,
-            'product_location_dest_id': customers_location.id,
             'location_id': parts_location.id,
             'under_warranty': warranty,
             'priority': priority,

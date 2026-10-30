@@ -21,6 +21,9 @@ odoo-bin -d frisair_demo --without-demo=True -i serviq_demo_hvac
 De Stoqflow-API-gegevens blijven leeg en de sync-crons staan uit; vul een
 sandbox-sleutel in bij de Stoqflow-instellingen om echt te synchroniseren.
 
+Een rondleiding langs de dagelijkse workflows voor een demo staat in
+[`WALKTHROUGH.md`](WALKTHROUGH.md).
+
 ## Wat zit erin
 
 | Onderdeel | Inhoud |
@@ -31,7 +34,7 @@ sandbox-sleutel in bij de Stoqflow-instellingen om echt te synchroniseren.
 | Reserveonderdelen | Printplaat, ventilatormotor, expansieventiel, afstandsbediening, condenspomp, sensor, filters; componentrol *Reserveonderdeel*, nooit naar Stoqflow |
 | Installatiepakketten | Kit-stuklijst (phantom) van buitenunit + binnenunit + montagekit per vermogen, componentrol *Installatiepakket*, categorie *Split airco* |
 | Installaties | 13 installaties: 9 uit de geleverde pakketten met de serienummers van de levering, 4 oudere (2019-2022) zonder documenten; inbedrijfstellingen (afgerond, ingepland, nog in te plannen), onderhoud, herstellingen en een vervanging |
-| Herstellingen | 7 herstelorders (app Reparaties) op geïnstalleerde units, gekozen op serienummer: garantie en betalend, met verbruikte reserveonderdelen uit de werkplaats of een servicewagen, in elke fase (nieuw, bevestigd, in reparatie, hersteld, geannuleerd), offertes / verkooporders voor de betalende en opvolgactiviteiten |
+| Herstellingen | Type *Herstellingen op locatie*: de unit blijft bij de klant, onderdelen van de plank of een servicewagen. 7 herstelorders (app Reparaties) op geïnstalleerde units, gekozen op serienummer: garantie en betalend, met verbruikte reserveonderdelen uit de werkplaats of een servicewagen, in elke fase (nieuw, bevestigd, in reparatie, hersteld, geannuleerd), offertes / verkooporders voor de betalende en opvolgactiviteiten |
 | Historiek | Zo'n 6 weken documenten: inkopen, productieorders, bevoorrading naar Stoqflow, verkopen en leveringen, interne transfers naar de servicewagens |
 | Open orders | Inkoop en bevoorrading die Stoqflow nog moet ontvangen en verkopen die Stoqflow nog moet leveren (procescode *Pending*), plus een offerte |
 
