@@ -1,14 +1,14 @@
 # Demo-walkthrough: een dag bij Frisair Klimaattechniek
 
 Een rondleiding langs de dagelijkse werking van een airco-installateur in
-Odoo met Serviq en Stoqflow, op de data van `serviq_demo_hvac`. De
+Odoo met Serviq, op de data van `serviq_demo_hvac`. De
 scenario's volgen één werkdag en wisselen tussen vier rollen:
 
 | Rol | Werkt in |
 |---|---|
 | **Planner / dispatcher** | Installaties, Reparaties |
 | **Technieker** | Interventies, Reparaties |
-| **Verkoop** | Verkoop, Stoqflow |
+| **Verkoop** | Verkoop |
 | **Magazijn / werkplaats** | Voorraad, Productie, Logistiek |
 
 Elk scenario staat op zichzelf; kies wat bij het publiek past. Een volledige
@@ -20,13 +20,9 @@ ongeveer 30 minuten.
 1. Installeer de demo op een lege database (zie `README.md`) en log in als
    **admin**.
 2. **Maak een kopie** van de database om mee te demonstreren (database
-   manager > *Duplicate*). Vink daarbij **Neutralize** aan: dan kan je in
-   scenario 7 een levering van Stoqflow nabootsen zonder Stoqflow-account.
-   De originele database blijft zo een schone uitgangssituatie voor de
-   volgende demo.
-3. Zet de **ontwikkelaarsmodus** aan (Settings > *Activate the developer
-   mode*); die is alleen nodig voor scenario 7.
-4. Optioneel: installeer het Nederlands (Settings > Languages) voor een
+   manager > *Duplicate*). De originele database blijft zo een schone
+   uitgangssituatie voor de volgende demo.
+3. Optioneel: installeer het Nederlands (Settings > Languages) voor een
    volledig Nederlandstalige interface. Deze gids gebruikt de Engelse namen
    van de standaardmenu's van Odoo; de Serviq-menu's zijn altijd Nederlands.
 
@@ -187,38 +183,30 @@ aanvaarden.
    (`S00014`): *Installatiepakket split airco 3,5 kW* plus de plaatsing.
 2. Toon op het product (**Sales > Products > Products**) de stuklijst van het
    pakket: buitenunit, binnenunit en montagekit (type *Kit*). Het pakket zelf
-   heeft geen voorraad; de onderdelen liggen bij Stoqflow.
+   heeft geen voorraad; de onderdelen liggen in het Stoqflow-magazijn.
 3. **Confirm**. Smart button **Delivery**: de levering vertrekt uit
-   **SQF/Stock** (Stoqflow) en bevat de drie onderdelen.
-4. Tab **Stoqflow** op de levering: dit wordt een Stoqflow-order. De
-   procescode is *Pending*: de koppeling stuurt de order naar Stoqflow,
-   Stoqflow pickt de units en meldt de **serienummers** terug bij de
-   levering (de serienummercontrole staat aan op de units).
-5. **Stoqflow > Dashboard** / **Stoqflow > Orders**: de openstaande en
-   afgewerkte Stoqflow-orders.
+   **SQF/Stock** (Stoqflow Fulfilment) en bevat de drie onderdelen; Odoo
+   heeft al een **serienummer** gereserveerd voor de buiten- en de
+   binnenunit.
+4. **Logistiek > Uitgaande goederen**: de nieuwe order staat bij de
+   leveringen die nog moeten vertrekken.
 
-**Toon vooral:** verkoop werkt met één pakketlijn; de logistieke
-afhandeling (en de serienummers) komt van Stoqflow.
+**Toon vooral:** verkoop werkt met één pakketlijn; welke units (en welke
+serienummers) er vertrekken, volgt uit de stuklijst en de voorraad.
 
 ---
 
 ## 7. Stoqflow levert: installatie registreren (verkoop + planner, 10 min)
 
 **Verhaal:** Stoqflow heeft de airco van Ann Verbruggen geleverd op de
-werf. In productie meldt de koppeling dit vanzelf; in de demo bootsen we
-het na.
-
-> Alleen op een **geneutraliseerde kopie** met de **ontwikkelaarsmodus** aan
-> (zie Voorbereiding). Op een gewone database weigert Odoo terecht om een
-> Stoqflow-levering met de hand af te werken.
+werf en bevestigt welke units vertrokken zijn.
 
 1. **Inventory > Operations > Transfers > Deliveries**, open de levering van
    *Ann Verbruggen* (`SQF/OUT/00009`).
-2. Tab **Debug** > *Set process code / status*: **Process code** = *Manual*,
-   opslaan. Klik **Validate** (vraagt Odoo de eerste keer of klanten een
-   sms krijgen bij levering, kies naar wens). De serienummers van buiten- en binnenunit
-   staan op de levering (ze werden bij de bevestiging gereserveerd, zoals
-   Stoqflow ze zou melden).
+2. Controleer de **serienummers** van buiten- en binnenunit op de levering
+   (pas ze aan als Stoqflow andere units gepickt heeft) en klik
+   **Validate** (vraagt Odoo de eerste keer of klanten een sms krijgen bij
+   levering, kies naar wens).
 3. **Installaties > Installaties** > **New**:
    * **Product**: *Installatiepakket split airco 3,5 kW*: categorie en
      componenten (buitenunit, binnenunit, montagekit) komen uit de stuklijst;
@@ -231,8 +219,8 @@ het na.
 4. Smart button **Interventie plannen**: *Inbedrijfstelling*, en plan via
    **Inplannen via kalender** (zie scenario 8).
 
-**Toon vooral:** het serienummer loopt door van ontvangst bij Stoqflow via
-de levering tot op de installatie bij de klant.
+**Toon vooral:** het serienummer loopt door van de ontvangst in het
+Stoqflow-magazijn via de levering tot op de installatie bij de klant.
 
 ---
 
@@ -265,7 +253,7 @@ die volgt uit de geplande en afgewerkte interventies.
 
 1. **Inventory > Operations > Transfers > Receipts**, open de ontvangst van
    Nordklima met de printplaten (`FRW/IN/00005`, aankoop `P00009`): ze komen
-   binnen op **FRW/Stock/Reserveonderdelen**, niet bij Stoqflow.
+   binnen op **FRW/Stock/Reserveonderdelen**, niet in het Stoqflow-magazijn.
 2. **Validate**.
 3. Open de herstelling van *Familie Mertens* en klik **Check availability**:
    **Component Status** wordt *Available*. De technieker kan op het geplande
@@ -286,18 +274,19 @@ die volgt uit de geplande en afgewerkte interventies.
    Frisair Werkplaats*.
 2. Vul een hoeveelheid in bij **To Order** en klik **Order**.
 3. Er ontstaan twee transfers: een uitgaande uit de werkplaats
-   (`FRW/OUT/…`, verzending naar Stoqflow) en een ontvangst bij Stoqflow
-   (`SQF/IN/…`) met procescode **Pending**: de aankondiging van de inkomende
-   goederen aan Stoqflow. Toon ook de oudere aankondiging (`SQF/IN/00006`)
-   die nog op Stoqflow wacht.
+   (`FRW/OUT/…`, verzending naar Stoqflow) en een ontvangst in het
+   Stoqflow-magazijn (`SQF/IN/…`), via de transitlocatie tussen de twee
+   magazijnen. Valideer de uitgaande. Toon ook de oudere zending
+   (`SQF/IN/00006`) die Stoqflow nog moet ontvangen.
 
 **d. Units op komst bij Stoqflow**
 
 1. **Logistiek > Inkomende goederen**: per leverancier de aankopen en hun
    ontvangststatus. De laatste aankoop van airco-units bij Nordklima
-   (`P00003`) is nog niet ontvangen: Stoqflow meldt de serienummers bij de
-   ontvangst.
-2. Ter vergelijking een afgewerkte ontvangst (`SQF/IN/00001`): elke unit
+   (`P00003`) is nog niet ontvangen.
+2. Open de ontvangst (`SQF/IN/00003`) en registreer bij de ontvangst een
+   **serienummer per unit** (zoals Stoqflow ze doorgeeft), valideer.
+3. Ter vergelijking een afgewerkte ontvangst (`SQF/IN/00001`): elke unit
    heeft zijn eigen serienummer.
 
 ---
@@ -318,9 +307,9 @@ die volgt uit de geplande en afgewerkte interventies.
 1. **Logistiek > Reserveonderdelen**: de leveringen van reserveonderdelen
    per klant. Koeltechniek Verhaegen heeft een levering klaarstaan
    (`FRW/OUT/00005`): expansieventiel en filters.
-2. Open de levering en **Validate**. Ze vertrekt uit de werkplaats, niet uit
-   Stoqflow: reserveonderdelen gaan nooit naar Stoqflow (*Never send this
-   product to Stoqflow* op het product).
+2. Open de levering en **Validate**. Ze vertrekt uit de werkplaats:
+   reserveonderdelen liggen nooit bij Stoqflow, alleen op de plank en in de
+   servicewagens.
 
 ---
 

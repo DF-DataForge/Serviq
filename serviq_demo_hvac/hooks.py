@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Builds the "Frisair Klimaattechniek" demo company on install: a Belgian
-# airco installer that stores its airco units at Stoqflow.
+# airco installer that stores its airco units in the Stoqflow fulfilment
+# warehouse (a plain Odoo warehouse here, without the Stoqflow integration).
 #   * master data: company, the own workshop warehouse (with spare parts
 #     shelf and service vans), the Stoqflow warehouse, partners, Serviq
 #     configuration, serial-tracked units, mounting kits (BoM), spare parts
@@ -12,7 +13,7 @@
 #     on the vans and sold to a colleague installer;
 #   * the installations at the customers with their interventions, and
 #     repair orders on installed units (warranty and paid, every stage);
-#   * open orders still waiting to go to Stoqflow.
+#   * open orders still waiting to be delivered or received.
 import logging
 from datetime import timedelta
 
@@ -33,7 +34,6 @@ _serial_counters = {}
 def post_init_hook(env):
     company = _setup_company(env)
     _enable_features(env)
-    _configure_stoqflow(env)
     wks, sqf, locations = _setup_warehouses(env, company)
     serviq = _setup_serviq(env, company)
     partners = _setup_partners(env)
@@ -46,7 +46,6 @@ def post_init_hook(env):
     _run_open_orders(env, partners, products, sqf)
     _run_repairs(env, partners, products, serviq, wks, locations, installations)
     _setup_orderpoints(env, products, wks, sqf)
-    _set_process_codes(env)
     _logger.info('Frisair Klimaattechniek demo data installed')
 
 
@@ -79,8 +78,7 @@ def _next_serial(product, date):
 
 
 def _receive_serials(move, date):
-    """Register a serial number per received unit, as Stoqflow reports them
-    on the receipt."""
+    """Register a serial number per received unit."""
     move.move_line_ids.unlink()
     move.env['stock.move.line'].create([{
         'move_id': move.id,
@@ -98,10 +96,6 @@ def _validate(picking, date_done=None):
     """Process a picking in full, as if the warehouse handled every line.
     Received serial-tracked units get a new serial number; deliveries use
     the serials reserved by Odoo."""
-    # History is handled outside the integration: the Stoqflow sync refuses
-    # manual validation of transfers it still has to process.
-    if picking.df_process_code in ('P', 'F'):
-        picking.df_process_code = 'M'
     picking.action_assign()
     for move in picking.move_ids:
         if move.product_id.tracking == 'serial' and picking.picking_type_code == 'incoming':
@@ -224,7 +218,7 @@ def _task(env, serviq, installation, itype, deadline_days, done=False, descripti
 
 
 # ---------------------------------------------------------------------------
-# Company, features and Stoqflow settings
+# Company and features
 # ---------------------------------------------------------------------------
 
 def _setup_company(env):
@@ -265,38 +259,11 @@ def _enable_features(env):
     })
 
 
-def _configure_stoqflow(env):
-    """Fill in the non-secret Stoqflow settings. API credentials are left
-    empty on purpose: enter your Stoqflow sandbox key in the settings."""
-    params = env['ir.config_parameter'].sudo()
-    for key, value in {
-        'webship.base_url': 'https://api.stoqflow.com/',
-        'webship.base_app_url': 'https://app.stoqflow.com/',
-        'webship.sync_order': 'True',
-        'webship.sync_products': 'True',
-        'webship.sync_klanten': 'True',
-        'webship.sync_leveranciers': 'True',
-        'webship.default_status_order': 'ready-to-pick',
-        'webship.default_status_po_order': 'ordered',
-        'webship.show_parcels_tab': 'True',
-        'webship.show_pick_analysis_tab': 'True',
-    }.items():
-        params.set_param(key, value)
-
-    # Without credentials the sync crons would only flag errors; they are
-    # switched off until a Stoqflow account is connected.
-    for xid in ('ir_cron_sync_statussen', 'ir_cron_sync_statusP',
-                'ir_cron_import_stock', 'ir_cron_daily_report'):
-        cron = env.ref('webship.%s' % xid, raise_if_not_found=False)
-        if cron:
-            cron.active = False
-
-
 def _setup_warehouses(env, company):
     """Frisair Werkplaats: own warehouse and workshop, with a spare parts
     shelf and a location per service van. Stoqflow Fulfilment: the
-    fulfilment partner's warehouse storing the airco units, whose stock
-    location is flagged as a Stoqflow location."""
+    fulfilment partner's warehouse storing the airco units and the mounting
+    kits."""
     wks = env['stock.warehouse'].search([('company_id', '=', company.id)], limit=1)
     wks.write({'name': 'Frisair Werkplaats', 'code': 'FRW'})
     # Renaming the code does not rename existing sequences; align them
@@ -335,9 +302,6 @@ def _setup_warehouses(env, company):
         'resupply_wh_ids': [Command.link(wks.id)],
     })
     _xmlid(sqf, 'warehouse_stoqflow')
-    # Pickings into this location become Stoqflow purchase orders,
-    # pickings out of it become Stoqflow orders.
-    sqf.lot_stock_id.df_is_webship_location = True
     # Sales are shipped by Stoqflow by default, also when entered in the backend
     env.ref('base.user_admin').property_warehouse_id = sqf
 
@@ -523,18 +487,15 @@ def _setup_products(env, partners, serviq, wks, sqf):
         tmpl = _xmlid(env['product.template'].create(vals), 'product_%s' % key)
         return tmpl.product_variant_id
 
-    # Never sent to Stoqflow: parts, spare parts, packages and services
-    not_stoqflow = {'df_product_do_not_send_webship': True}
-
     # Airco units: serial-tracked, bought straight into the Stoqflow
-    # warehouse; Stoqflow checks and reports the serial numbers.
+    # warehouse; the serial numbers are registered on the receipt.
     units = {}
     for power, kw, out_cost, in_cost in [('25', '2,5', 520.0, 260.0),
                                          ('35', '3,5', 610.0, 290.0),
                                          ('50', '5,0', 840.0, 360.0)]:
-        for side, role, label, cost, weight, dims, hs in [
-            ('out', 'outdoor', 'buitenunit', out_cost, 32.0 + int(power) / 10, (800, 300, 560), '84159000'),
-            ('in', 'indoor', 'binnenunit wandmodel', in_cost, 9.0 + int(power) / 25, (920, 230, 300), '84151090'),
+        for side, role, label, cost, weight in [
+            ('out', 'outdoor', 'buitenunit', out_cost, 32.0 + int(power) / 10),
+            ('in', 'indoor', 'binnenunit wandmodel', in_cost, 9.0 + int(power) / 25),
         ]:
             key = '%s_%s' % (side, power)
             units[key] = product(
@@ -542,9 +503,6 @@ def _setup_products(env, partners, serviq, wks, sqf):
                 cat_units, cost, round(cost * 1.6, -1), partners['nordklima'], 21, weight,
                 roles[role], route_buy, tracking='serial',
                 description_sale='Split airco, koudemiddel R32, energieklasse A++',
-                df_type='basic', df_hs_code=hs, df_country_of_origin='DE',
-                df_length=dims[0], df_width=dims[1], df_height=dims[2],
-                df_flag_fragile=side == 'in', df_check_serial_numbers=True,
             )
             units[key].product_tmpl_id.serviq_category_id = category
 
@@ -560,7 +518,7 @@ def _setup_products(env, partners, serviq, wks, sqf):
         ('trunking', 'Leidinggoot 80 mm met bochten (set)', 'TP-LG-80', 18.5, 'techniparts', 5, 2.0),
     ]:
         parts[key] = product(key, name, code, cat_parts, cost, round(cost * 1.8, 2), partners[vendor],
-                             delay, weight, routes=route_buy, sale_ok=False, **not_stoqflow)
+                             delay, weight, routes=route_buy, sale_ok=False)
 
     # Mounting kits: assembled in the workshop, resupplied to Stoqflow
     kits = {}
@@ -572,8 +530,6 @@ def _setup_products(env, partners, serviq, wks, sqf):
             key, name, code, cat_kits, 0.0, price, weight=11.5, role=roles['mounting_kit'],
             routes=route_manufacture | route_resupply, purchase_ok=False,
             description_sale='Samengesteld in onze werkplaats in Mechelen.',
-            df_type='basic', df_hs_code='73269098', df_country_of_origin='BE',
-            df_length=600, df_width=400, df_height=200,
         )
         bom = env['mrp.bom'].create({
             'product_tmpl_id': kits[key].product_tmpl_id.id,
@@ -600,7 +556,7 @@ def _setup_products(env, partners, serviq, wks, sqf):
         ('filter', 'Filterset binnenunit Aero', 'KP-FLT-AERO', 7.5, 19.5, 'klimaparts', 3),
     ]:
         spare[key] = product(key, name, code, cat_spare, cost, price, partners[vendor], delay, 0.5,
-                             roles['spare_part'], route_buy, **not_stoqflow)
+                             roles['spare_part'], route_buy)
 
     # Installation packages: a kit BoM of an outdoor unit, an indoor unit and
     # a mounting kit. The delivery from Stoqflow holds the three components.
@@ -612,8 +568,7 @@ def _setup_products(env, partners, serviq, wks, sqf):
             key, 'Installatiepakket split airco %s kW' % kw, 'FRW-PKG-%s' % power, cat_packages,
             0.0, price, role=roles['package'], is_storable=False, purchase_ok=False,
             serviq_category_id=category.id,
-            description_sale='Buitenunit, binnenunit wandmodel en montagekit Nordklima Aero %s kW' % kw,
-            **not_stoqflow)
+            description_sale='Buitenunit, binnenunit wandmodel en montagekit Nordklima Aero %s kW' % kw)
         bom = env['mrp.bom'].create({
             'product_tmpl_id': packages[power].product_tmpl_id.id,
             'product_qty': 1,
@@ -633,7 +588,7 @@ def _setup_products(env, partners, serviq, wks, sqf):
         ('travel', 'Verplaatsing servicewagen', 'SRV-VERPL', 45.0),
     ]:
         services[key] = product(key, name, code, cat_services, 0.0, price, type='service',
-                                is_storable=False, purchase_ok=False, **not_stoqflow)
+                                is_storable=False, purchase_ok=False)
 
     return {
         'units': units, 'parts': parts, 'kits': kits, 'spare': spare,
@@ -648,7 +603,7 @@ def _setup_products(env, partners, serviq, wks, sqf):
 def _run_unit_purchases(env, partners, products, sqf):
     units = products['units']
     nordklima = partners['nordklima']
-    # Opening stock, received by Stoqflow with the serial numbers
+    # Opening stock, received at Stoqflow with the serial numbers
     _purchase(env, nordklima, [
         (units['out_25'], 6), (units['in_25'], 6),
         (units['out_35'], 8), (units['in_35'], 8),
@@ -658,7 +613,7 @@ def _run_unit_purchases(env, partners, products, sqf):
         (units['out_35'], 6), (units['in_35'], 6),
         (units['out_25'], 4), (units['in_25'], 4),
     ], sqf.in_type_id, days_ago=16, receive=True)
-    # On its way: an inbound announcement still to be sent to Stoqflow
+    # On its way: still to be received at Stoqflow
     _purchase(env, nordklima, [
         (units['out_50'], 4), (units['in_50'], 4),
         (units['out_35'], 6), (units['in_35'], 6),
@@ -694,14 +649,13 @@ def _run_kit_assembly(env, partners, products, wks, sqf):
     route = products['route_resupply']
     _resupply(env, kits['kit_s'], 14, sqf, route, days_ago=30, receive=True)
     _resupply(env, kits['kit_l'], 6, sqf, route, days_ago=30, receive=True)
-    # Shipped from the workshop, still to be announced to Stoqflow
+    # Shipped from the workshop, still to be received at Stoqflow
     _resupply(env, kits['kit_s'], 4, sqf, route, days_ago=1, receive=False)
 
 
 def _resupply(env, product, qty, sqf, route, days_ago=0, receive=False):
     """Replenish the Stoqflow warehouse from the workshop. The workshop leg is
-    always shipped; the Stoqflow leg (the inbound announcement to Stoqflow) is
-    only received when receive=True."""
+    always shipped; the receipt at Stoqflow is only done when receive=True."""
     # A one-off manual orderpoint drives the resupply route; Odoo removes it
     # again once it has nothing left to order.
     orderpoint = env['stock.warehouse.orderpoint'].create({
@@ -713,7 +667,7 @@ def _resupply(env, product, qty, sqf, route, days_ago=0, receive=False):
     orderpoint.action_replenish()
     orderpoint.exists().unlink()
     pickings = env['stock.picking'].search([('id', 'not in', existing.ids)])
-    outgoing = pickings.filtered(lambda p: not p.location_dest_id.df_is_webship_location)
+    outgoing = pickings.filtered(lambda p: p.location_dest_id != sqf.lot_stock_id)
     incoming = pickings - outgoing
     for picking in outgoing:
         _validate(picking, _days_ago(days_ago))
@@ -847,7 +801,7 @@ def _setup_older_installations(env, partners, products, serviq):
 
 
 # ---------------------------------------------------------------------------
-# Open orders, still waiting to go to Stoqflow
+# Open orders, still waiting to be delivered by Stoqflow
 # ---------------------------------------------------------------------------
 
 def _run_open_orders(env, partners, products, sqf):
@@ -1018,7 +972,7 @@ def _run_repairs(env, partners, products, serviq, wks, locations, installations)
 
 
 # ---------------------------------------------------------------------------
-# Replenishment rules and Stoqflow process codes
+# Replenishment rules
 # ---------------------------------------------------------------------------
 
 def _setup_orderpoints(env, products, wks, sqf):
@@ -1044,20 +998,3 @@ def _setup_orderpoints(env, products, wks, sqf):
             'product_min_qty': 2, 'product_max_qty': 10, 'trigger': 'manual',
             'route_id': route_buy.id,
         })
-
-
-def _set_process_codes(env):
-    """Mark history as handled outside the integration so only the open
-    documents are pending for Stoqflow."""
-    Picking = env['stock.picking']
-    for picking in Picking.search([]):
-        involves_stoqflow = (picking.location_id.df_is_webship_location
-                             or picking.location_dest_id.df_is_webship_location)
-        if not involves_stoqflow:
-            code = 'NA'
-        elif picking.state in ('done', 'cancel'):
-            code = 'M'
-        else:
-            code = 'P'
-        if picking.df_process_code != code:
-            picking.df_process_code = code
