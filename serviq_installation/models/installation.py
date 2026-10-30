@@ -231,7 +231,9 @@ class Installation(models.Model):
 
         Task = self.env['project.task']
         tasks_by_day, without_date = {}, []
-        domain = [('serviq_installation_id', '!=', False)]
+        # A first installation has no installation yet: an intervention
+        # type is enough.
+        domain = Task._serviq_intervention_domain()
         if installer_id == -1:
             domain.append(('serviq_installer_id', '=', False))
         elif installer_id:
@@ -417,7 +419,7 @@ class Installation(models.Model):
         plan_field = Task._serviq_plan_field()
         week_start, month_start, _today = self._dashboard_periods()
         week_end = week_start + timedelta(days=7)
-        base = [('serviq_installation_id', '!=', False)] + (domain or [])
+        base = Task._serviq_intervention_domain() + (domain or [])
         open_ = [('state', 'not in', list(self.TASK_CLOSED_STATES))]
         planned_this_week = open_ + [
             (plan_field, '>=', self._dashboard_datetime(week_start)),
@@ -455,7 +457,8 @@ class Installation(models.Model):
     def _dashboard_hours(self):
         Line = self.env['account.analytic.line']
         week_start, month_start, _today = self._dashboard_periods()
-        base = [('task_id.serviq_installation_id', '!=', False)]
+        base = ['|', ('task_id.serviq_installation_id', '!=', False),
+                ('task_id.serviq_intervention_type_id', '!=', False)]
         tiles = []
         for key, label, start in (
                 ('week', _('Deze week'), week_start),
@@ -523,7 +526,8 @@ class Installation(models.Model):
             period = 'week'
         start, end, label = self._hours_period(period, date_from, date_to)
         domain = [
-            ('task_id.serviq_installation_id', '!=', False),
+            '|', ('task_id.serviq_installation_id', '!=', False),
+            ('task_id.serviq_intervention_type_id', '!=', False),
             ('date', '>=', fields.Date.to_string(start)),
             ('date', '<=', fields.Date.to_string(end)),
         ]

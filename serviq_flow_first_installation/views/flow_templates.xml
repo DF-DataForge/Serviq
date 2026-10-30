@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Section of the flow on the intervention page. Values: task, flow,
+         flow_action (POST url) + those of _flow_values (fi_*). -->
+    <template id="flow_section" name="Flow: eerste installatie">
+        <t t-if="fi_installation">
+            <p class="mb-0">
+                <i class="fa fa-check-circle text-success me-1"/>
+                Installatie <a t-attf-href="/my/installations/#{fi_installation.id}" t-out="fi_installation.name"/>
+                is geregistreerd voor deze interventie.
+            </p>
+        </t>
+        <t t-elif="not fi_products">
+            <p class="text-muted mb-0">
+                <t t-if="fi_has_distributor_stock">
+                    Er is geen installatieproduct met een serienummer beschikbaar in de voorraad
+                    van de distributeur.
+                </t>
+                <t t-else="">
+                    Er is geen voorraadlocatie van een distributeur gekend voor deze interventie.
+                </t>
+                Neem contact op met uw distributeur.
+            </p>
+        </t>
+        <t t-else="">
+            <p class="text-muted">
+                Kies het geplaatste product en zijn serienummer. De installatie wordt aangemaakt
+                met de componenten van het product en aan deze interventie gekoppeld.
+            </p>
+            <form method="post" t-att-action="flow_action" class="row g-2 align-items-end sq-fi-form">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-5">
+                    <label class="form-label" for="sq_fi_product">Product</label>
+                    <select id="sq_fi_product" name="product_tmpl_id" class="form-select" required="required">
+                        <option value="">Kies een product...</option>
+                        <option t-foreach="fi_products" t-as="product" t-att-value="product.id"
+                                t-out="product.display_name"/>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label" for="sq_fi_lot">Serienummer</label>
+                    <select id="sq_fi_lot" name="lot_id" class="form-select" required="required">
+                        <option value="">Kies een serienummer...</option>
+                        <option t-foreach="fi_lots" t-as="lot" t-att-value="lot.id"
+                                t-att-data-product="lot.product_id.product_tmpl_id.id"
+                                t-out="lot.name"/>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fa fa-plus me-1"/>Registreren
+                    </button>
+                </div>
+            </form>
+            <script>
+                (function () {
+                    var product = document.getElementById('sq_fi_product');
+                    var lot = document.getElementById('sq_fi_lot');
+                    if (!product || !lot) { return; }
+                    product.addEventListener('change', function () {
+                        lot.value = '';
+                        Array.prototype.forEach.call(lot.options, function (option) {
+                            option.hidden = option.value !== '' &amp;&amp; option.dataset.product !== product.value;
+                        });
+                    });
+                })();
+            </script>
+        </t>
+    </template>
+</odoo>

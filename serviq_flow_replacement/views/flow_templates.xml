@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Section of the flow on the intervention page. Values: task, flow,
+         flow_action (POST url) + those of _flow_values (rp_*). -->
+    <template id="flow_section" name="Flow: vervanging">
+        <p t-if="not rp_lines" class="text-muted">
+            Deze installatie heeft geen vervangbare componenten.
+        </p>
+        <t t-else="">
+            <p class="text-muted">
+                Kies de component die vervangen wordt en geef het serienummer van het nieuwe
+                onderdeel op.
+            </p>
+            <form method="post" t-att-action="flow_action" class="row g-2 align-items-end sq-rp-form"
+                  t-att-data-check-url="rp_check_url">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-4">
+                    <label class="form-label" for="sq_rp_line">Component</label>
+                    <select id="sq_rp_line" name="line_id" class="form-select" required="required">
+                        <option value="">Kies een component...</option>
+                        <option t-foreach="rp_lines" t-as="line" t-att-value="line.id">
+                            <t t-out="line.product_tmpl_id.display_name"/>
+                            <t t-if="line.lot_id"> (<t t-out="line.lot_id.name"/>)</t>
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="sq_rp_serial">Nieuw serienummer</label>
+                    <input id="sq_rp_serial" type="text" name="serial" class="form-control"
+                           required="required" autocomplete="off"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="sq_rp_note">Opmerking</label>
+                    <input id="sq_rp_note" type="text" name="note" class="form-control"/>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fa fa-exchange me-1"/>Vervangen
+                    </button>
+                </div>
+                <div class="col-12"><small id="sq_rp_feedback" class="d-block"/></div>
+            </form>
+            <script>
+                (function () {
+                    var form = document.querySelector('.sq-rp-form');
+                    if (!form || !window.fetch) { return; }
+                    var line = form.querySelector('#sq_rp_line');
+                    var serial = form.querySelector('#sq_rp_serial');
+                    var feedback = form.querySelector('#sq_rp_feedback');
+                    var timer = null;
+                    function check() {
+                        if (!line.value || !serial.value.trim()) {
+                            feedback.textContent = '';
+                            return;
+                        }
+                        var url = form.dataset.checkUrl + '?line_id=' + encodeURIComponent(line.value)
+                            + '&amp;serial=' + encodeURIComponent(serial.value.trim());
+                        fetch(url, {credentials: 'same-origin'})
+                            .then(function (response) { return response.json(); })
+                            .then(function (result) {
+                                feedback.textContent = result.message || '';
+                                feedback.className = 'd-block ' + (result.ok ? 'text-success' : 'text-danger');
+                            })
+                            .catch(function () { feedback.textContent = ''; });
+                    }
+                    function delayed() {
+                        clearTimeout(timer);
+                        timer = setTimeout(check, 400);
+                    }
+                    serial.addEventListener('input', delayed);
+                    line.addEventListener('change', check);
+                })();
+            </script>
+        </t>
+        <t t-if="rp_history">
+            <h6 class="mt-4">Geregistreerde vervangingen</h6>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr><th>Datum</th><th>Component</th><th>Oud</th><th>Nieuw</th><th>Opmerking</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="rp_history" t-as="rep">
+                            <td><t t-out="rep.date" t-options="{'widget': 'datetime'}"/></td>
+                            <td t-out="rep.product_tmpl_id.display_name"/>
+                            <td><code t-out="rep.old_lot_id.name or '-'"/></td>
+                            <td><code t-out="rep.new_lot_id.name or '-'"/></td>
+                            <td t-out="rep.note or ''"/>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+    </template>
+</odoo>

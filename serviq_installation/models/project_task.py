@@ -53,6 +53,14 @@ class ProjectTask(models.Model):
             self.serviq_installer_id = installation.installer_id
 
     @api.model
+    def _serviq_intervention_domain(self):
+        """Tasks that are interventions: linked to an installation or
+        typed as an intervention (a first installation has no installation
+        yet)."""
+        return ['|', ('serviq_installation_id', '!=', False),
+                ('serviq_intervention_type_id', '!=', False)]
+
+    @api.model
     def _serviq_plan_field(self):
         """Field holding the planned start of an intervention: the planned
         date of Planning / Field Service when installed, else the

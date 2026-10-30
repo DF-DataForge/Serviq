@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="installation_replacement_list_view" model="ir.ui.view">
+        <field name="name">serviq.installation.replacement.list</field>
+        <field name="model">serviq.installation.replacement</field>
+        <field name="arch" type="xml">
+            <list string="Vervangingen" create="0">
+                <field name="date"/>
+                <field name="installation_id" optional="show"/>
+                <field name="task_id"/>
+                <field name="product_tmpl_id"/>
+                <field name="old_lot_id"/>
+                <field name="new_lot_id"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="note" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="installation_form_view_replacement" model="ir.ui.view">
+        <field name="name">serviq.installation.form.replacement</field>
+        <field name="model">serviq.installation</field>
+        <field name="inherit_id" ref="serviq_installation.installation_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='interventions']" position="after">
+                <page string="Vervangingen" name="replacements" invisible="not replacement_ids">
+                    <field name="replacement_ids" readonly="1">
+                        <list>
+                            <field name="date"/>
+                            <field name="task_id"/>
+                            <field name="product_tmpl_id"/>
+                            <field name="old_lot_id"/>
+                            <field name="new_lot_id"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="note" optional="show"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

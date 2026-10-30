@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Section of the flow on the intervention page. Values: task, flow,
+         flow_action (POST url) + those of _flow_values (co_*). -->
+    <template id="flow_section" name="Flow: inbedrijfstelling">
+        <t t-if="co_done">
+            <p class="mb-0">
+                <i class="fa fa-check-circle text-success me-1"/>
+                De inbedrijfstelling is afgerond. Installatie
+                <a t-attf-href="/my/installations/#{co_installation.id}" t-out="co_installation.name"/>
+                staat op <strong t-out="state_labels.get(co_installation.state)"/>.
+            </p>
+        </t>
+        <t t-else="">
+            <p class="text-muted">
+                Vul per component het serienummer en eventueel een opmerking aan. Na het
+                afronden wordt de installatie actief.
+            </p>
+            <form method="post" t-att-action="flow_action">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <p t-if="not co_lines" class="text-muted">Deze installatie heeft geen componenten.</p>
+                <div t-else="" class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Serienummer</th>
+                                <th>Opmerking</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="co_lines" t-as="line">
+                                <td>
+                                    <t t-out="line.product_tmpl_id.display_name"/>
+                                    <small t-if="line.role_id" class="d-block text-muted" t-out="line.role_id.name"/>
+                                </td>
+                                <td style="min-width: 12rem;">
+                                    <input type="text" class="form-control form-control-sm"
+                                           t-att-name="'serial_%d' % line.id"
+                                           t-att-value="line.lot_id.name or ''"
+                                           placeholder="Serienummer" autocomplete="off"/>
+                                </td>
+                                <td style="min-width: 12rem;">
+                                    <input type="text" class="form-control form-control-sm"
+                                           t-att-name="'note_%d' % line.id"
+                                           t-att-value="line.note or ''"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="submit" name="action" value="save" class="btn btn-outline-primary">
+                        <i class="fa fa-save me-1"/>Opslaan
+                    </button>
+                    <button type="submit" name="action" value="finish" class="btn btn-success"
+                            onclick="return confirm('De inbedrijfstelling afronden? De interventie wordt afgesloten.');">
+                        <i class="fa fa-flag-checkered me-1"/>Inbedrijfstelling afronden
+                    </button>
+                </div>
+            </form>
+        </t>
+    </template>
+</odoo>

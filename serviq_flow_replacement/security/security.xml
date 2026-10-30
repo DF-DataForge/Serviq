@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Portal users see the replacements on their own installations (same
+         scope as the installation rule of serviq_portal). -->
+    <record id="rule_installation_replacement_portal" model="ir.rule">
+        <field name="name">Vervanging: portaal ziet vervangingen van eigen installaties</field>
+        <field name="model_id" ref="model_serviq_installation_replacement"/>
+        <field name="domain_force">['|',
+            ('installation_id.distributor_id', 'child_of', [user.commercial_partner_id.id]),
+            ('installation_id.installer_id', 'child_of', [user.commercial_partner_id.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_installation_replacement_company" model="ir.rule">
+        <field name="name">Vervanging: multi-company</field>
+        <field name="model_id" ref="model_serviq_installation_replacement"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

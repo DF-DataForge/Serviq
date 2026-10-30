@@ -1,0 +1,64 @@
+/* Serviq portal: scoped under .sq-portal so the rest of the website is
+   untouched. Neutral colours, based on the Bootstrap variables. */
+
+.sq-portal {
+    --sq-border: var(--border-color, #dee2e6);
+    --sq-radius: .5rem;
+    --sq-accent: var(--primary, var(--bs-primary, #0d6efd));
+}
+
+.sq-portal .sq-card {
+    border: 1px solid var(--sq-border);
+    border-radius: var(--sq-radius);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .04);
+}
+.sq-portal .sq-card h5 {
+    font-weight: 600;
+    margin-bottom: .75rem;
+}
+.sq-portal .sq-flow {
+    border-left: 4px solid var(--sq-accent);
+}
+.sq-portal .sq-nav .nav-link {
+    border-radius: 2rem;
+}
+.sq-portal .sq-type-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+.sq-portal .sq-type-tabs .nav-link {
+    white-space: nowrap;
+}
+
+/* Status badges of installations */
+.sq-portal .sq-state { background: #e9ecef; color: #495057; }
+.sq-portal .sq-state-active { background: #d1e7dd; color: #0f5132; }
+.sq-portal .sq-state-service,
+.sq-portal .sq-state-commissioning { background: #fff3cd; color: #664d03; }
+.sq-portal .sq-state-offline,
+.sq-portal .sq-state-out_of_service { background: #f8d7da; color: #842029; }
+.sq-portal .sq-state-installation,
+.sq-portal .sq-state-delivered { background: #cfe2ff; color: #084298; }
+
+/* Planning calendar */
+.sq-portal .sq-calendar { table-layout: fixed; min-width: 640px; }
+.sq-portal .sq-cal-day { vertical-align: top; height: 7rem; padding: .25rem; }
+.sq-portal .sq-cal-day.sq-cal-week { height: 12rem; }
+.sq-portal .sq-cal-outside { background: #f8f9fa; opacity: .6; }
+.sq-portal .sq-cal-today { background: rgba(13, 110, 253, .06); }
+.sq-portal .sq-cal-today .sq-cal-daynum { font-weight: 700; }
+.sq-portal .sq-chip {
+    font-size: .8rem;
+    margin-top: .25rem;
+    padding: .2rem .4rem;
+    border-radius: .3rem;
+    border-left: 3px solid #fd7e14;
+    background: #fff4e6;
+    color: inherit;
+    text-decoration: none;
+    overflow: hidden;
+}
+.sq-portal .sq-chip:hover { filter: brightness(.97); }
+.sq-portal .sq-chip-done { border-left-color: #198754; background: #e8f5ee; }
+.sq-portal .sq-chip-current { outline: 2px solid var(--sq-accent); }

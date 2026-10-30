@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Technical definition: refreshed on every module update. 'active'
+         is not set here, so enabling / disabling the flow survives. -->
+    <record id="flow_replacement" model="serviq.portal.flow">
+        <field name="name">Vervanging</field>
+        <field name="code">replacement</field>
+        <field name="sequence">30</field>
+        <field name="description">De installateur kiest een vervangbare component van de installatie en registreert het serienummer van het nieuwe onderdeel; de vervanging komt in de historiek van de installatie.</field>
+        <field name="handler_model">serviq.portal.flow.handler.replacement</field>
+        <field name="template">serviq_flow_replacement.flow_section</field>
+        <field name="button_label">Component vervangen</field>
+        <field name="icon">fa-exchange</field>
+        <field name="module">serviq_flow_replacement</field>
+    </record>
+    <!-- Intervention types the flow is shown on: set on install only, then managed
+         in Installaties > Configuratie > Flows. -->
+    <data noupdate="1">
+        <function model="serviq.portal.flow" name="write"
+                  eval="[[ref('flow_replacement')], {'intervention_type_ids': [(6, 0, [ref('serviq_installation.intervention_type_replacement')])]}]"/>
+    </data>
+</odoo>

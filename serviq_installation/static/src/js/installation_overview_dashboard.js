@@ -186,7 +186,7 @@ class InstallationOverviewDashboard extends Component {
             type: "ir.actions.act_window",
             name: _t("Interventies"),
             res_model: "project.task",
-            domain: [["serviq_installation_id", "!=", false]],
+            domain: ["|", ["serviq_installation_id", "!=", false], ["serviq_intervention_type_id", "!=", false]],
             // 'New' creates a field service task.
             context: (this.state.calendar && this.state.calendar.task_context) || { fsm_mode: true },
             views: [

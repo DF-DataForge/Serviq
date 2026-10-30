@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         /my: tiles
+         ============================================================ -->
+    <template id="portal_my_home_serviq" name="Installaties (portaal)"
+              inherit_id="portal.portal_my_home" customize_show="True" priority="45">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
+            <t t-set="portal_service_category_enable" t-value="True"/>
+        </xpath>
+        <div id="portal_service_category" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/serviq_portal/static/description/icon.png'"/>
+                <t t-set="title">Installaties</t>
+                <t t-set="url" t-value="'/my/installations'"/>
+                <t t-set="text">Uw installaties, componenten en serienummers</t>
+                <t t-set="placeholder_count" t-value="'serviq_installation_count'"/>
+            </t>
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/project/static/src/img/tasks.svg'"/>
+                <t t-set="title">Open interventies</t>
+                <t t-set="url" t-value="'/my/installations/interventions'"/>
+                <t t-set="text">Interventies op te volgen en planning</t>
+                <t t-set="placeholder_count" t-value="'serviq_intervention_count'"/>
+            </t>
+        </div>
+    </template>
+
+    <template id="portal_breadcrumbs_serviq" name="Installaties: kruimelpad"
+              inherit_id="portal.portal_breadcrumbs" priority="45">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <t t-if="page_name and page_name.startswith('serviq_')">
+                <li t-if="page_name == 'serviq_installations'" class="breadcrumb-item">Installaties</li>
+                <li t-elif="page_name in ('serviq_installation', 'serviq_interventions', 'serviq_planning', 'serviq_intervention')"
+                    class="breadcrumb-item"><a href="/my/installations">Installaties</a></li>
+                <li t-if="page_name == 'serviq_installation'" class="breadcrumb-item active"
+                    t-out="installation.name"/>
+                <li t-if="page_name == 'serviq_interventions'" class="breadcrumb-item">Interventies</li>
+                <li t-if="page_name == 'serviq_planning'" class="breadcrumb-item">Planning</li>
+                <t t-if="page_name == 'serviq_intervention'">
+                    <li class="breadcrumb-item"><a href="/my/installations/interventions">Interventies</a></li>
+                    <li class="breadcrumb-item active" t-out="task.name"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- ============================================================
+         Shared parts
+         ============================================================ -->
+    <template id="portal_nav" name="Installaties: navigatie">
+        <ul class="nav nav-pills sq-nav mb-3">
+            <li class="nav-item">
+                <a href="/my/installations"
+                   t-attf-class="nav-link #{'active' if page_name in ('serviq_installations', 'serviq_installation') else ''}">
+                    <i class="fa fa-cubes me-1"/>Installaties
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/my/installations/interventions"
+                   t-attf-class="nav-link #{'active' if page_name in ('serviq_interventions', 'serviq_intervention') else ''}">
+                    <i class="fa fa-wrench me-1"/>Interventies
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/my/installations/planning"
+                   t-attf-class="nav-link #{'active' if page_name == 'serviq_planning' else ''}">
+                    <i class="fa fa-calendar me-1"/>Planning
+                </a>
+            </li>
+        </ul>
+    </template>
+
+    <template id="portal_alerts" name="Installaties: meldingen">
+        <div t-if="message" class="alert alert-success" role="status">
+            <i class="fa fa-check-circle me-1"/><t t-out="message"/>
+        </div>
+        <div t-if="error" class="alert alert-danger" role="alert">
+            <i class="fa fa-exclamation-triangle me-1"/><t t-out="error"/>
+        </div>
+    </template>
+
+    <template id="installation_state_badge" name="Installaties: statusbadge">
+        <span t-attf-class="badge rounded-pill sq-state sq-state-#{rec.state}"
+              t-out="state_labels.get(rec.state) or '-'"/>
+    </template>
+
+    <template id="task_state_badge" name="Interventies: statusbadge">
+        <span t-if="t.state == '1_done' or t._serviq_is_finished()" class="badge rounded-pill text-bg-success">Afgerond</span>
+        <span t-elif="t.state == '1_canceled'" class="badge rounded-pill text-bg-secondary">Geannuleerd</span>
+        <span t-else="" class="badge rounded-pill text-bg-warning">Open</span>
+    </template>
+
+    <template id="portal_no_access" name="Installaties: geen toegang">
+        <t t-call="portal.portal_layout">
+            <div class="sq-portal py-5">
+                <h2>Geen toegang</h2>
+                <p class="text-muted">
+                    Deze pagina is enkel beschikbaar voor installateurs en distributeurs,
+                    voor hun eigen installaties en interventies. Neem contact op met uw
+                    beheerder als u denkt dat dit niet klopt.
+                </p>
+                <a href="/my" class="btn btn-secondary">Terug naar mijn account</a>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================================
+         Installations
+         ============================================================ -->
+    <template id="portal_installation_list" name="Installaties: lijst">
+        <t t-call="portal.portal_layout">
+            <div class="sq-portal py-3">
+                <t t-call="serviq_portal.portal_nav"/>
+                <form method="get" action="/my/installations" class="row g-2 mb-3">
+                    <div class="col-sm-6">
+                        <input type="search" name="search" class="form-control" t-att-value="search"
+                               placeholder="Zoek op referentie, klant of serienummer"/>
+                    </div>
+                    <div class="col-sm-4">
+                        <select name="state" class="form-select">
+                            <option value="">Alle statussen</option>
+                            <t t-foreach="state_labels.items()" t-as="item">
+                                <option t-att-value="item[0]" t-att-selected="state == item[0]"
+                                        t-out="item[1]"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-sm-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fa fa-search me-1"/>Zoeken
+                        </button>
+                    </div>
+                </form>
+                <t t-if="not installations">
+                    <div class="alert alert-info">Geen installaties gevonden.</div>
+                </t>
+                <t t-else="">
+                    <t t-call="portal.portal_table">
+                        <thead>
+                            <tr>
+                                <th>Installatie</th>
+                                <th>Klant</th>
+                                <th class="d-none d-md-table-cell">Distributeur</th>
+                                <th class="d-none d-md-table-cell">Installateur</th>
+                                <th>Serienummer</th>
+                                <th class="text-end">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="installations" t-as="rec">
+                                <td><a t-attf-href="/my/installations/#{rec.id}" t-out="rec.name"/></td>
+                                <td>
+                                    <t t-out="rec.customer_id.name or '-'"/>
+                                    <small t-if="rec.customer_id.city" class="d-block text-muted" t-out="rec.customer_id.city"/>
+                                </td>
+                                <td class="d-none d-md-table-cell" t-out="rec.distributor_id.name or '-'"/>
+                                <td class="d-none d-md-table-cell" t-out="rec.installer_id.name or '-'"/>
+                                <td><code t-if="rec.lot_id" t-out="rec.lot_id.name"/></td>
+                                <td class="text-end"><t t-call="serviq_portal.installation_state_badge"/></td>
+                            </tr>
+                        </tbody>
+                    </t>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_installation_detail" name="Installaties: detail">
+        <t t-call="portal.portal_layout">
+            <div class="sq-portal py-3">
+                <t t-call="serviq_portal.portal_nav"/>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div>
+                        <h2 class="mb-0" t-out="installation.name"/>
+                        <span class="text-muted" t-out="installation.category_id.name"/>
+                    </div>
+                    <t t-set="rec" t-value="installation"/>
+                    <t t-call="serviq_portal.installation_state_badge"/>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="card sq-card h-100"><div class="card-body">
+                            <h5><i class="fa fa-cube me-2"/>Installatie</h5>
+                            <dl class="row mb-0">
+                                <dt class="col-5">Referentie</dt><dd class="col-7" t-out="installation.code or '-'"/>
+                                <dt class="col-5">Product</dt><dd class="col-7" t-out="installation.product_tmpl_id.display_name"/>
+                                <dt class="col-5">Serienummer</dt>
+                                <dd class="col-7"><code t-if="installation.lot_id" t-out="installation.lot_id.name"/><t t-else="">-</t></dd>
+                                <dt class="col-5">Distributeur</dt><dd class="col-7" t-out="installation.distributor_id.name or '-'"/>
+                                <dt class="col-5">Installateur</dt><dd class="col-7" t-out="installation.installer_id.name or '-'"/>
+                            </dl>
+                        </div></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card sq-card h-100"><div class="card-body">
+                            <h5><i class="fa fa-user me-2"/>Klant</h5>
+                            <t t-set="customer" t-value="installation.customer_id"/>
+                            <div t-if="customer">
+                                <strong t-out="customer.name"/>
+                                <div t-out="customer" t-options="{'widget': 'contact', 'fields': ['address', 'phone', 'email'], 'no_marker': False}"/>
+                            </div>
+                            <div t-else="" class="text-muted">Geen klant ingesteld.</div>
+                            <div t-if="installation.contact_person_name" class="mt-2">
+                                <strong>Contactpersoon:</strong>
+                                <t t-out="installation.contact_person_name"/>
+                                <t t-if="installation.contact_person_phone">
+                                    (<a t-attf-href="tel:#{installation.contact_person_phone}" t-out="installation.contact_person_phone"/>)
+                                </t>
+                            </div>
+                        </div></div>
+                    </div>
+                </div>
+
+                <div class="card sq-card mb-3" id="components">
+                    <div class="card-body">
+                        <h5><i class="fa fa-puzzle-piece me-2"/>Componenten</h5>
+                        <t t-call="serviq_portal.installation_components">
+                            <t t-set="lines" t-value="installation.line_ids"/>
+                        </t>
+                    </div>
+                </div>
+
+                <div class="card sq-card mb-3" id="interventions">
+                    <div class="card-body">
+                        <h5><i class="fa fa-wrench me-2"/>Interventies</h5>
+                        <p t-if="not tasks" class="text-muted mb-0">Nog geen interventies.</p>
+                        <t t-call="serviq_portal.intervention_rows">
+                            <t t-set="rows" t-value="tasks"/>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="installation_components" name="Installaties: componenten">
+        <p t-if="not lines" class="text-muted mb-0">Geen componenten.</p>
+        <div t-else="" class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th class="d-none d-sm-table-cell">Rol</th>
+                        <th>Serienummer</th>
+                        <th class="d-none d-md-table-cell">Opmerking</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr t-foreach="lines" t-as="line">
+                        <td>
+                            <t t-out="line.product_tmpl_id.display_name"/>
+                            <small t-if="line.rack_number" class="text-muted"> (rack <t t-out="line.rack_number"/>)</small>
+                            <ul t-if="line.sub_installation_id.line_ids" class="list-unstyled small text-muted mb-0 ms-3">
+                                <li t-foreach="line.sub_installation_id.line_ids" t-as="sub">
+                                    <t t-out="sub.product_tmpl_id.display_name"/>
+                                    <code t-if="sub.lot_id" t-out="sub.lot_id.name"/>
+                                </li>
+                            </ul>
+                        </td>
+                        <td class="d-none d-sm-table-cell" t-out="line.role_id.name or '-'"/>
+                        <td>
+                            <code t-if="line.lot_id" t-out="line.lot_id.name"/>
+                            <span t-elif="line.serial_photo" class="badge text-bg-info">Foto</span>
+                            <span t-else="" class="text-muted">-</span>
+                        </td>
+                        <td class="d-none d-md-table-cell" t-out="line.note or ''"/>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <!-- ============================================================
+         Interventions
+         ============================================================ -->
+    <template id="intervention_rows" name="Interventies: rijen">
+        <t t-set="row_plan_field" t-value="plan_field or request.env['project.task']._serviq_plan_field()"/>
+        <div t-if="rows" class="table-responsive">
+            <table class="table table-sm align-middle mb-0 sq-clickable">
+                <thead>
+                    <tr>
+                        <th>Interventie</th>
+                        <th>Type</th>
+                        <th class="d-none d-md-table-cell">Klant</th>
+                        <th class="d-none d-md-table-cell">Installateur</th>
+                        <th>Gepland</th>
+                        <th class="text-center">Status</th>
+                        <th t-if="task_flows" class="text-end"/>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr t-foreach="rows" t-as="t">
+                        <td>
+                            <a t-attf-href="/my/installations/intervention/#{t.id}" t-out="t.name"/>
+                            <small t-if="t.serviq_installation_id" class="d-block text-muted" t-out="t.serviq_installation_id.name"/>
+                        </td>
+                        <td t-out="t.serviq_intervention_type_id.name or '-'"/>
+                        <td class="d-none d-md-table-cell">
+                            <t t-out="t.partner_id.name or '-'"/>
+                            <small t-if="t.partner_id.city" class="d-block text-muted" t-out="t.partner_id.city"/>
+                        </td>
+                        <td class="d-none d-md-table-cell" t-out="t.serviq_installer_id.name or '-'"/>
+                        <td><t t-out="t[row_plan_field]" t-options="{'widget': 'datetime'}"/></td>
+                        <td class="text-center"><t t-call="serviq_portal.task_state_badge"/></td>
+                        <td t-if="task_flows" class="text-end">
+                            <t t-set="row_flow" t-value="task_flows.get(t.id)"/>
+                            <a t-if="row_flow" class="btn btn-sm btn-primary"
+                               t-attf-href="/my/installations/intervention/#{t.id}#flow-#{row_flow.code}">
+                                <i t-attf-class="fa #{row_flow.icon or 'fa-arrow-right'} me-1"/>
+                                <t t-out="row_flow.button_label or row_flow.name"/>
+                            </a>
+                            <a t-else="" class="btn btn-sm btn-outline-primary"
+                               t-attf-href="/my/installations/intervention/#{t.id}">Openen</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <template id="portal_intervention_list" name="Interventies: lijst">
+        <t t-call="portal.portal_layout">
+            <div class="sq-portal py-3">
+                <t t-call="serviq_portal.portal_nav"/>
+                <div class="d-flex flex-wrap gap-2 justify-content-between mb-2">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <t t-foreach="[('open', 'Open'), ('done', 'Afgerond'), ('all', 'Alle')]" t-as="opt">
+                            <a t-attf-href="/my/installations/interventions?status=#{opt[0]}#{'&amp;type_id=%s' % type_id if type_id else ''}"
+                               t-attf-class="btn #{'btn-primary' if status == opt[0] else 'btn-outline-primary'}"
+                               t-out="opt[1]"/>
+                        </t>
+                    </div>
+                </div>
+                <!-- One tab per intervention type (configuration data) -->
+                <ul class="nav nav-tabs sq-type-tabs mb-3">
+                    <li class="nav-item">
+                        <a t-attf-href="/my/installations/interventions?status=#{status}"
+                           t-attf-class="nav-link #{'active' if not type_id else ''}">
+                            Alle <span class="badge text-bg-light" t-out="total_all"/>
+                        </a>
+                    </li>
+                    <t t-foreach="type_tabs" t-as="tab">
+                        <li t-if="tab['count'] or tab['type'].id == type_id" class="nav-item">
+                            <a t-attf-href="/my/installations/interventions?status=#{status}&amp;type_id=#{tab['type'].id}"
+                               t-attf-class="nav-link #{'active' if tab['type'].id == type_id else ''}">
+                                <t t-out="tab['type'].name"/>
+                                <span class="badge text-bg-light" t-out="tab['count']"/>
+                            </a>
+                        </li>
+                    </t>
+                </ul>
+                <div t-if="not tasks" class="alert alert-info">Geen interventies gevonden.</div>
+                <t t-else="">
+                    <t t-call="serviq_portal.intervention_rows">
+                        <t t-set="rows" t-value="tasks"/>
+                    </t>
+                    <div t-if="pager" class="o_portal_pager d-flex justify-content-center my-3">
+                        <t t-call="portal.pager"/>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <!-- ============================================================
+         Planning (calendar data of serviq.installation)
+         ============================================================ -->
+    <template id="portal_planning" name="Interventies: planning">
+        <t t-call="portal.portal_layout">
+            <div class="sq-portal py-3">
+                <t t-call="serviq_portal.portal_nav"/>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h3 class="mb-0 text-capitalize" t-out="cal['label']"/>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a t-att-href="url('month', cal['anchor'])"
+                               t-attf-class="btn #{'btn-primary' if scope == 'month' else 'btn-outline-primary'}">Maand</a>
+                            <a t-att-href="url('week', cal['anchor'])"
+                               t-attf-class="btn #{'btn-primary' if scope == 'week' else 'btn-outline-primary'}">Week</a>
+                            <a t-att-href="url('day', cal['anchor'])"
+                               t-attf-class="btn #{'btn-primary' if scope == 'day' else 'btn-outline-primary'}">Dag</a>
+                        </div>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a t-att-href="url(scope, cal['prev'])" class="btn btn-outline-secondary" title="Vorige">
+                                <i class="fa fa-chevron-left"/>
+                            </a>
+                            <a t-att-href="url(scope, cal['today'])" class="btn btn-outline-secondary">Vandaag</a>
+                            <a t-att-href="url(scope, cal['next'])" class="btn btn-outline-secondary" title="Volgende">
+                                <i class="fa fa-chevron-right"/>
+                            </a>
+                        </div>
+                        <form t-if="cal['installers']" method="get" action="/my/installations/planning" class="d-flex">
+                            <input type="hidden" name="scope" t-att-value="scope"/>
+                            <input type="hidden" name="date" t-att-value="cal['anchor']"/>
+                            <select name="installer_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">Alle installateurs</option>
+                                <option value="-1" t-att-selected="installer_id == -1">Zonder installateur</option>
+                                <t t-foreach="cal['installers']" t-as="inst">
+                                    <option t-att-value="inst[0]" t-att-selected="installer_id == inst[0]" t-out="inst[1]"/>
+                                </t>
+                            </select>
+                        </form>
+                    </div>
+                </div>
+
+                <div t-if="scope in ('month', 'week')" class="table-responsive card sq-card mb-3">
+                    <table class="table table-bordered sq-calendar mb-0">
+                        <thead>
+                            <tr>
+                                <th t-foreach="weekday_labels" t-as="wd" class="text-center small text-muted" t-out="wd"/>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="cal['weeks']" t-as="week">
+                                <td t-foreach="week" t-as="day"
+                                    t-attf-class="sq-cal-day #{'sq-cal-outside' if scope == 'month' and day['month'] != cal['anchor_month'] else ''} #{'sq-cal-today' if day['date'] == cal['today'] else ''} #{'sq-cal-week' if scope == 'week' else ''}">
+                                    <a t-att-href="url('day', day['date'])" class="small text-decoration-none sq-cal-daynum" t-out="day['day']"/>
+                                    <t t-foreach="cal['tasks_by_day'].get(day['date'], [])" t-as="item">
+                                        <t t-call="serviq_portal.planning_chip"/>
+                                    </t>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div t-if="scope == 'day'" class="card sq-card mb-3"><div class="card-body">
+                    <t t-set="day_items" t-value="cal['tasks_by_day'].get(cal['day'], [])"/>
+                    <p t-if="not day_items" class="text-muted text-center my-3">Geen interventies op deze dag.</p>
+                    <t t-foreach="day_items" t-as="item">
+                        <t t-call="serviq_portal.planning_chip"/>
+                    </t>
+                </div></div>
+
+                <div t-if="cal['without_date']" class="card sq-card"><div class="card-body">
+                    <h5>Nog niet ingepland</h5>
+                    <t t-foreach="cal['without_date']" t-as="item">
+                        <t t-call="serviq_portal.planning_chip"/>
+                    </t>
+                </div></div>
+            </div>
+        </t>
+    </template>
+
+    <template id="planning_chip" name="Interventies: kalenderitem">
+        <a t-attf-href="/my/installations/intervention/#{item['id']}"
+           t-attf-class="sq-chip d-block #{'sq-chip-done' if item['done'] else ''} #{'sq-chip-current' if item['current'] else ''}">
+            <span t-if="item['start']" class="fw-bold">
+                <t t-out="item['start']"/><t t-if="item['end']">-<t t-out="item['end']"/></t>
+            </span>
+            <span t-out="item['name']"/>
+            <small t-if="item['type']" class="d-block text-truncate" t-out="item['type']"/>
+            <small t-if="item['partner']" class="d-block text-truncate">
+                <i class="fa fa-user me-1"/><t t-out="item['partner']"/><t t-if="item['city']">, <t t-out="item['city']"/></t>
+            </small>
+        </a>
+    </template>
+
+    <!-- ============================================================
+         Intervention page: generic parts + the sections of the flows
+         ============================================================ -->
+    <template id="portal_intervention_detail" name="Interventies: detail">
+        <t t-call="portal.portal_layout">
+            <div class="sq-portal py-3">
+                <t t-call="serviq_portal.portal_nav"/>
+                <t t-call="serviq_portal.portal_alerts"/>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div>
+                        <h2 class="mb-0" t-out="task.name"/>
+                        <span class="text-muted" t-out="task.serviq_intervention_type_id.name"/>
+                    </div>
+                    <t t-set="t" t-value="task"/>
+                    <t t-call="serviq_portal.task_state_badge"/>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="card sq-card h-100"><div class="card-body">
+                            <h5><i class="fa fa-info-circle me-2"/>Interventie</h5>
+                            <dl class="row mb-0">
+                                <dt class="col-5">Gepland</dt>
+                                <dd class="col-7"><t t-out="task[plan_field]" t-options="{'widget': 'datetime'}"/><t t-if="not task[plan_field]">-</t></dd>
+                                <dt class="col-5">Installateur</dt><dd class="col-7" t-out="task.serviq_installer_id.name or '-'"/>
+                                <dt class="col-5">Distributeur</dt><dd class="col-7" t-out="task.serviq_distributor_id.name or '-'"/>
+                                <dt class="col-5">Fase</dt><dd class="col-7" t-out="task.stage_id.name or '-'"/>
+                                <t t-if="task.date_end">
+                                    <dt class="col-5">Afgerond op</dt>
+                                    <dd class="col-7"><t t-out="task.date_end" t-options="{'widget': 'datetime'}"/></dd>
+                                </t>
+                                <dt class="col-5">Installatie</dt>
+                                <dd class="col-7">
+                                    <a t-if="installation" t-attf-href="/my/installations/#{installation.id}" t-out="installation.name"/>
+                                    <t t-else="">-</t>
+                                </dd>
+                            </dl>
+                        </div></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card sq-card h-100"><div class="card-body">
+                            <h5><i class="fa fa-user me-2"/>Klant</h5>
+                            <t t-if="task.partner_id">
+                                <strong t-out="task.partner_id.name"/>
+                                <div t-out="task.partner_id" t-options="{'widget': 'contact', 'fields': ['address', 'phone', 'email'], 'no_marker': False}"/>
+                                <a t-if="maps_url" t-att-href="maps_url" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary mt-2">
+                                    <i class="fa fa-map-marker me-1"/>Route
+                                </a>
+                            </t>
+                            <div t-else="" class="text-muted">Geen klant ingesteld.</div>
+                        </div></div>
+                    </div>
+                </div>
+
+                <div t-if="installation" class="card sq-card mb-3" id="components">
+                    <div class="card-body">
+                        <h5><i class="fa fa-puzzle-piece me-2"/>Componenten van <t t-out="installation.name"/></h5>
+                        <t t-call="serviq_portal.installation_components">
+                            <t t-set="lines" t-value="installation.line_ids"/>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- Flows: one section per active flow applying to this intervention -->
+                <t t-foreach="flow_sections" t-as="section">
+                    <div class="card sq-card sq-flow mb-3" t-att-id="'flow-%s' % section['flow'].code">
+                        <div class="card-body">
+                            <h5>
+                                <i t-attf-class="fa #{section['flow'].icon or 'fa-cogs'} me-2"/>
+                                <t t-out="section['flow'].name"/>
+                            </h5>
+                            <t t-call="{{ section['template'] }}" t-args="section['values']"
+                               flow_action="section['action']"/>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- Report / notes -->
+                <div class="card sq-card mb-3" id="report">
+                    <div class="card-body">
+                        <h5><i class="fa fa-pencil-square-o me-2"/>Rapport en notities</h5>
+                        <form method="post" t-attf-action="/my/installations/intervention/#{task.id}/report">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <textarea name="report" rows="6" class="form-control mb-2"
+                                      placeholder="Wat werd er gedaan, vaststellingen, opmerkingen..."
+                                      t-out="report_text"/>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-save me-1"/>Opslaan
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Hours (timesheets) -->
+                <div t-if="timesheets_enabled" class="card sq-card mb-3" id="hours">
+                    <div class="card-body">
+                        <h5><i class="fa fa-clock-o me-2"/>Uren</h5>
+                        <form method="post" t-attf-action="/my/installations/intervention/#{task.id}/hours"
+                              class="row g-2 align-items-end">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <div class="col-sm-5">
+                                <label class="form-label" for="sq_arrival">Aankomst</label>
+                                <input id="sq_arrival" type="datetime-local" name="arrival" class="form-control" required="required"/>
+                            </div>
+                            <div class="col-sm-5">
+                                <label class="form-label" for="sq_departure">Vertrek</label>
+                                <input id="sq_departure" type="datetime-local" name="departure" class="form-control" required="required"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <button type="submit" class="btn btn-primary w-100">Loggen</button>
+                            </div>
+                        </form>
+                        <table t-if="timesheets" class="table table-sm mt-3 mb-0">
+                            <thead>
+                                <tr><th>Datum</th><th>Werknemer</th><th>Omschrijving</th><th class="text-end">Uren</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="timesheets" t-as="line">
+                                    <td><t t-out="line.date" t-options="{'widget': 'date'}"/></td>
+                                    <td t-out="line.employee_id.name or '-'"/>
+                                    <td t-out="line.name or ''"/>
+                                    <td class="text-end"><t t-out="line.unit_amount" t-options="{'widget': 'float_time'}"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Mark done / reopen -->
+                <div class="card sq-card mb-3" id="state">
+                    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <span t-if="is_closed" class="text-muted">Deze interventie is afgerond.</span>
+                        <span t-else="" class="text-muted">Klaar met deze interventie?</span>
+                        <form method="post" t-attf-action="/my/installations/intervention/#{task.id}/state">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button t-if="not is_closed" type="submit" name="action" value="done" class="btn btn-success">
+                                <i class="fa fa-check me-1"/>Afronden
+                            </button>
+                            <button t-elif="task.state == '1_done'" type="submit" name="action" value="reopen" class="btn btn-outline-secondary">
+                                <i class="fa fa-undo me-1"/>Heropenen
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

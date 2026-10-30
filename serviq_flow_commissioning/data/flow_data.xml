@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Technical definition: refreshed on every module update. 'active'
+         is not set here, so enabling / disabling the flow survives. -->
+    <record id="flow_commissioning" model="serviq.portal.flow">
+        <field name="name">Inbedrijfstelling</field>
+        <field name="code">commissioning</field>
+        <field name="sequence">20</field>
+        <field name="description">De installateur vult per component het serienummer en een opmerking aan en rondt de inbedrijfstelling af; de installatie wordt daarna actief.</field>
+        <field name="handler_model">serviq.portal.flow.handler.commissioning</field>
+        <field name="template">serviq_flow_commissioning.flow_section</field>
+        <field name="button_label">Inbedrijfstelling</field>
+        <field name="icon">fa-cogs</field>
+        <field name="module">serviq_flow_commissioning</field>
+    </record>
+    <!-- Intervention types the flow is shown on: set on install only, then managed
+         in Installaties > Configuratie > Flows. -->
+    <data noupdate="1">
+        <function model="serviq.portal.flow" name="write"
+                  eval="[[ref('flow_commissioning')], {'intervention_type_ids': [(6, 0, [ref('serviq_installation.intervention_type_commissioning')])]}]"/>
+    </data>
+</odoo>

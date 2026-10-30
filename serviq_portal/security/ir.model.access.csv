@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_portal_flow_internal,serviq.portal.flow internal,model_serviq_portal_flow,base.group_user,1,0,0,0
+access_portal_flow_manager,serviq.portal.flow manager,model_serviq_portal_flow,serviq_installation.group_installation_manager,1,1,1,1
+access_portal_flow_portal,serviq.portal.flow portal,model_serviq_portal_flow,base.group_portal,1,0,0,0
+access_installation_portal,serviq.installation portal,serviq_installation.model_serviq_installation,base.group_portal,1,0,0,0
+access_installation_line_portal,serviq.installation.line portal,serviq_installation.model_serviq_installation_line,base.group_portal,1,0,0,0
+access_installation_category_portal,serviq.installation.category portal,serviq_installation.model_serviq_installation_category,base.group_portal,1,0,0,0
+access_component_role_portal,serviq.component.role portal,serviq_installation.model_serviq_component_role,base.group_portal,1,0,0,0
+access_intervention_type_portal,serviq.intervention.type portal,serviq_installation.model_serviq_intervention_type,base.group_portal,1,0,0,0

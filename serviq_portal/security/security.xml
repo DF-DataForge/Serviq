@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Record rules for portal users.
+
+    A portal user is matched through its commercial partner (the company of
+    the contact): it sees the installations where that company (or one of
+    its contacts) is the distributor or the installer, their components,
+    and the interventions where it is the installer or the distributor.
+
+    The rules only apply to base.group_portal, so internal users keep their
+    unrestricted access (apart from the multi-company rule of the core).
+    The portal pages read through sudo() with explicit access checks in the
+    controller; these rules keep direct (RPC) access in line with them.
+-->
+<odoo>
+    <record id="rule_installation_portal" model="ir.rule">
+        <field name="name">Installatie: portaal ziet eigen installaties</field>
+        <field name="model_id" ref="serviq_installation.model_serviq_installation"/>
+        <field name="domain_force">['|',
+            ('distributor_id', 'child_of', [user.commercial_partner_id.id]),
+            ('installer_id', 'child_of', [user.commercial_partner_id.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_installation_line_portal" model="ir.rule">
+        <field name="name">Installatiecomponent: portaal ziet componenten van eigen installaties</field>
+        <field name="model_id" ref="serviq_installation.model_serviq_installation_line"/>
+        <field name="domain_force">['|',
+            ('installation_id.distributor_id', 'child_of', [user.commercial_partner_id.id]),
+            ('installation_id.installer_id', 'child_of', [user.commercial_partner_id.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Read only: added to (OR-ed with) the portal rules of Project. -->
+    <record id="rule_intervention_portal" model="ir.rule">
+        <field name="name">Interventie: portaal ziet interventies als installateur of distributeur</field>
+        <field name="model_id" ref="project.model_project_task"/>
+        <field name="domain_force">['&amp;', ('serviq_intervention_type_id', '!=', False), '|',
+            ('serviq_installer_id', 'child_of', [user.commercial_partner_id.id]),
+            ('serviq_distributor_id', 'child_of', [user.commercial_partner_id.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+</odoo>

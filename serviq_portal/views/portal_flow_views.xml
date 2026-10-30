@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="portal_flow_list_view" model="ir.ui.view">
+        <field name="name">serviq.portal.flow.list</field>
+        <field name="model">serviq.portal.flow</field>
+        <field name="arch" type="xml">
+            <list string="Flows">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="intervention_type_ids" widget="many2many_tags"/>
+                <field name="installation_category_ids" widget="many2many_tags" optional="hide"/>
+                <field name="module" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="portal_flow_form_view" model="ir.ui.view">
+        <field name="name">serviq.portal.flow.form</field>
+        <field name="model">serviq.portal.flow</field>
+        <field name="arch" type="xml">
+            <form string="Flow">
+                <sheet>
+                    <widget name="web_ribbon" title="Uitgeschakeld" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="bv. Eerste installatie"/></h1>
+                    </div>
+                    <group>
+                        <group name="portal" string="Portaal">
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="intervention_type_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                            <field name="installation_category_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                            <field name="button_label"/>
+                            <field name="icon"/>
+                        </group>
+                        <group name="technical" string="Technisch">
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="handler_model"/>
+                            <field name="template"/>
+                            <field name="module"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="Wat doet deze flow in het portaal?"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="portal_flow_search_view" model="ir.ui.view">
+        <field name="name">serviq.portal.flow.search</field>
+        <field name="model">serviq.portal.flow</field>
+        <field name="arch" type="xml">
+            <search string="Flows">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="intervention_type_ids"/>
+                <filter string="Actief" name="enabled" domain="[('active', '=', True)]"/>
+                <filter string="Uitgeschakeld" name="disabled" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="portal_flow_action" model="ir.actions.act_window">
+        <field name="name">Flows</field>
+        <field name="res_model">serviq.portal.flow</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Geen flows geïnstalleerd</p>
+            <p>Flows zijn aparte modules (Installaties &gt; Configuratie &gt; Instellingen).
+               Elke geïnstalleerde flow verschijnt hier en kan aan- of uitgezet worden.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_portal_flow" parent="serviq_installation.menu_installation_config"
+              name="Flows" action="portal_flow_action" sequence="40"/>
+</odoo>
