@@ -18,6 +18,7 @@ zonder klantnamen, logo's of hardgecodeerde producten.
 | `serviq_flow_commissioning` | optioneel | Flow: componentgegevens aanvullen en inbedrijfstelling afronden |
 | `serviq_flow_replacement` | optioneel | Flow: component vervangen met historiek |
 | `serviq_flow_refrigerant` | optioneel | Flow: registratie van een koeltechnisch systeem en zijn koudemiddellogboek (F-gassenverordening): ton CO2-eq, logboek- en lekcontroleplicht, gecertificeerde technicus/bedrijf, flesbalans, PDF-logboek |
+| `serviq_demo_hvac` | nee, alleen demo | Demobedrijf: Belgische airco-installateur met een Stoqflow-fulfilmentmagazijn (vereist `webship`), units met serienummers, montagekits, reserveonderdelen, installatiepakketten, installaties, herstellingen en enkele weken historiek. Zie `serviq_demo_hvac/README.md` |
 
 Alle optionele modules zijn aan of uit te zetten via
 **Installaties > Configuratie > Instellingen** (aanvinken installeert de
