@@ -1,0 +1,89 @@
+/* Maps of the installations: overview panel, full page and the location
+   on the installation form. Markers in the colour of the status. */
+.sq-map-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.sq-map-legend { display: flex; flex-wrap: wrap; gap: 6px; }
+.sq-map-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #dee2e6;
+    background: #fff;
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 12px;
+}
+.sq-map-legend-item.sq-map-legend-off { opacity: 0.4; }
+.sq-map-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+
+.sq-map-wrap { position: relative; }
+.sq-map {
+    height: 460px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+    background: #e9ecef;
+}
+.sq-map-full { padding: 16px; height: 100%; overflow: auto; }
+.sq-map-full .sq-map { height: calc(100vh - 220px); min-height: 420px; }
+.sq-map-small { height: 260px; }
+.sq-map-location { width: 100%; }
+.sq-map-msg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #495057;
+    pointer-events: none;
+    z-index: 500;
+}
+.sq-map-msg-light {
+    inset: auto 8px 8px 8px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+.sq-map .leaflet-container, .sq-map.leaflet-container { font-family: inherit; }
+
+.sq-map-marker { background: transparent; border: none; }
+.sq-map-marker-inner {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+/* Status colours (same meaning as the badges of the installation). */
+.sq-map-state-delivered, .sq-map-state-installation { background: #0d6efd; }
+.sq-map-state-commissioning { background: #6f42c1; }
+.sq-map-state-active { background: #198754; }
+.sq-map-state-service { background: #fd7e14; }
+.sq-map-state-offline { background: #dc3545; }
+.sq-map-state-out_of_service { background: #6c757d; }
+.sq-map-state-none { background: #adb5bd; }
+
+.sq-map-tooltip { min-width: 200px; }
+.sq-map-tooltip-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+.sq-map-status {
+    color: #fff;
+    border-radius: 8px;
+    padding: 0 6px;
+    font-size: 11px;
+}
+.sq-map-tooltip-product { font-weight: 600; margin-bottom: 4px; }
+.sq-map-tooltip-line i { width: 16px; color: #6c757d; }

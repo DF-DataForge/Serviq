@@ -10,6 +10,10 @@
                 <app data-string="Installaties" string="Installaties" name="serviq_installation"
                      groups="serviq_installation.group_installation_manager">
                     <block title="Modules" name="serviq_modules">
+                        <setting id="serviq_installation_map" string="Kaart"
+                                 help="Locatie van elke installatie op een kaart: op de installatie, op het overzicht en als volledige kaart.">
+                            <field name="module_serviq_installation_map"/>
+                        </setting>
                         <setting id="serviq_logistics" string="Logistieke dashboards"
                                  help="Voorraad, serienummers, inkomende en uitgaande goederen en reserveonderdelen.">
                             <field name="module_serviq_logistics"/>

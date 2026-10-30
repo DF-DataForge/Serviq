@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_installation_map.InstallationMap">
+        <div t-attf-class="sq-in-section sq-map-overview {{ fullPage ? 'sq-map-full o_action' : '' }}">
+            <div class="sq-map-header">
+                <h4 class="mb-0"><i class="fa fa-map-marker me-2"/>Kaart van de installaties</h4>
+                <div class="sq-map-legend">
+                    <t t-foreach="state.states" t-as="st" t-key="st[0]">
+                        <button type="button"
+                                t-attf-class="sq-map-legend-item {{ state.hidden[st[0]] ? 'sq-map-legend-off' : '' }}"
+                                t-on-click="() => this.toggleState(st[0])">
+                            <span t-attf-class="sq-map-dot sq-map-state-{{ st[0] }}"/>
+                            <t t-esc="st[1]"/>
+                            <span class="text-muted ms-1">(<t t-esc="state.counts[st[0]] || 0"/>)</span>
+                        </button>
+                    </t>
+                    <button t-if="filtered" type="button" class="btn btn-link btn-sm py-0"
+                            t-on-click="showAll">Alle tonen</button>
+                </div>
+            </div>
+            <!-- Leaflet owns the map element: messages are kept outside it. -->
+            <div class="sq-map-wrap">
+                <div class="sq-map" t-ref="map"/>
+                <div t-if="state.loading" class="sq-map-msg">
+                    <i class="fa fa-spinner fa-spin me-2"/>Kaart laden...
+                </div>
+                <div t-if="state.error" class="sq-map-msg">
+                    De kaart kon niet geladen worden.
+                </div>
+            </div>
+            <div t-if="state.missing" class="text-muted small mt-2">
+                <i class="fa fa-info-circle me-1"/>
+                <a href="#" t-on-click.prevent="openMissing"><t t-esc="state.missing"/> installaties</a>
+                hebben nog geen locatie en staan niet op de kaart.
+            </div>
+        </div>
+    </t>
+
+    <t t-name="serviq_installation_map.InstallationLocationMap">
+        <div class="sq-map-location">
+            <div class="sq-map-wrap">
+                <div class="sq-map sq-map-small" t-ref="map"/>
+                <div t-if="state.error" class="sq-map-msg">De kaart kon niet geladen worden.</div>
+                <div t-elif="!hasLocation" class="sq-map-msg sq-map-msg-light">
+                    <t t-if="editable">Nog geen locatie: klik op de kaart of geolocaliseer het adres.</t>
+                    <t t-else="">Nog geen locatie.</t>
+                </div>
+            </div>
+            <small t-if="editable and hasLocation" class="text-muted">
+                Versleep de marker of klik op de kaart om de positie aan te passen.
+            </small>
+        </div>
+    </t>
+</templates>

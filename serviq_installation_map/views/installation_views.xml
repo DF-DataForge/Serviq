@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Location + map on the installation form, under the tiles -->
+    <record id="installation_form_view_map" model="ir.ui.view">
+        <field name="name">serviq.installation.form.map</field>
+        <field name="model">serviq.installation</field>
+        <field name="inherit_id" ref="serviq_installation.installation_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('sq-in-form-tiles-wrap')]" position="after">
+                <div class="sq-in-form-tile sq-in-form-tile-location mb-3">
+                    <h5><i class="fa fa-map-marker me-2"/>Locatie</h5>
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <group name="location">
+                                <field name="site_partner_id" readonly="is_locked"
+                                       context="{'default_parent_id': customer_id, 'default_type': 'other'}"
+                                       domain="customer_id and [('commercial_partner_id', '=', customer_id)] or []"/>
+                                <field name="site_city" invisible="not site_partner_id"/>
+                                <field name="latitude" readonly="is_locked"/>
+                                <field name="longitude" readonly="is_locked"/>
+                                <field name="has_location" invisible="1"/>
+                            </group>
+                            <button name="action_geolocalize" type="object" icon="fa-crosshairs"
+                                    string="Adres geolocaliseren" class="btn-secondary"
+                                    invisible="not site_partner_id or is_locked"/>
+                        </div>
+                        <div class="col-lg-8">
+                            <widget name="serviq_installation_location_map"/>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="installation_list_view_map" model="ir.ui.view">
+        <field name="name">serviq.installation.list.map</field>
+        <field name="model">serviq.installation</field>
+        <field name="inherit_id" ref="serviq_installation.installation_list_view"/>
+        <field name="arch" type="xml">
+            <field name="customer_id" position="after">
+                <field name="site_city" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="installation_search_view_map" model="ir.ui.view">
+        <field name="name">serviq.installation.search.map</field>
+        <field name="model">serviq.installation</field>
+        <field name="inherit_id" ref="serviq_installation.installation_search_view"/>
+        <field name="arch" type="xml">
+            <field name="customer_id" position="after">
+                <field name="site_partner_id"/>
+                <field name="site_city"/>
+            </field>
+            <filter name="filter_sn_registration" position="after">
+                <filter string="Zonder locatie" name="filter_no_location"
+                        domain="[('has_location', '=', False)]"/>
+            </filter>
+        </field>
+    </record>
+
+    <!-- Geolocalize the selection from the list -->
+    <record id="action_installation_geolocalize" model="ir.actions.server">
+        <field name="name">Adres geolocaliseren</field>
+        <field name="model_id" ref="serviq_installation.model_serviq_installation"/>
+        <field name="binding_model_id" ref="serviq_installation.model_serviq_installation"/>
+        <field name="binding_view_types">list,kanban</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_geolocalize()</field>
+    </record>
+
+    <!-- Full page map -->
+    <record id="installation_map_action" model="ir.actions.client">
+        <field name="name">Kaart</field>
+        <field name="tag">serviq_installation_map.map</field>
+    </record>
+    <menuitem id="menu_installation_map" parent="serviq_installation.menu_installation_root"
+              name="Kaart" action="installation_map_action" sequence="15"/>
+
+    <!-- Settings -->
+    <record id="res_config_settings_view_form_map" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.map</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="serviq_installation.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <block name="serviq_stock" position="after">
+                <block title="Kaart" name="serviq_map">
+                    <setting id="serviq_map_tiles" string="Kaarttegels"
+                             help="Standaard OpenStreetMap. Gebruik bij intensief gebruik een eigen tegelserver of provider met API-sleutel.">
+                        <div class="content-group">
+                            <div class="row mt-2">
+                                <label for="serviq_map_tile_url" class="col-lg-4 o_light_label"/>
+                                <field name="serviq_map_tile_url"
+                                       placeholder="https://tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+                            </div>
+                            <div class="row">
+                                <label for="serviq_map_tile_attribution" class="col-lg-4 o_light_label"/>
+                                <field name="serviq_map_tile_attribution"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </block>
+        </field>
+    </record>
+</odoo>

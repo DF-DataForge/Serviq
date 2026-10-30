@@ -6,6 +6,8 @@ class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
 
     # Optional modules: ticking one installs it, unticking uninstalls it.
+    module_serviq_installation_map = fields.Boolean(
+        string='Kaart van de installaties')
     module_serviq_logistics = fields.Boolean(
         string='Logistieke dashboards')
     module_serviq_portal = fields.Boolean(
