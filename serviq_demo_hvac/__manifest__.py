@@ -25,6 +25,9 @@ are left out and the stock starts from an opening inventory.
   paid repairs, spare parts used from the shelf or a van, every stage and
   follow-up activities.
 * Sold packages still to be installed and a quotation.
+* The installer portal (serviq_portal) with the commissioning flow: a
+  technician with a portal login sees the interventions of Frisair under
+  /my/installations, with the planning, and finishes them there.
 
 Do not install this on a production database: it changes the main company
 and creates a warehouse, products, partners and orders.
@@ -34,6 +37,8 @@ and creates a warehouse, products, partners and orders.
     'website': 'https://www.data-forge.be',
     'depends': [
         'serviq_installation',
+        'serviq_portal',
+        'serviq_flow_commissioning',
         'repair',
         'sale_stock',
         'l10n_be',

@@ -9,7 +9,7 @@ rollen:
 | Rol | Werkt in |
 |---|---|
 | **Planner / dispatcher** | Installaties, Reparaties |
-| **Technieker** | Interventies, Reparaties |
+| **Technieker** | Interventies, Reparaties, het installateursportaal |
 | **Verkoop** | Verkoop, Installaties |
 
 Elk scenario staat op zichzelf; kies wat bij het publiek past. Een volledige
@@ -239,6 +239,9 @@ installatie staan.
    **Done**.
 3. De installatie staat op **Actief**.
 
+In plaats van stap 2 kan de technieker de inbedrijfstelling ook zelf
+afronden in het portaal, zie scenario 11.
+
 **Toon vooral:** niemand hoeft de status van een installatie bij te houden:
 die volgt uit de geplande en afgewerkte interventies.
 
@@ -277,6 +280,44 @@ die volgt uit de geplande en afgewerkte interventies.
 
 ---
 
+## 11. De technieker in het portaal (technieker, 10 min)
+
+**Verhaal:** de technieker werkt onderweg, op zijn gsm. Hij heeft geen
+backend-gebruiker nodig: in het installateursportaal ziet hij de
+interventies van Frisair, zijn planning en de installaties, en werkt hij ze
+af.
+
+1. Open een privévenster en log in op `/web/login` als **technieker**
+   (wachtwoord `technieker`): Jens Verlinden, technieker bij Frisair, met
+   een portaalgebruiker.
+2. **My Account** (`/my`): de tegels **Installaties** en **Open
+   interventies**.
+3. **Open interventies**: één tab per type interventie (inbedrijfstelling,
+   herstelling, onderhoud, vervanging) met hun aantal; met **Open**,
+   **Afgerond** en **Alle** wissel je tussen open en afgeronde
+   interventies.
+4. **Planning**: maand-, week- of dagkalender van de interventies, dezelfde
+   als in de backend.
+5. Open *Inbedrijfstelling - Elke Maes*:
+   * de gegevens van de klant, met de knop **Route** (Google Maps);
+   * het blok **Inbedrijfstelling**: de componenten van de installatie met
+     hun serienummer. Vul een opmerking in bij de buitenunit (bv.
+     *Gemonteerd op muurbeugel achtergevel*) en klik **Inbedrijfstelling
+     afronden**.
+   * De interventie is afgerond; in de backend staat de installatie van
+     Elke Maes op **Actief**, met in de chatter *Inbedrijfstelling afgerond
+     door Jens Verlinden via het portaal*.
+6. Open *Periodiek onderhoud - Kapsalon Lena*: vul het **Rapport** in
+   (bv. *Filters gereinigd, koudemiddeldruk in orde*), klik **Opslaan** en
+   onderaan **Afronden**. De installatie gaat terug naar **Actief**.
+
+**Toon vooral:** de technieker werkt de interventies af waar hij is; de
+planner ziet het resultaat meteen in de backend. Installateurs en
+distributeurs van buiten het bedrijf krijgen hetzelfde portaal, beperkt tot
+hun eigen installaties en interventies.
+
+---
+
 ## Overzicht van de demodata
 
 | Klant | Situatie | Gebruikt in |
@@ -287,10 +328,10 @@ die volgt uit de geplande en afgewerkte interventies.
 | Sofie Wouters | Actief | 2 |
 | Dokterspraktijk De Linde | Actief | - |
 | Pieter Janssens | Garantieherstelling nieuw (afstandsbediening) | 4 |
-| Elke Maes | Inbedrijfstelling gepland | 8 |
+| Elke Maes | Inbedrijfstelling gepland | 8, 11 |
 | Thomas Peeters | Geleverd, inbedrijfstelling nog in te plannen | 8 |
 | Familie Mertens | Oudere installatie; betalende herstelling wacht op printplaat | 5 |
-| Kapsalon Lena | Oudere installatie; betalende herstelling afgerond, onderhoud gepland | 9 |
+| Kapsalon Lena | Oudere installatie; betalende herstelling afgerond, onderhoud gepland | 9, 11 |
 | Familie Wuyts | Oudere installatie; offerte voor herstelling verstuurd | 5 |
 | Garage Peeters & Zn | Oudere installatie; herstelling geannuleerd, vervanging gepland | 9 |
 | Ann Verbruggen | Pakket verkocht, levering en plaatsing vandaag | 7 |
