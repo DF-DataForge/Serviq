@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Common refrigerants with their GWP (IPCC AR4, 100 years, as in the
+     annexes of the F-gas regulation). Check them against the regulation
+     in force; they can be changed in Installaties > Configuratie >
+     Koudemiddelen. -->
+<odoo noupdate="1">
+    <record id="refrigerant_r32" model="serviq.refrigerant">
+        <field name="name">R32</field>
+        <field name="sequence">10</field>
+        <field name="gwp">675</field>
+        <field name="is_fluorinated" eval="True"/>
+    </record>
+    <record id="refrigerant_r134a" model="serviq.refrigerant">
+        <field name="name">R134a</field>
+        <field name="sequence">20</field>
+        <field name="gwp">1430</field>
+        <field name="is_fluorinated" eval="True"/>
+    </record>
+    <record id="refrigerant_r404a" model="serviq.refrigerant">
+        <field name="name">R404A</field>
+        <field name="sequence">30</field>
+        <field name="gwp">3922</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R125/R143a/R134a</field>
+    </record>
+    <record id="refrigerant_r407c" model="serviq.refrigerant">
+        <field name="name">R407C</field>
+        <field name="sequence">40</field>
+        <field name="gwp">1774</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R32/R125/R134a</field>
+    </record>
+    <record id="refrigerant_r407f" model="serviq.refrigerant">
+        <field name="name">R407F</field>
+        <field name="sequence">50</field>
+        <field name="gwp">1825</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R32/R125/R134a</field>
+    </record>
+    <record id="refrigerant_r410a" model="serviq.refrigerant">
+        <field name="name">R410A</field>
+        <field name="sequence">60</field>
+        <field name="gwp">2088</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R32/R125</field>
+    </record>
+    <record id="refrigerant_r422d" model="serviq.refrigerant">
+        <field name="name">R422D</field>
+        <field name="sequence">70</field>
+        <field name="gwp">2729</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R125/R134a/R600a</field>
+    </record>
+    <record id="refrigerant_r448a" model="serviq.refrigerant">
+        <field name="name">R448A</field>
+        <field name="sequence">80</field>
+        <field name="gwp">1387</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R32/R125/R1234yf/R134a/R1234ze</field>
+    </record>
+    <record id="refrigerant_r449a" model="serviq.refrigerant">
+        <field name="name">R449A</field>
+        <field name="sequence">90</field>
+        <field name="gwp">1397</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R32/R125/R1234yf/R134a</field>
+    </record>
+    <record id="refrigerant_r452a" model="serviq.refrigerant">
+        <field name="name">R452A</field>
+        <field name="sequence">100</field>
+        <field name="gwp">2140</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R32/R125/R1234yf</field>
+    </record>
+    <record id="refrigerant_r454b" model="serviq.refrigerant">
+        <field name="name">R454B</field>
+        <field name="sequence">110</field>
+        <field name="gwp">466</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R32/R1234yf</field>
+    </record>
+    <record id="refrigerant_r507a" model="serviq.refrigerant">
+        <field name="name">R507A</field>
+        <field name="sequence">120</field>
+        <field name="gwp">3985</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R125/R143a</field>
+    </record>
+    <record id="refrigerant_r513a" model="serviq.refrigerant">
+        <field name="name">R513A</field>
+        <field name="sequence">130</field>
+        <field name="gwp">631</field>
+        <field name="is_fluorinated" eval="True"/>
+        <field name="composition">R1234yf/R134a</field>
+    </record>
+    <record id="refrigerant_r1234yf" model="serviq.refrigerant">
+        <field name="name">R1234yf</field>
+        <field name="sequence">140</field>
+        <field name="gwp">4</field>
+        <field name="is_fluorinated" eval="True"/>
+    </record>
+    <record id="refrigerant_r1234ze" model="serviq.refrigerant">
+        <field name="name">R1234ze</field>
+        <field name="sequence">150</field>
+        <field name="gwp">7</field>
+        <field name="is_fluorinated" eval="True"/>
+    </record>
+    <record id="refrigerant_r290" model="serviq.refrigerant">
+        <field name="name">R290</field>
+        <field name="sequence">160</field>
+        <field name="gwp">3</field>
+        <field name="is_fluorinated" eval="False"/>
+        <field name="composition">propaan</field>
+    </record>
+    <record id="refrigerant_r600a" model="serviq.refrigerant">
+        <field name="name">R600a</field>
+        <field name="sequence">170</field>
+        <field name="gwp">3</field>
+        <field name="is_fluorinated" eval="False"/>
+        <field name="composition">isobutaan</field>
+    </record>
+    <record id="refrigerant_r744" model="serviq.refrigerant">
+        <field name="name">R744</field>
+        <field name="sequence">180</field>
+        <field name="gwp">1</field>
+        <field name="is_fluorinated" eval="False"/>
+        <field name="composition">CO2</field>
+    </record>
+    <record id="refrigerant_r717" model="serviq.refrigerant">
+        <field name="name">R717</field>
+        <field name="sequence">190</field>
+        <field name="gwp">0</field>
+        <field name="is_fluorinated" eval="False"/>
+        <field name="composition">ammoniak</field>
+    </record>
+</odoo>

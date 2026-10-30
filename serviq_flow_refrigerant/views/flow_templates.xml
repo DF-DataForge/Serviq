@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Section of the flow on the intervention page. Values: task, flow,
+         flow_action (POST url) + those of _flow_values (rf_*). -->
+    <template id="flow_section" name="Flow: koudemiddelregistratie">
+        <t t-set="inst" t-value="rf_installation"/>
+        <p t-if="not inst" class="text-muted">
+            Registreer eerst de installatie; daarna vult u hier het koudemiddel en de handelingen in.
+        </p>
+        <t t-else="">
+            <!-- 1. The refrigeration system -->
+            <h6>Koeltechnisch systeem</h6>
+            <div t-if="inst.refrigerant_id" class="row g-2 mb-2 small">
+                <div class="col-6 col-md-3"><span class="text-muted d-block">Koudemiddel</span>
+                    <strong t-out="inst.refrigerant_id.name"/> (GWP <t t-out="'%d' % inst.refrigerant_gwp"/>)</div>
+                <div class="col-6 col-md-3"><span class="text-muted d-block">Nominale inhoud</span>
+                    <strong><t t-out="inst.refrigerant_charge_kg"/> kg</strong> -
+                    <t t-out="inst.refrigerant_co2_eq"/> t CO2-eq</div>
+                <div class="col-6 col-md-3"><span class="text-muted d-block">Logboekplichtig</span>
+                    <strong t-out="'Ja' if inst.fgas_logbook_required else 'Nee'"/>
+                    <t t-if="inst.fgas_leak_check_months"> - lekcontrole elke <t t-out="inst.fgas_leak_check_months"/> maanden</t></div>
+                <div class="col-6 col-md-3"><span class="text-muted d-block">Volgende lekcontrole</span>
+                    <strong t-if="inst.fgas_next_leak_check" t-out="inst.fgas_next_leak_check" t-options="{'widget': 'date'}"/>
+                    <t t-else="">-</t>
+                    <span t-attf-class="badge ms-1 {{ 'text-bg-danger' if inst.fgas_check_state == 'overdue' else 'text-bg-warning' if inst.fgas_check_state in ('due', 'unknown') else 'text-bg-success' if inst.fgas_check_state == 'ok' else 'text-bg-secondary' }}"
+                          t-out="rf_check_states.get(inst.fgas_check_state)"/></div>
+            </div>
+            <div t-if="inst.fgas_detection_missing" class="alert alert-danger py-2 small">
+                Vanaf 500 ton CO2-equivalent is een vast lekdetectiesysteem verplicht.
+            </div>
+            <details t-att-open="None if inst.refrigerant_id else 'open'" class="mb-3">
+                <summary class="mb-2"><t t-if="inst.refrigerant_id">Gegevens wijzigen</t><t t-else="">Gegevens van het systeem invullen</t></summary>
+                <form method="post" t-att-action="flow_action" class="row g-2 align-items-end">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="rf_action" value="system"/>
+                    <div class="col-md-3">
+                        <label class="form-label" for="sq_rf_refrigerant">Koudemiddel</label>
+                        <select id="sq_rf_refrigerant" name="refrigerant_id" class="form-select" required="required">
+                            <option value="">Kies...</option>
+                            <option t-foreach="rf_refrigerants" t-as="ref" t-att-value="ref.id"
+                                    t-att-selected="ref == inst.refrigerant_id">
+                                <t t-out="ref.name"/> (GWP <t t-out="'%d' % ref.gwp"/>)
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="sq_rf_charge">Nominale inhoud (kg)</label>
+                        <input id="sq_rf_charge" type="number" step="0.001" min="0" name="charge_kg"
+                               class="form-control" required="required"
+                               t-att-value="inst.refrigerant_charge_kg or None"/>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="sq_rf_date">Ingebruikname</label>
+                        <input id="sq_rf_date" type="date" name="commissioning_date" class="form-control"
+                               t-att-value="inst.refrigerant_commissioning_date or None"/>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check">
+                            <input id="sq_rf_hermetic" type="checkbox" name="hermetic" class="form-check-input"
+                                   t-att-checked="inst.refrigerant_hermetic or None"/>
+                            <label class="form-check-label" for="sq_rf_hermetic">Hermetisch gesloten</label>
+                        </div>
+                        <div class="form-check">
+                            <input id="sq_rf_detection" type="checkbox" name="leak_detection" class="form-check-input"
+                                   t-att-checked="inst.refrigerant_leak_detection or None"/>
+                            <label class="form-check-label" for="sq_rf_detection">Vast lekdetectiesysteem</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-outline-primary w-100">
+                            <i class="fa fa-save me-1"/>Opslaan
+                        </button>
+                    </div>
+                </form>
+            </details>
+
+            <!-- 2. A handling for the logbook -->
+            <t t-if="inst.refrigerant_id">
+                <h6>Handeling registreren</h6>
+                <form method="post" t-att-action="flow_action" class="row g-2 sq-rf-log-form">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="rf_action" value="log"/>
+                    <div class="col-md-3">
+                        <label class="form-label" for="sq_rf_type">Handeling</label>
+                        <select id="sq_rf_type" name="entry_type" class="form-select" required="required">
+                            <option value="">Kies...</option>
+                            <option t-foreach="rf_entry_types" t-as="et" t-att-value="et[0]" t-out="et[1]"/>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="sq_rf_log_date">Datum</label>
+                        <input id="sq_rf_log_date" type="date" name="date" class="form-control"
+                               t-att-value="rf_today" t-att-max="rf_today" required="required"/>
+                    </div>
+                    <div class="col-md-2 sq-rf-qty">
+                        <label class="form-label" for="sq_rf_qty">Hoeveelheid (kg)</label>
+                        <input id="sq_rf_qty" type="number" step="0.001" min="0" name="quantity_kg" class="form-control"/>
+                    </div>
+                    <div class="col-md-2 sq-rf-qty" t-if="rf_cylinders">
+                        <label class="form-label" for="sq_rf_cylinder">Fles</label>
+                        <select id="sq_rf_cylinder" name="cylinder_id" class="form-select">
+                            <option value="">-</option>
+                            <option t-foreach="rf_cylinders" t-as="cyl" t-att-value="cyl.id">
+                                <t t-out="cyl.name"/> (<t t-out="cyl.balance_kg"/> kg)
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 sq-rf-in">
+                        <label class="form-label" for="sq_rf_origin">Herkomst</label>
+                        <select id="sq_rf_origin" name="origin" class="form-select">
+                            <option value="">Kies...</option>
+                            <option t-foreach="rf_origins" t-as="og" t-att-value="og[0]" t-out="og[1]"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6 sq-rf-facility">
+                        <label class="form-label" for="sq_rf_facility">Recyclage-/regeneratie-installatie</label>
+                        <input id="sq_rf_facility" type="text" name="facility_name" class="form-control" placeholder="Naam"/>
+                    </div>
+                    <div class="col-md-6 sq-rf-facility">
+                        <label class="form-label" for="sq_rf_facility_address">Adres</label>
+                        <input id="sq_rf_facility_address" type="text" name="facility_address" class="form-control"/>
+                    </div>
+                    <div class="col-md-4 sq-rf-leak">
+                        <label class="form-label" for="sq_rf_leak">Resultaat lekcontrole</label>
+                        <select id="sq_rf_leak" name="leak_result" class="form-select">
+                            <option value="">Kies...</option>
+                            <option t-foreach="rf_leak_results" t-as="lr" t-att-value="lr[0]" t-out="lr[1]"/>
+                        </select>
+                    </div>
+                    <div class="col-md-4 sq-rf-leak">
+                        <label class="form-label" for="sq_rf_leak_location">Plaats van het lek</label>
+                        <input id="sq_rf_leak_location" type="text" name="leak_location" class="form-control"/>
+                    </div>
+                    <div class="col-md-4 sq-rf-leak">
+                        <label class="form-label" for="sq_rf_follow_up">Opvolgcontrole</label>
+                        <input id="sq_rf_follow_up" type="date" name="follow_up_date" class="form-control"/>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="sq_rf_description">Omschrijving</label>
+                        <textarea id="sq_rf_description" name="description" rows="2" class="form-control"
+                                  placeholder="Werken, storing of alarm..."/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="sq_rf_tech_cert">
+                            Certificaat technicus (<t t-out="rf_technician.name"/>)
+                        </label>
+                        <input id="sq_rf_tech_cert" type="text" name="technician_certificate" class="form-control"
+                               required="required" t-att-value="rf_technician.serviq_fgas_certificate or None"
+                               t-att-readonly="rf_technician.serviq_fgas_certificate and 'readonly' or None"/>
+                        <small t-if="rf_technician.serviq_fgas_certificate and not rf_technician_valid" class="text-danger">
+                            Dit certificaat is vervallen.
+                        </small>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="sq_rf_comp_cert">
+                            Certificaat bedrijf (<t t-out="rf_contractor.name"/>)
+                        </label>
+                        <input id="sq_rf_comp_cert" type="text" name="contractor_certificate" class="form-control"
+                               required="required" t-att-value="rf_contractor.serviq_fgas_certificate or None"
+                               t-att-readonly="rf_contractor.serviq_fgas_certificate and 'readonly' or None"/>
+                        <small t-if="rf_contractor.serviq_fgas_certificate and not rf_contractor_valid" class="text-danger">
+                            Dit certificaat is vervallen.
+                        </small>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fa fa-book me-1"/>In logboek registreren
+                        </button>
+                    </div>
+                </form>
+                <script>
+                    (function () {
+                        var form = document.querySelector('.sq-rf-log-form');
+                        if (!form) { return; }
+                        var type = form.querySelector('#sq_rf_type');
+                        var origin = form.querySelector('#sq_rf_origin');
+                        function show(selector, visible) {
+                            form.querySelectorAll(selector).forEach(function (el) {
+                                el.classList.toggle('d-none', !visible);
+                            });
+                        }
+                        function update() {
+                            var added = ['initial_charge', 'addition'].indexOf(type.value) !== -1;
+                            var recovered = ['recovery', 'decommissioning'].indexOf(type.value) !== -1;
+                            var recycled = ['recycled', 'reclaimed'].indexOf(origin.value) !== -1;
+                            show('.sq-rf-qty', added || recovered);
+                            show('.sq-rf-in', added);
+                            show('.sq-rf-facility', added &amp;&amp; recycled);
+                            show('.sq-rf-leak', type.value === 'leak_check');
+                            form.querySelector('#sq_rf_qty').required = added || recovered;
+                            origin.required = added;
+                            form.querySelector('#sq_rf_leak').required = type.value === 'leak_check';
+                            form.querySelectorAll('.sq-rf-facility input').forEach(function (el) {
+                                el.required = added &amp;&amp; recycled;
+                            });
+                        }
+                        type.addEventListener('change', update);
+                        origin.addEventListener('change', update);
+                        update();
+                    })();
+                </script>
+
+                <!-- 3. The logbook -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <h6 class="mb-0">Logboek</h6>
+                    <a t-att-href="rf_logbook_url" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <i class="fa fa-file-pdf-o me-1"/>Logboek (PDF)
+                    </a>
+                </div>
+                <p t-if="not rf_logs" class="text-muted small mt-2">Nog geen handelingen geregistreerd.</p>
+                <div t-else="" class="table-responsive mt-2">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr><th>Datum</th><th>Handeling</th><th class="text-end">kg</th>
+                                <th>Herkomst / resultaat</th><th>Technicus</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="rf_logs" t-as="log">
+                                <td t-out="log.date" t-options="{'widget': 'date'}"/>
+                                <td t-field="log.entry_type"/>
+                                <td class="text-end"><t t-if="log.direction != 'none'" t-out="log.quantity_kg"/></td>
+                                <td>
+                                    <span t-if="log.origin" t-field="log.origin"/>
+                                    <span t-if="log.leak_result" t-field="log.leak_result"/>
+                                </td>
+                                <td><t t-out="log.technician_name"/> (<t t-out="log.technician_certificate"/>)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

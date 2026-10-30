@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Refrigerants -->
+    <record id="refrigerant_list_view" model="ir.ui.view">
+        <field name="name">serviq.refrigerant.list</field>
+        <field name="model">serviq.refrigerant</field>
+        <field name="arch" type="xml">
+            <list string="Koudemiddelen" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="gwp"/>
+                <field name="is_fluorinated"/>
+                <field name="composition" optional="show"/>
+                <field name="note" optional="hide"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="refrigerant_action" model="ir.actions.act_window">
+        <field name="name">Koudemiddelen</field>
+        <field name="res_model">serviq.refrigerant</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <!-- Logbook -->
+    <record id="refrigerant_log_list_view" model="ir.ui.view">
+        <field name="name">serviq.refrigerant.log.list</field>
+        <field name="model">serviq.refrigerant.log</field>
+        <field name="arch" type="xml">
+            <list string="Koudemiddellogboek" decoration-danger="leak_result == 'leak'">
+                <field name="date"/>
+                <field name="installation_id"/>
+                <field name="entry_type"/>
+                <field name="refrigerant_id"/>
+                <field name="quantity_kg" sum="Totaal"/>
+                <field name="co2_eq" sum="Totaal" optional="show"/>
+                <field name="direction" optional="hide"/>
+                <field name="origin" optional="show"/>
+                <field name="cylinder_id" optional="show"/>
+                <field name="leak_result" optional="show"/>
+                <field name="technician_name" optional="show"/>
+                <field name="technician_certificate" optional="hide"/>
+                <field name="contractor_name" optional="show"/>
+                <field name="task_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="refrigerant_log_form_view" model="ir.ui.view">
+        <field name="name">serviq.refrigerant.log.form</field>
+        <field name="model">serviq.refrigerant.log</field>
+        <field name="arch" type="xml">
+            <form string="Handeling koudemiddel">
+                <sheet>
+                    <group>
+                        <group string="Handeling">
+                            <field name="installation_id"/>
+                            <field name="task_id"
+                                   domain="[('serviq_installation_id', '=', installation_id)]"/>
+                            <field name="date"/>
+                            <field name="entry_type"/>
+                            <field name="direction" invisible="1"/>
+                            <field name="refrigerant_id"/>
+                            <field name="quantity_kg" invisible="direction == 'none'"
+                                   required="direction != 'none'"/>
+                            <field name="co2_eq" invisible="direction == 'none'"/>
+                            <field name="cylinder_id" invisible="direction == 'none'"
+                                   domain="[('refrigerant_id', '=', refrigerant_id)]"/>
+                        </group>
+                        <group string="Herkomst" invisible="direction != 'in'">
+                            <field name="origin" required="direction == 'in'"/>
+                            <field name="facility_name"
+                                   invisible="origin not in ('recycled', 'reclaimed')"
+                                   required="origin in ('recycled', 'reclaimed')"/>
+                            <field name="facility_address"
+                                   invisible="origin not in ('recycled', 'reclaimed')"
+                                   required="origin in ('recycled', 'reclaimed')"/>
+                        </group>
+                        <group string="Lekcontrole" invisible="entry_type != 'leak_check'">
+                            <field name="leak_result" required="entry_type == 'leak_check'"/>
+                            <field name="leak_location" invisible="leak_result in (False, 'no_leak')"/>
+                            <field name="follow_up_date" invisible="leak_result in (False, 'no_leak')"/>
+                        </group>
+                        <group string="Technicus en bedrijf">
+                            <field name="technician_id"/>
+                            <field name="technician_name"/>
+                            <field name="technician_certificate"/>
+                            <field name="contractor_id"/>
+                            <field name="contractor_name"/>
+                            <field name="contractor_certificate"/>
+                            <field name="user_id"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="Omschrijving van de werken, storing of alarm..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="refrigerant_log_search_view" model="ir.ui.view">
+        <field name="name">serviq.refrigerant.log.search</field>
+        <field name="model">serviq.refrigerant.log</field>
+        <field name="arch" type="xml">
+            <search string="Koudemiddellogboek">
+                <field name="installation_id"/>
+                <field name="refrigerant_id"/>
+                <field name="cylinder_id"/>
+                <field name="technician_name"/>
+                <field name="contractor_name"/>
+                <filter string="Toegevoegd" name="filter_in" domain="[('direction', '=', 'in')]"/>
+                <filter string="Teruggewonnen" name="filter_out" domain="[('direction', '=', 'out')]"/>
+                <filter string="Lekcontroles" name="filter_leak_check"
+                        domain="[('entry_type', '=', 'leak_check')]"/>
+                <filter string="Lek vastgesteld" name="filter_leak"
+                        domain="[('leak_result', 'in', ('leak', 'leak_repaired'))]"/>
+                <separator/>
+                <filter string="Datum" name="filter_date" date="date"/>
+                <group name="groupby">
+                    <filter string="Koudemiddel" name="group_by_refrigerant"
+                            context="{'group_by': 'refrigerant_id'}"/>
+                    <filter string="Handeling" name="group_by_type"
+                            context="{'group_by': 'entry_type'}"/>
+                    <filter string="Installatie" name="group_by_installation"
+                            context="{'group_by': 'installation_id'}"/>
+                    <filter string="Jaar" name="group_by_year"
+                            context="{'group_by': 'date:year'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="refrigerant_log_pivot_view" model="ir.ui.view">
+        <field name="name">serviq.refrigerant.log.pivot</field>
+        <field name="model">serviq.refrigerant.log</field>
+        <field name="arch" type="xml">
+            <pivot string="Koudemiddelboekhouding">
+                <field name="refrigerant_id" type="row"/>
+                <field name="direction" type="col"/>
+                <field name="quantity_kg" type="measure"/>
+                <field name="co2_eq" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="refrigerant_log_action" model="ir.actions.act_window">
+        <field name="name">Koudemiddellogboek</field>
+        <field name="res_model">serviq.refrigerant.log</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nog geen handelingen met koudemiddel</p>
+            <p>Elke vulling, bijvulling, terugwinning, lekcontrole, herstelling, onderhoud en
+               storing van een koeltechnische installatie komt in dit logboek.</p>
+        </field>
+    </record>
+
+    <!-- Cylinders -->
+    <record id="refrigerant_cylinder_list_view" model="ir.ui.view">
+        <field name="name">serviq.refrigerant.cylinder.list</field>
+        <field name="model">serviq.refrigerant.cylinder</field>
+        <field name="arch" type="xml">
+            <list string="Koudemiddelflessen">
+                <field name="name"/>
+                <field name="refrigerant_id"/>
+                <field name="kind"/>
+                <field name="owner_id" optional="show"/>
+                <field name="supplier_id" optional="hide"/>
+                <field name="capacity_kg" optional="show"/>
+                <field name="balance_kg" sum="Totaal"/>
+            </list>
+        </field>
+    </record>
+    <record id="refrigerant_cylinder_form_view" model="ir.ui.view">
+        <field name="name">serviq.refrigerant.cylinder.form</field>
+        <field name="model">serviq.refrigerant.cylinder</field>
+        <field name="arch" type="xml">
+            <form string="Koudemiddelfles">
+                <sheet>
+                    <widget name="web_ribbon" title="Gearchiveerd" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Flesnummer"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="refrigerant_id"/>
+                            <field name="kind"/>
+                            <field name="capacity_kg"/>
+                            <field name="balance_kg"/>
+                        </group>
+                        <group>
+                            <field name="owner_id"/>
+                            <field name="supplier_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Bewegingen" name="moves">
+                            <field name="move_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="move_type"/>
+                                    <field name="quantity_kg"/>
+                                    <field name="partner_id"/>
+                                    <field name="reference"/>
+                                    <field name="note" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Handelingen op installaties" name="logs">
+                            <field name="log_ids" readonly="1">
+                                <list>
+                                    <field name="date"/>
+                                    <field name="installation_id"/>
+                                    <field name="entry_type"/>
+                                    <field name="quantity_kg"/>
+                                    <field name="technician_name"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="refrigerant_cylinder_action" model="ir.actions.act_window">
+        <field name="name">Koudemiddelflessen</field>
+        <field name="res_model">serviq.refrigerant.cylinder</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Installation -->
+    <record id="installation_form_view_refrigerant" model="ir.ui.view">
+        <field name="name">serviq.installation.form.refrigerant</field>
+        <field name="model">serviq.installation</field>
+        <field name="inherit_id" ref="serviq_installation.installation_form_view"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_open_refrigerant_logs" type="object"
+                        class="oe_stat_button" icon="fa-snowflake-o"
+                        invisible="not has_refrigerant">
+                    <field name="refrigerant_log_count" widget="statinfo" string="Logboek"/>
+                </button>
+            </div>
+            <xpath expr="//page[@name='interventions']" position="after">
+                <page string="Koudemiddel" name="refrigerant" invisible="not has_refrigerant">
+                    <field name="has_refrigerant" invisible="1"/>
+                    <div class="alert alert-danger" role="alert" invisible="not fgas_detection_missing">
+                        Vanaf 500 ton CO2-equivalent is een vast lekdetectiesysteem verplicht.
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="fgas_check_state != 'overdue'">
+                        De verplichte lekcontrole is te laat.
+                    </div>
+                    <group>
+                        <group string="Basisgegevens">
+                            <field name="refrigerant_id"/>
+                            <field name="refrigerant_gwp"/>
+                            <field name="refrigerant_charge_kg"/>
+                            <field name="refrigerant_co2_eq"/>
+                            <field name="refrigerant_hermetic"/>
+                            <field name="refrigerant_leak_detection"/>
+                            <field name="refrigerant_commissioning_date"/>
+                        </group>
+                        <group string="Verplichtingen">
+                            <field name="fgas_logbook_required"/>
+                            <field name="fgas_detection_missing" invisible="1"/>
+                            <field name="fgas_leak_check_months"
+                                   invisible="not fgas_logbook_required"/>
+                            <field name="fgas_last_leak_check"/>
+                            <field name="fgas_next_leak_check"
+                                   invisible="not fgas_logbook_required"/>
+                            <field name="fgas_check_state" widget="badge"
+                                   decoration-success="fgas_check_state == 'ok'"
+                                   decoration-warning="fgas_check_state in ('due', 'unknown')"
+                                   decoration-danger="fgas_check_state == 'overdue'"/>
+                            <field name="refrigerant_added_kg"/>
+                            <field name="refrigerant_recovered_kg"/>
+                        </group>
+                    </group>
+                    <button name="action_print_refrigerant_logbook" type="object"
+                            string="Logboek afdrukken" icon="fa-print" class="btn-secondary"/>
+                    <field name="refrigerant_log_ids" readonly="1" class="mt-3">
+                        <list decoration-danger="leak_result == 'leak'">
+                            <field name="date"/>
+                            <field name="entry_type"/>
+                            <field name="quantity_kg"/>
+                            <field name="co2_eq" optional="show"/>
+                            <field name="origin" optional="show"/>
+                            <field name="leak_result" optional="show"/>
+                            <field name="technician_name"/>
+                            <field name="technician_certificate" optional="hide"/>
+                            <field name="contractor_name" optional="show"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+    <record id="installation_list_view_refrigerant" model="ir.ui.view">
+        <field name="name">serviq.installation.list.refrigerant</field>
+        <field name="model">serviq.installation</field>
+        <field name="inherit_id" ref="serviq_installation.installation_list_view"/>
+        <field name="arch" type="xml">
+            <field name="state" position="before">
+                <field name="refrigerant_id" optional="hide"/>
+                <field name="refrigerant_co2_eq" optional="hide"/>
+                <field name="fgas_next_leak_check" optional="hide"/>
+            </field>
+        </field>
+    </record>
+    <record id="installation_search_view_refrigerant" model="ir.ui.view">
+        <field name="name">serviq.installation.search.refrigerant</field>
+        <field name="model">serviq.installation</field>
+        <field name="inherit_id" ref="serviq_installation.installation_search_view"/>
+        <field name="arch" type="xml">
+            <filter name="filter_sn_registration" position="after">
+                <separator/>
+                <filter string="Koeltechnische systemen" name="filter_refrigerant"
+                        domain="[('has_refrigerant', '=', True)]"/>
+                <filter string="Logboekplichtig" name="filter_fgas_logbook"
+                        domain="[('fgas_logbook_required', '=', True)]"/>
+                <filter string="Lekcontrole te laat" name="filter_fgas_overdue"
+                        domain="[('fgas_logbook_required', '=', True), ('fgas_next_leak_check', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Lekdetectie ontbreekt" name="filter_fgas_detection"
+                        domain="[('fgas_detection_missing', '=', True)]"/>
+            </filter>
+        </field>
+    </record>
+
+    <!-- Category -->
+    <record id="installation_category_form_view_refrigerant" model="ir.ui.view">
+        <field name="name">serviq.installation.category.form.refrigerant</field>
+        <field name="model">serviq.installation.category</field>
+        <field name="inherit_id" ref="serviq_installation.installation_category_form_view"/>
+        <field name="arch" type="xml">
+            <field name="active_after_first_installation" position="after">
+                <field name="has_refrigerant"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Contacts: F-gas certificate -->
+    <record id="res_partner_form_view_refrigerant" model="ir.ui.view">
+        <field name="name">res.partner.form.refrigerant</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="serviq_installation.res_partner_form_inherit"/>
+        <field name="arch" type="xml">
+            <field name="serviq_can_install_for_ids" position="after">
+                <field name="serviq_fgas_certificate"/>
+                <field name="serviq_fgas_certificate_valid_until"
+                       invisible="not serviq_fgas_certificate"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Settings -->
+    <record id="res_config_settings_view_form_refrigerant" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.refrigerant</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="serviq_installation.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <block name="serviq_interventions" position="inside">
+                <setting id="serviq_fgas_lead_days" string="Lekcontrole vooraf inplannen"
+                         help="Aantal dagen voor de verplichte lekcontrole dat de interventie automatisch ingepland wordt.">
+                    <field name="serviq_fgas_lead_days"/>
+                </setting>
+            </block>
+        </field>
+    </record>
+
+    <!-- Menus -->
+    <menuitem id="menu_refrigerant_root" parent="serviq_installation.menu_installation_root"
+              name="Koudemiddelen" sequence="40"/>
+    <menuitem id="menu_refrigerant_log" parent="menu_refrigerant_root"
+              name="Logboek" action="refrigerant_log_action" sequence="10"/>
+    <menuitem id="menu_refrigerant_cylinder" parent="menu_refrigerant_root"
+              name="Flessen" action="refrigerant_cylinder_action" sequence="20"/>
+    <menuitem id="menu_refrigerant_config" parent="serviq_installation.menu_installation_config"
+              name="Koudemiddelen" action="refrigerant_action" sequence="40"/>
+</odoo>

@@ -33,6 +33,10 @@
                                  help="De installateur vervangt componenten en registreert het nieuwe serienummer.">
                             <field name="module_serviq_flow_replacement"/>
                         </setting>
+                        <setting id="serviq_flow_refrigerant" string="Koudemiddelregistratie (F-gassen)"
+                                 help="Registratie van koeltechnische systemen: koudemiddel, inhoud in ton CO2-equivalent, logboek van alle handelingen met gecertificeerde technicus, lekcontroleplicht en flesbalans.">
+                            <field name="module_serviq_flow_refrigerant"/>
+                        </setting>
                     </block>
                     <block title="Interventies" name="serviq_interventions">
                         <setting id="serviq_intervention_project" string="Project interventies"

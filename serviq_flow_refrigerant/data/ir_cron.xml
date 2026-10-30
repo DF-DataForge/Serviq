@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Plans the leak check intervention when the next mandatory leak
+         check of an installation comes within the lead time. -->
+    <record id="ir_cron_plan_leak_checks" model="ir.cron">
+        <field name="name">Installaties: lekcontroles inplannen (F-gassen)</field>
+        <field name="model_id" ref="serviq_installation.model_serviq_installation"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_plan_leak_checks()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

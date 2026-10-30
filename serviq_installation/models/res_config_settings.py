@@ -16,6 +16,8 @@ class ResConfigSettings(models.TransientModel):
         string='Flow: inbedrijfstelling')
     module_serviq_flow_replacement = fields.Boolean(
         string='Flow: vervanging van componenten')
+    module_serviq_flow_refrigerant = fields.Boolean(
+        string='Flow: koudemiddelregistratie (F-gassen)')
 
     serviq_intervention_project_id = fields.Many2one(
         'project.project', string='Project interventies',

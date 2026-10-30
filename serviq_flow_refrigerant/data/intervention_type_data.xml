@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="intervention_type_leak_check" model="serviq.intervention.type">
+        <field name="name">Lekcontrole</field>
+        <field name="code">leak_check</field>
+        <field name="sequence">45</field>
+        <field name="counts_as_service" eval="False"/>
+    </record>
+</odoo>

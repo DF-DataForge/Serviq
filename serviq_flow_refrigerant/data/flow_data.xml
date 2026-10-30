@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Technical definition: refreshed on every module update. 'active'
+         is not set here, so enabling / disabling the flow survives. -->
+    <record id="flow_refrigerant" model="serviq.portal.flow">
+        <field name="name">Koudemiddelregistratie</field>
+        <field name="code">refrigerant</field>
+        <field name="sequence">40</field>
+        <field name="description">Registratie van een koeltechnisch systeem volgens de F-gassenverordening: koudemiddel, nominale inhoud in kg en ton CO2-equivalent, hermetisch gesloten, lekdetectie en ingebruikname; daarna elke handeling in het logboek (vulling, bijvulling, terugwinning, lekcontrole, herstelling, onderhoud, storing, ontmanteling) met de herkomst van het koudemiddel en de gecertificeerde technicus en het bedrijf.</field>
+        <field name="handler_model">serviq.portal.flow.handler.refrigerant</field>
+        <field name="template">serviq_flow_refrigerant.flow_section</field>
+        <field name="button_label">Koudemiddel registreren</field>
+        <field name="icon">fa-snowflake-o</field>
+        <field name="module">serviq_flow_refrigerant</field>
+    </record>
+    <!-- Intervention types the flow is shown on: set on install only, then
+         managed in Installaties > Configuratie > Flows. -->
+    <data noupdate="1">
+        <function model="serviq.portal.flow" name="write"
+                  eval="[[ref('flow_refrigerant')], {'intervention_type_ids': [(6, 0, [
+                      ref('serviq_installation.intervention_type_first_installation'),
+                      ref('serviq_installation.intervention_type_commissioning'),
+                      ref('serviq_installation.intervention_type_repair'),
+                      ref('serviq_installation.intervention_type_maintenance'),
+                      ref('serviq_installation.intervention_type_other'),
+                      ref('intervention_type_leak_check')])]}]"/>
+    </data>
+</odoo>

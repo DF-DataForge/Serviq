@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_refrigerant_logbook" model="ir.actions.report">
+        <field name="name">Koudemiddellogboek</field>
+        <field name="model">serviq.installation</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">serviq_flow_refrigerant.report_refrigerant_logbook</field>
+        <field name="report_file">serviq_flow_refrigerant.report_refrigerant_logbook</field>
+        <field name="print_report_name">'Logboek koudemiddel - %s' % (object.code or object.name)</field>
+        <field name="binding_model_id" ref="serviq_installation.model_serviq_installation"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_refrigerant_logbook">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Logboek koudemiddel</h2>
+                        <p class="text-muted">Register volgens de F-gassenverordening (EU).</p>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td><strong>Installatie</strong></td><td t-out="o.display_name"/>
+                                <td><strong>Exploitant</strong></td><td t-out="o.customer_id.display_name or '-'"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Adres</strong></td>
+                                <td colspan="3" t-out="o.customer_id._display_address(without_company=True).replace('\n', ', ') if o.customer_id else '-'"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Koudemiddel</strong></td><td t-out="o.refrigerant_id.name or '-'"/>
+                                <td><strong>GWP</strong></td><td t-out="'%d' % o.refrigerant_gwp"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Nominale inhoud</strong></td>
+                                <td><t t-out="o.refrigerant_charge_kg"/> kg - <t t-out="o.refrigerant_co2_eq"/> ton CO2-eq</td>
+                                <td><strong>Ingebruikname</strong></td>
+                                <td t-out="o.refrigerant_commissioning_date" t-options="{'widget': 'date'}"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Hermetisch gesloten</strong></td><td t-out="'Ja' if o.refrigerant_hermetic else 'Nee'"/>
+                                <td><strong>Vast lekdetectiesysteem</strong></td><td t-out="'Ja' if o.refrigerant_leak_detection else 'Nee'"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Logboekplichtig</strong></td><td t-out="'Ja' if o.fgas_logbook_required else 'Nee'"/>
+                                <td><strong>Lekcontrole</strong></td>
+                                <td>
+                                    <t t-if="o.fgas_leak_check_months">elke <t t-out="o.fgas_leak_check_months"/> maanden,
+                                        volgende <t t-out="o.fgas_next_leak_check" t-options="{'widget': 'date'}"/></t>
+                                    <t t-else="">-</t>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <h4 class="mt-4">Handelingen</h4>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Datum</th><th>Handeling</th><th class="text-end">kg</th>
+                                    <th class="text-end">t CO2-eq</th><th>Herkomst / resultaat</th>
+                                    <th>Technicus (certificaat)</th><th>Bedrijf (certificaat)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.refrigerant_log_ids.sorted('date')" t-as="log">
+                                    <td t-out="log.date" t-options="{'widget': 'date'}"/>
+                                    <td>
+                                        <span t-field="log.entry_type"/>
+                                        <div t-if="log.description" class="small text-muted" t-out="log.description"/>
+                                    </td>
+                                    <td class="text-end"><t t-if="log.direction != 'none'" t-out="log.quantity_kg"/></td>
+                                    <td class="text-end"><t t-if="log.direction != 'none'" t-out="log.co2_eq"/></td>
+                                    <td>
+                                        <t t-if="log.origin"><span t-field="log.origin"/>
+                                            <t t-if="log.facility_name"> - <t t-out="log.facility_name"/>, <t t-out="log.facility_address"/></t>
+                                        </t>
+                                        <t t-if="log.leak_result"><span t-field="log.leak_result"/>
+                                            <t t-if="log.leak_location"> (<t t-out="log.leak_location"/>)</t>
+                                        </t>
+                                        <t t-if="log.cylinder_id"><div class="small">Fles <t t-out="log.cylinder_id.name"/></div></t>
+                                    </td>
+                                    <td><t t-out="log.technician_name"/> (<t t-out="log.technician_certificate"/>)</td>
+                                    <td><t t-out="log.contractor_name"/> (<t t-out="log.contractor_certificate"/>)</td>
+                                </tr>
+                                <tr t-if="not o.refrigerant_log_ids">
+                                    <td colspan="7" class="text-muted">Nog geen handelingen geregistreerd.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="small text-muted">
+                            Totaal toegevoegd: <t t-out="o.refrigerant_added_kg"/> kg -
+                            totaal teruggewonnen: <t t-out="o.refrigerant_recovered_kg"/> kg.
+                            Dit register wordt minstens 5 jaar bewaard door de exploitant en het koeltechnisch bedrijf.
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

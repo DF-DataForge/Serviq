@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_refrigerant_internal,serviq.refrigerant internal,model_serviq_refrigerant,base.group_user,1,0,0,0
+access_refrigerant_manager,serviq.refrigerant manager,model_serviq_refrigerant,serviq_installation.group_installation_manager,1,1,1,1
+access_refrigerant_portal,serviq.refrigerant portal,model_serviq_refrigerant,base.group_portal,1,0,0,0
+access_refrigerant_log_user,serviq.refrigerant.log user,model_serviq_refrigerant_log,serviq_installation.group_installation_user,1,0,1,0
+access_refrigerant_log_manager,serviq.refrigerant.log manager,model_serviq_refrigerant_log,serviq_installation.group_installation_manager,1,1,1,1
+access_refrigerant_log_portal,serviq.refrigerant.log portal,model_serviq_refrigerant_log,base.group_portal,1,0,0,0
+access_refrigerant_cylinder_user,serviq.refrigerant.cylinder user,model_serviq_refrigerant_cylinder,serviq_installation.group_installation_user,1,1,1,0
+access_refrigerant_cylinder_manager,serviq.refrigerant.cylinder manager,model_serviq_refrigerant_cylinder,serviq_installation.group_installation_manager,1,1,1,1
+access_refrigerant_cylinder_portal,serviq.refrigerant.cylinder portal,model_serviq_refrigerant_cylinder,base.group_portal,1,0,0,0
+access_refrigerant_cylinder_move_user,serviq.refrigerant.cylinder.move user,model_serviq_refrigerant_cylinder_move,serviq_installation.group_installation_user,1,1,1,0
+access_refrigerant_cylinder_move_manager,serviq.refrigerant.cylinder.move manager,model_serviq_refrigerant_cylinder_move,serviq_installation.group_installation_manager,1,1,1,1
