@@ -1,14 +1,14 @@
 # Serviq demo: Frisair Klimaattechniek
 
 Demodatabase voor Serviq: een fictieve Belgische airco-installateur,
-**Frisair Klimaattechniek BV** uit Mechelen, die zijn airco-units laat
-opslaan in een fulfilmentmagazijn van Stoqflow. Dat magazijn is een gewoon
-Odoo-magazijn: de Stoqflow-koppeling (`webship`) wordt niet gebruikt. Alles
-wordt bij de installatie van de module aangemaakt door `hooks.py` (geen
-XML-data).
+**Frisair Klimaattechniek BV** uit Mechelen. De demo gaat alleen over de
+installatieflows (installaties, serienummers, inbedrijfstelling, onderhoud,
+herstellingen); de logistiek erachter (inkoop, assemblage, fulfilment) is
+weggelaten en de voorraad start vanuit een beginvoorraad. Alles wordt bij
+de installatie van de module aangemaakt door `hooks.py` (geen XML-data).
 
 Niet installeren op een productiedatabase: de module wijzigt het
-hoofdbedrijf en maakt magazijnen, producten, partners en orders aan.
+hoofdbedrijf en maakt een magazijn, producten, partners en orders aan.
 
 ## Installeren
 
@@ -26,17 +26,16 @@ Een rondleiding langs de dagelijkse workflows voor een demo staat in
 
 | Onderdeel | Inhoud |
 |---|---|
-| Magazijnen | **Frisair Werkplaats** (FRW): eigen magazijn en werkplaats, plank *Reserveonderdelen* (locatie reserveonderdelen) en twee servicewagens als locatie. **Stoqflow Fulfilment** (SQF): fulfilmentmagazijn voor de units en kits, bevoorraad vanuit FRW |
-| Airco-units | Nordklima Aero buiten- en binnenunits van 2,5 / 3,5 / 5,0 kW; serienummer per stuk, op ontvangsten en leveringen. Ingekocht rechtstreeks in SQF |
-| Montagekits | Twee kits (2,5-3,5 kW en 5,0 kW) met stuklijst van koperleiding, muurbeugel, trillingsdempers, condensafvoer, kabel en leidinggoot; onderdelen ingekocht in FRW, kits samengesteld in de werkplaats en naar SQF gestuurd |
-| Reserveonderdelen | Printplaat, ventilatormotor, expansieventiel, afstandsbediening, condenspomp, sensor, filters; componentrol *Reserveonderdeel*, blijven in de werkplaats en de servicewagens |
+| Magazijn | **Frisair Werkplaats** (FRW): voorraad van units en montagekits, plank *Reserveonderdelen* (locatie reserveonderdelen) en twee servicewagens als locatie; beginvoorraad via een voorraadtelling |
+| Airco-units | Nordklima Aero buiten- en binnenunits van 2,5 / 3,5 / 5,0 kW, met een serienummer per stuk |
+| Montagekits | Twee kits (2,5-3,5 kW en 5,0 kW) met een stuklijst van koperleiding, muurbeugel, trillingsdempers, condensafvoer, kabel en leidinggoot; in een installatie een sub-installatie |
+| Reserveonderdelen | Printplaat, ventilatormotor, expansieventiel, afstandsbediening, condenspomp, sensor, filters; componentrol *Reserveonderdeel* |
 | Installatiepakketten | Kit-stuklijst (phantom) van buitenunit + binnenunit + montagekit per vermogen, componentrol *Installatiepakket*, categorie *Split airco* |
-| Installaties | 13 installaties: 9 uit de geleverde pakketten met de serienummers van de levering, 4 oudere (2019-2022) zonder documenten; inbedrijfstellingen (afgerond, ingepland, nog in te plannen), onderhoud, herstellingen en een vervanging |
-| Herstellingen | Type *Herstellingen op locatie*: de unit blijft bij de klant, onderdelen van de plank of een servicewagen. 7 herstelorders (app Reparaties) op geïnstalleerde units, gekozen op serienummer: garantie en betalend, met verbruikte reserveonderdelen uit de werkplaats of een servicewagen, in elke fase (nieuw, bevestigd, in reparatie, hersteld, geannuleerd), offertes / verkooporders voor de betalende en opvolgactiviteiten |
-| Historiek | Zo'n 6 weken documenten: inkopen, productieorders, bevoorrading naar Stoqflow, verkopen en leveringen, interne transfers naar de servicewagens |
-| Open orders | Inkoop en bevoorrading die nog in SQF ontvangen moeten worden, verkopen die SQF nog moet leveren, een productieorder en een offerte |
+| Installaties | 13 installaties: 9 uit de verkochte en geleverde pakketten met de serienummers van de levering, 4 oudere (2019-2022) zonder documenten; inbedrijfstellingen (afgerond, ingepland, nog in te plannen), onderhoud, herstellingen en een vervanging |
+| Herstellingen | Type *Herstellingen op locatie*: de unit blijft bij de klant, onderdelen van de plank of een servicewagen. 7 herstelorders (app Reparaties) op geïnstalleerde units, gekozen op serienummer: garantie en betalend, in elke fase (nieuw, bevestigd, in reparatie, hersteld, geannuleerd), offertes / verkooporders voor de betalende en opvolgactiviteiten |
+| Openstaand | Twee verkochte pakketten die nog geleverd en geplaatst moeten worden, en een offerte |
 
 Een herstelling opzoeken op serienummer: *Reparaties* > zoeken op
-*Lot/Serienummer*, of vanuit het serienummer (smart button
-*Reparaties*); het serienummer toont ook de installatie waarop het
+*Lot/Serienummer*, of vanuit het serienummer (smart button met de
+moersleutel); het serienummer toont ook de installatie waarop het
 geplaatst is.

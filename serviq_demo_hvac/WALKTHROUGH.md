@@ -1,18 +1,19 @@
 # Demo-walkthrough: een dag bij Frisair Klimaattechniek
 
-Een rondleiding langs de dagelijkse werking van een airco-installateur in
-Odoo met Serviq, op de data van `serviq_demo_hvac`. De
-scenario's volgen één werkdag en wisselen tussen vier rollen:
+Een rondleiding langs de dagelijkse installatieflows van een
+airco-installateur in Odoo met Serviq, op de data van `serviq_demo_hvac`:
+installaties met hun serienummers, inbedrijfstelling, onderhoud en
+herstellingen. De scenario's volgen één werkdag en wisselen tussen drie
+rollen:
 
 | Rol | Werkt in |
 |---|---|
 | **Planner / dispatcher** | Installaties, Reparaties |
 | **Technieker** | Interventies, Reparaties |
-| **Verkoop** | Verkoop |
-| **Magazijn / werkplaats** | Voorraad, Productie, Logistiek |
+| **Verkoop** | Verkoop, Installaties |
 
 Elk scenario staat op zichzelf; kies wat bij het publiek past. Een volledige
-demo duurt zo'n 60 à 75 minuten, de kern (scenario's 1, 2, 3, 6 en 8)
+demo duurt zo'n 50 à 60 minuten, de kern (scenario's 1, 2, 3, 7 en 8)
 ongeveer 30 minuten.
 
 ## Voorbereiding
@@ -31,9 +32,8 @@ Over de verwijzingen in deze gids:
 * De **documentnummers** tussen haakjes (bv. `FRW/RO/00002`) gelden voor een
   verse installatie; zoek anders op de klantnaam.
 * **Serienummers** hebben de vorm `AO35-2609-0001`: `AO`/`AI` voor buiten- of
-  binnenunit, het vermogen, jaar en maand van ontvangst, volgnummer. Jaar en
-  maand hangen af van de installatiedatum van de demo; kopieer ze uit het
-  scherm.
+  binnenunit, het vermogen, jaar en maand, volgnummer. Jaar en maand hangen
+  af van de installatiedatum van de demo; kopieer ze uit het scherm.
 * Alle datums zijn relatief tot de dag van installatie: "vandaag" in de data
   is de dag waarop je de demo installeerde.
 
@@ -44,23 +44,21 @@ Over de verwijzingen in deze gids:
 **Verhaal:** de dag begint met de vraag *wat loopt er, wat moet er vandaag
 gebeuren?*
 
-1. **Installaties > Overzicht.**
-   * Bovenaan de tellers: 13 installaties, waarvan een deel *Actief*, één
-     *Inbedrijfstelling gepland* en enkele in *Service* (er is binnen 14
-     dagen een interventie gepland).
-   * Tegel **Interventies**: open, deze week gepland, niet ingepland,
-     afgerond deze maand. Klik op *Niet ingepland*: de herstelling bij
-     Pieter Janssens en de inbedrijfstelling bij Thomas Peeters wachten
-     op een datum.
-   * Tegel **Producten in reparatie**: de open herstelorders uit de app
-     Reparaties per fase (nieuw, bevestigd, in reparatie).
-   * **Planning**: maand-, week- of dagkalender van de interventies, te
-     filteren per installateur.
-2. **Logistiek > Overzicht**: de stand van voorraad, serienummers,
-   inkomende en uitgaande goederen en reserveonderdelen in één scherm.
+**Installaties > Overzicht**
 
-**Toon vooral:** één startscherm voor planning, service en logistiek, zonder
-zelf lijsten te moeten samenstellen.
+* Bovenaan de tellers: 13 installaties, waarvan een deel *Actief*, één
+  *Inbedrijfstelling gepland* en enkele in *Service* (er is binnen 14 dagen
+  een interventie gepland).
+* Tegel **Interventies**: open, deze week gepland, niet ingepland, afgerond
+  deze maand. Klik op *Niet ingepland*: de herstelling bij Pieter Janssens
+  en de inbedrijfstelling bij Thomas Peeters wachten op een datum.
+* Tegel **Producten in reparatie**: de open herstelorders uit de app
+  Reparaties per fase (nieuw, bevestigd, in reparatie).
+* **Planning**: maand-, week- of dagkalender van de interventies, te
+  filteren per installateur.
+
+**Toon vooral:** één startscherm voor installaties, planning en service,
+zonder zelf lijsten te moeten samenstellen.
 
 ---
 
@@ -83,7 +81,7 @@ Ze leest het serienummer af van het typeplaatje.
    ingevuld.
    * **Customer**: Sofie Wouters.
    * **Under Warranty** aanvinken: de installatie is enkele weken oud (zie
-     de leverdatum op de installatie of de verkooporder).
+     de leverdatum op de verkooporder).
    * Het type is *Herstellingen op locatie*: de unit blijft bij de klant
      (*Product Source/Destination Location* = Customers), onderdelen komen
      standaard van de plank *Reserveonderdelen*. Zet **Component Source
@@ -100,7 +98,7 @@ Ze leest het serienummer af van het typeplaatje.
    **Herstellingen** telt de nieuwe interventie.
 
 **Toon vooral:** van serienummer naar klant, installatie, garantie en
-herstelling in een paar klikken, zonder te zoeken in mappen of mails.
+herstelling in een paar klikken.
 
 ---
 
@@ -113,16 +111,14 @@ van de buitenunit vervangen (foutcode E7, onder garantie).
    (`FRW/RO/00002`, fase *Under Repair*, prioriteit urgent).
 2. Tab **Parts**: een lijn *Add* (nieuwe motor van de plank
    Reserveonderdelen) en een lijn *Remove* (de defecte motor gaat naar
-   Scrap, voor de garantieclaim bij de leverancier).
-3. Klik **End Repair**: het onderdeel is verbruikt, de voorraad van de plank
-   daalt met één.
+   Scrap, voor de garantieclaim bij de fabrikant).
+3. Klik **End Repair**: het onderdeel is verbruikt.
 4. In de chatter de geplande activiteiten: *Klant bellen na testrun* (morgen)
    en *Garantieclaim indienen bij Nordklima*. Markeer de eerste als gedaan
    met een korte notitie.
 5. **Installaties > Interventies**: open *Herstelling - Bakkerij Van Hoof* en
    zet de status van de taak op **Done** (het rondje met het vinkje naast de
-   titel). De installatie gaat terug
-   van *Service* naar **Actief**.
+   titel). De installatie gaat terug van *Service* naar **Actief**.
 
 **Toon vooral:** verbruikte onderdelen en defecte stukken zijn traceerbaar
 per serienummer; de status van de installatie volgt de interventies vanzelf.
@@ -134,14 +130,14 @@ per serienummer; de status van de installatie volgt de interventies vanzelf.
 **Verhaal:** de afstandsbediening van Pieter Janssens reageert niet meer.
 De melding staat al in het systeem, met een activiteit *Bezoek inplannen*.
 
-1. **Repairs > Orders**, filter op de activiteiten van vandaag of open de
-   herstelling van *Pieter Janssens* (`FRW/RO/00006`, *New*, garantie).
-   Onderdelen komen uit *Servicewagen 1*.
+1. **Repairs > Orders**, open de herstelling van *Pieter Janssens*
+   (`FRW/RO/00006`, *New*, garantie). Onderdelen komen uit
+   *Servicewagen 1*.
 2. **Installaties > Interventies** > *Herstelling - Pieter Janssens* (nog
    zonder datum) > **Inplannen via kalender**. Combineer met een ander bezoek
    in de buurt (Sint-Katelijne-Waver) door in de weekkalender te kijken.
 3. Terug naar de herstelling: **Confirm Repair**, ter plaatse **Start
-   Repair**, na de vervanging **End Repair**. De voorraad van de wagen daalt.
+   Repair**, na de vervanging **End Repair**.
 4. Markeer de activiteit *Bezoek inplannen* als gedaan.
 
 ---
@@ -155,7 +151,7 @@ De melding staat al in het systeem, met een activiteit *Bezoek inplannen*.
 1. Open de herstelling van *Familie Wuyts* (`FRW/RO/00005`, *New*): de
    buitenunit maakt lawaai, er is een offerte verstuurd en een activiteit
    *Offerte opvolgen*.
-2. Smart button **Sale Order** (`S00017`, *Quotation Sent*): het
+2. Smart button **Sale Order** (`S00014`, *Quotation Sent*): het
    expansieventiel uit de herstelling plus arbeid en verplaatsing. De klant
    belt om te aanvaarden: **Confirm**.
 3. Terug naar de herstelling (smart button op de verkooporder) en **Confirm
@@ -164,10 +160,14 @@ De melding staat al in het systeem, met een activiteit *Bezoek inplannen*.
 **Familie Mertens: wachten op een printplaat**
 
 1. Open de herstelling van *Familie Mertens* (`FRW/RO/00003`, *Confirmed*):
-   offerte aanvaard, maar **Component Status** toont een verwachte datum:
-   de printplaat is niet op voorraad en besteld bij Nordklima.
-2. Het bijhorende bezoek staat al gepland (*Herstelling - Familie Mertens*),
-   na de verwachte levering. De ontvangst volgt in scenario 9a.
+   offerte aanvaard, maar **Component Status** staat op *Not Available*: de
+   printplaat is niet op voorraad en besteld bij de fabrikant (activiteit
+   *Levering printplaat opvolgen*). Het bezoek staat al gepland.
+2. De printplaat is binnen: **Inventory > Operations > Physical Inventory**,
+   lijn voor *Printplaat binnenunit Aero* op **FRW/Stock/Reserveonderdelen**
+   met *Counted Quantity* 2, **Apply**.
+3. Terug naar de herstelling: **Check availability**, **Component Status**
+   wordt *Available*. Op het bezoek: **Start Repair** en **End Repair**.
 
 **Toon vooral:** garantie of niet bepaalt de prijs op de offerte; de
 planner ziet meteen welke herstellingen op een onderdeel wachten.
@@ -180,33 +180,29 @@ planner ziet meteen welke herstellingen op een onderdeel wachten.
 aanvaarden.
 
 1. **Sales > Orders > Quotations**, open de offerte van *Jan De Smet*
-   (`S00014`): *Installatiepakket split airco 3,5 kW* plus de plaatsing.
+   (`S00011`): *Installatiepakket split airco 3,5 kW* plus de plaatsing.
 2. Toon op het product (**Sales > Products > Products**) de stuklijst van het
-   pakket: buitenunit, binnenunit en montagekit (type *Kit*). Het pakket zelf
-   heeft geen voorraad; de onderdelen liggen in het Stoqflow-magazijn.
-3. **Confirm**. Smart button **Delivery**: de levering vertrekt uit
-   **SQF/Stock** (Stoqflow Fulfilment) en bevat de drie onderdelen; Odoo
-   heeft al een **serienummer** gereserveerd voor de buiten- en de
-   binnenunit.
-4. **Logistiek > Uitgaande goederen**: de nieuwe order staat bij de
-   leveringen die nog moeten vertrekken.
+   pakket: buitenunit, binnenunit en montagekit (type *Kit*). Het pakket
+   heeft zelf de componentrol *Installatiepakket* en de categorie *Split
+   airco*.
+3. **Confirm**. Smart button **Delivery**: de levering bevat de drie
+   onderdelen; Odoo heeft al een **serienummer** gereserveerd voor de
+   buiten- en de binnenunit.
 
 **Toon vooral:** verkoop werkt met één pakketlijn; welke units (en welke
-serienummers) er vertrekken, volgt uit de stuklijst en de voorraad.
+serienummers) er naar de klant gaan, volgt uit de stuklijst.
 
 ---
 
-## 7. Stoqflow levert: installatie registreren (verkoop + planner, 10 min)
+## 7. Levering en installatie registreren (verkoop + planner, 10 min)
 
-**Verhaal:** Stoqflow heeft de airco van Ann Verbruggen geleverd op de
-werf en bevestigt welke units vertrokken zijn.
+**Verhaal:** de airco van Ann Verbruggen is vandaag geleverd en geplaatst.
 
 1. **Inventory > Operations > Transfers > Deliveries**, open de levering van
-   *Ann Verbruggen* (`SQF/OUT/00009`).
-2. Controleer de **serienummers** van buiten- en binnenunit op de levering
-   (pas ze aan als Stoqflow andere units gepickt heeft) en klik
-   **Validate** (vraagt Odoo de eerste keer of klanten een sms krijgen bij
-   levering, kies naar wens).
+   *Ann Verbruggen* (`FRW/OUT/00009`).
+2. Controleer de **serienummers** van buiten- en binnenunit (pas ze aan als
+   de technieker andere units meenam) en klik **Validate** (vraagt Odoo de
+   eerste keer of klanten een sms krijgen bij levering, kies naar wens).
 3. **Installaties > Installaties** > **New**:
    * **Product**: *Installatiepakket split airco 3,5 kW*: categorie en
      componenten (buitenunit, binnenunit, montagekit) komen uit de stuklijst;
@@ -219,8 +215,9 @@ werf en bevestigt welke units vertrokken zijn.
 4. Smart button **Interventie plannen**: *Inbedrijfstelling*, en plan via
    **Inplannen via kalender** (zie scenario 8).
 
-**Toon vooral:** het serienummer loopt door van de ontvangst in het
-Stoqflow-magazijn via de levering tot op de installatie bij de klant.
+**Toon vooral:** het serienummer loopt door van de voorraad via de levering
+tot op de installatie bij de klant, en elk serienummer kan maar op één
+installatie staan.
 
 ---
 
@@ -247,83 +244,36 @@ die volgt uit de geplande en afgewerkte interventies.
 
 ---
 
-## 9. Magazijn en werkplaats (magazijn, 15 min)
+## 9. Onderhoud en vervanging (planner, 5 min)
 
-**a. Printplaten ontvangen (vervolg scenario 5)**
+**Kapsalon Lena: jaarlijks onderhoud**
 
-1. **Inventory > Operations > Transfers > Receipts**, open de ontvangst van
-   Nordklima met de printplaten (`FRW/IN/00005`, aankoop `P00009`): ze komen
-   binnen op **FRW/Stock/Reserveonderdelen**, niet in het Stoqflow-magazijn.
-2. **Validate**.
-3. Open de herstelling van *Familie Mertens* en klik **Check availability**:
-   **Component Status** wordt *Available*. De technieker kan op het geplande
-   bezoek de herstelling starten en afronden.
+1. Open de installatie van *Kapsalon Lena* (geplaatst in 2020): status
+   **Service**, want het jaarlijks onderhoud staat binnen 14 dagen gepland.
+   De smart button **Herstellingen** toont ook de afgewerkte herstelling van
+   de temperatuursensor.
+2. Na het bezoek: open *Periodiek onderhoud - Kapsalon Lena* en zet het op
+   **Done**: de installatie gaat terug naar **Actief**.
 
-**b. Montagekits samenstellen**
+**Garage Peeters & Zn: vervangen in plaats van herstellen**
 
-1. **Manufacturing > Operations > Manufacturing Orders**, open de open
-   productieorder voor 6 × *Montagekit split 2,5-3,5 kW* (`FRW/MO/00003`).
-2. Toon de onderdelen (koperleiding, muurbeugel, trillingsdempers, …) en de
-   stuklijst; klik **Produce All**.
-
-**c. Kits naar Stoqflow sturen**
-
-1. **Inventory > Operations > Procurement > Replenishment**, verwijder de
-   standaardfilter en zoek *Montagekit*: de regel voor
-   **SQF/Stock** gebruikt de route *Stoqflow Fulfilment: Supply Product from
-   Frisair Werkplaats*.
-2. Vul een hoeveelheid in bij **To Order** en klik **Order**.
-3. Er ontstaan twee transfers: een uitgaande uit de werkplaats
-   (`FRW/OUT/…`, verzending naar Stoqflow) en een ontvangst in het
-   Stoqflow-magazijn (`SQF/IN/…`), via de transitlocatie tussen de twee
-   magazijnen. Valideer de uitgaande. Toon ook de oudere zending
-   (`SQF/IN/00006`) die Stoqflow nog moet ontvangen.
-
-**d. Units op komst bij Stoqflow**
-
-1. **Logistiek > Inkomende goederen**: per leverancier de aankopen en hun
-   ontvangststatus. De laatste aankoop van airco-units bij Nordklima
-   (`P00003`) is nog niet ontvangen.
-2. Open de ontvangst (`SQF/IN/00003`) en registreer bij de ontvangst een
-   **serienummer per unit** (zoals Stoqflow ze doorgeeft), valideer.
-3. Ter vergelijking een afgewerkte ontvangst (`SQF/IN/00001`): elke unit
-   heeft zijn eigen serienummer.
+1. **Repairs > Orders**, filter op *Cancelled*: de herstelling van de
+   compressor (`FRW/RO/00007`) is geannuleerd omdat herstellen niet rendabel
+   was.
+2. Op de installatie van *Garage Peeters & Zn* staat een interventie
+   *Vervanging* gepland (smart button **Vervangingen**).
 
 ---
 
-## 10. Servicewagen aanvullen en reserveonderdelen leveren (magazijn, 5 min)
+## 10. Dagafsluiting (planner, 5 min)
 
-**Servicewagen 1 aanvullen**
-
-1. **Logistiek > Voorraadoverzicht** (of **Inventory > Reporting >
-   Stock**, gegroepeerd per locatie): *Servicewagen 1* heeft nog één
-   condenspomp (de andere ging naar Familie Claes).
-2. **Inventory > Operations > Transfers > Internal** > **New**: van
-   **FRW/Stock/Reserveonderdelen** naar **FRW/Servicewagen 1 (1-ABC-123)**,
-   1 × *Condenspomp mini*. **Mark as To Do**, **Validate**.
-
-**Reserveonderdelen voor een collega-installateur**
-
-1. **Logistiek > Reserveonderdelen**: de leveringen van reserveonderdelen
-   per klant. Koeltechniek Verhaegen heeft een levering klaarstaan
-   (`FRW/OUT/00005`): expansieventiel en filters.
-2. Open de levering en **Validate**. Ze vertrekt uit de werkplaats:
-   reserveonderdelen liggen nooit bij Stoqflow, alleen op de plank en in de
-   servicewagens.
-
----
-
-## 11. Dagafsluiting (planner + magazijn, 5 min)
-
-1. **Logistiek > Serienummers**: per product waar de serienummers zitten:
-   besteld, in eigen voorraad (Stoqflow) of bij de klant, met reservatie- en
-   installatiestatus.
-2. **Logistiek > Uitgaande goederen**: de leveringen die Stoqflow nog moet
-   uitvoeren (Notariskantoor Goossens, Koeltechniek Verhaegen, …).
-3. **Repairs > Reporting > Repairs**: herstellingen per fase, garantie of
-   betalend (tags *Garantie* / *Betalend*).
-4. **Installaties > Overzicht**: de tellers zijn bijgewerkt met het werk van
+1. **Installaties > Overzicht**: de tellers zijn bijgewerkt met het werk van
    vandaag.
+2. **Repairs > Reporting > Repairs**: herstellingen per fase, garantie of
+   betalend (tags *Garantie* / *Betalend*).
+3. Op een serienummer (**Inventory > Products > Lots / Serial Numbers**) de
+   knop **Traceability**: de volledige historiek van de unit, van voorraad
+   via levering tot de herstellingen.
 
 ---
 
@@ -331,7 +281,7 @@ die volgt uit de geplande en afgewerkte interventies.
 
 | Klant | Situatie | Gebruikt in |
 |---|---|---|
-| Familie Claes | Actief; garantieherstelling (condenspomp) afgerond | 10 |
+| Familie Claes | Actief; garantieherstelling (condenspomp) afgerond | - |
 | Lien Van den Broeck | Twee installaties (twee kamers), actief | - |
 | Bakkerij Van Hoof | Garantieherstelling in uitvoering (ventilatormotor), in service | 3 |
 | Sofie Wouters | Actief | 2 |
@@ -339,11 +289,10 @@ die volgt uit de geplande en afgewerkte interventies.
 | Pieter Janssens | Garantieherstelling nieuw (afstandsbediening) | 4 |
 | Elke Maes | Inbedrijfstelling gepland | 8 |
 | Thomas Peeters | Geleverd, inbedrijfstelling nog in te plannen | 8 |
-| Familie Mertens | Oudere installatie; betalende herstelling wacht op printplaat | 5, 9a |
-| Kapsalon Lena | Oudere installatie; betalende herstelling afgerond, onderhoud gepland | - |
+| Familie Mertens | Oudere installatie; betalende herstelling wacht op printplaat | 5 |
+| Kapsalon Lena | Oudere installatie; betalende herstelling afgerond, onderhoud gepland | 9 |
 | Familie Wuyts | Oudere installatie; offerte voor herstelling verstuurd | 5 |
-| Garage Peeters & Zn | Oudere installatie; herstelling geannuleerd, vervanging gepland | - |
-| Ann Verbruggen | Pakket besteld, levering wacht op Stoqflow | 7 |
-| Notariskantoor Goossens | Twee pakketten besteld, levering wacht op Stoqflow | 11 |
+| Garage Peeters & Zn | Oudere installatie; herstelling geannuleerd, vervanging gepland | 9 |
+| Ann Verbruggen | Pakket verkocht, levering en plaatsing vandaag | 7 |
+| Notariskantoor Goossens | Twee pakketten verkocht, nog te leveren en te plaatsen | - |
 | Jan De Smet | Offerte | 6 |
-| Koeltechniek Verhaegen | Collega-installateur: losse units (Stoqflow) en reserveonderdelen (werkplaats) | 10 |

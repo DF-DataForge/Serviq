@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 # Builds the "Frisair Klimaattechniek" demo company on install: a Belgian
-# airco installer that stores its airco units in the Stoqflow fulfilment
-# warehouse (a plain Odoo warehouse here, without the Stoqflow integration).
-#   * master data: company, the own workshop warehouse (with spare parts
-#     shelf and service vans), the Stoqflow warehouse, partners, Serviq
-#     configuration, serial-tracked units, mounting kits (BoM), spare parts
-#     and installation packages (kit BoM of outdoor + indoor unit + mounting
-#     kit);
-#   * a few weeks of documents: units bought into Stoqflow, kit parts bought
-#     into the workshop, kits assembled and resupplied to Stoqflow, packages
-#     sold and delivered by Stoqflow with their serial numbers, spare parts
-#     on the vans and sold to a colleague installer;
-#   * the installations at the customers with their interventions, and
-#     repair orders on installed units (warranty and paid, every stage);
-#   * open orders still waiting to be delivered or received.
+# airco installer. The demo is about the installation flows only; the
+# logistics behind them (purchasing, assembly, fulfilment) are left out and
+# the stock starts from an opening inventory.
+#   * master data: company, the own warehouse (with spare parts shelf and
+#     service vans), customers, Serviq configuration, serial-tracked units,
+#     mounting kits (BoM), spare parts and installation packages (kit BoM of
+#     outdoor + indoor unit + mounting kit);
+#   * a few weeks of installation work: packages sold and delivered with
+#     their serial numbers, the installations at the customers with their
+#     commissioning, maintenance and repair interventions, and repair orders
+#     on installed units (warranty and paid, every stage);
+#   * sold packages still to be installed and a quotation.
 import logging
 from datetime import timedelta
 
@@ -34,18 +32,15 @@ _serial_counters = {}
 def post_init_hook(env):
     company = _setup_company(env)
     _enable_features(env)
-    wks, sqf, locations = _setup_warehouses(env, company)
+    wks, locations = _setup_warehouse(env, company)
     serviq = _setup_serviq(env, company)
     partners = _setup_partners(env)
-    products = _setup_products(env, partners, serviq, wks, sqf)
-    _run_unit_purchases(env, partners, products, sqf)
-    _run_kit_assembly(env, partners, products, wks, sqf)
-    _run_spare_parts(env, partners, products, wks, locations)
-    installations = _run_package_sales(env, partners, products, serviq, sqf)
+    products = _setup_products(env, serviq)
+    _setup_opening_stock(env, products, wks, locations)
+    installations = _run_package_sales(env, partners, products, serviq, wks)
     installations.update(_setup_older_installations(env, partners, products, serviq))
-    _run_open_orders(env, partners, products, sqf)
-    _run_repairs(env, partners, products, serviq, wks, locations, installations)
-    _setup_orderpoints(env, products, wks, sqf)
+    _run_open_orders(env, partners, products, wks)
+    _run_repairs(env, products, serviq, wks, locations, installations)
     _logger.info('Frisair Klimaattechniek demo data installed')
 
 
@@ -77,31 +72,12 @@ def _next_serial(product, date):
     return '%s-%s-%04d' % (key + (_serial_counters[key],))
 
 
-def _receive_serials(move, date):
-    """Register a serial number per received unit."""
-    move.move_line_ids.unlink()
-    move.env['stock.move.line'].create([{
-        'move_id': move.id,
-        'picking_id': move.picking_id.id,
-        'product_id': move.product_id.id,
-        'product_uom_id': move.product_id.uom_id.id,
-        'location_id': move.location_id.id,
-        'location_dest_id': move.location_dest_id.id,
-        'lot_name': _next_serial(move.product_id, date),
-        'quantity': 1,
-    } for _unit in range(int(move.product_uom_qty))])
-
-
 def _validate(picking, date_done=None):
-    """Process a picking in full, as if the warehouse handled every line.
-    Received serial-tracked units get a new serial number; deliveries use
-    the serials reserved by Odoo."""
+    """Process a delivery in full with the serial numbers reserved by
+    Odoo."""
     picking.action_assign()
     for move in picking.move_ids:
-        if move.product_id.tracking == 'serial' and picking.picking_type_code == 'incoming':
-            _receive_serials(move, date_done or fields.Datetime.now())
-        else:
-            move.quantity = move.product_uom_qty
+        move.quantity = move.product_uom_qty
     picking.move_ids.picked = True
     picking.with_context(skip_backorder=True, skip_sms=True).button_validate()
     if picking.state != 'done':
@@ -111,27 +87,6 @@ def _validate(picking, date_done=None):
         picking.move_ids.date = date_done
         picking.move_ids.move_line_ids.date = date_done
     return picking
-
-
-def _purchase(env, vendor, lines, picking_type, days_ago=0, receive=False, location_dest=None):
-    po = env['purchase.order'].create({
-        'partner_id': vendor.id,
-        'user_id': env.ref('base.user_admin').id,
-        'picking_type_id': picking_type.id,
-        'date_order': _days_ago(days_ago),
-        'order_line': [
-            Command.create({'product_id': product.id, 'product_qty': qty})
-            for product, qty in lines
-        ],
-    })
-    po.button_confirm()
-    if location_dest:
-        po.picking_ids.location_dest_id = location_dest
-        po.picking_ids.move_ids.location_dest_id = location_dest
-    if receive:
-        for picking in po.picking_ids:
-            _validate(picking, _days_ago(max(days_ago - 7, 0)))
-    return po
 
 
 def _sell(env, customer, lines, warehouse, days_ago=0, confirm=True, deliver=False):
@@ -154,41 +109,6 @@ def _sell(env, customer, lines, warehouse, days_ago=0, confirm=True, deliver=Fal
         for picking in so.picking_ids:
             _validate(picking, _days_ago(max(days_ago - 1, 0)))
     return so
-
-
-def _manufacture(env, product, qty, warehouse, days_ago=0, produce=False):
-    mo = env['mrp.production'].create({
-        'product_id': product.id,
-        'user_id': env.ref('base.user_admin').id,
-        'product_qty': qty,
-        'picking_type_id': warehouse.manu_type_id.id,
-        'date_start': _days_ago(days_ago),
-    })
-    mo.action_confirm()
-    mo.action_assign()
-    if produce:
-        mo.qty_producing = qty
-        mo.move_raw_ids.picked = True
-        mo.with_context(skip_backorder=True).button_mark_done()
-        mo.date_finished = _days_ago(days_ago)
-    return mo
-
-
-def _transfer(env, picking_type, source, dest, lines, days_ago=0):
-    """Internal transfer between two locations of the workshop, done."""
-    picking = env['stock.picking'].create({
-        'picking_type_id': picking_type.id,
-        'location_id': source.id,
-        'location_dest_id': dest.id,
-        'move_ids': [Command.create({
-            'product_id': product.id,
-            'product_uom_qty': qty,
-            'location_id': source.id,
-            'location_dest_id': dest.id,
-        }) for product, qty in lines],
-    })
-    picking.action_confirm()
-    return _validate(picking, _days_ago(days_ago))
 
 
 def _task(env, serviq, installation, itype, deadline_days, done=False, description=None):
@@ -246,24 +166,20 @@ def _setup_company(env):
 
 
 def _enable_features(env):
-    """Turn on the settings the demo relies on: serial numbers,
-    multi-warehouse with locations and routes."""
+    """Turn on the settings the demo relies on: serial numbers and
+    storage locations (spare parts shelf, service vans)."""
     groups = [
         'stock.group_production_lot',
         'stock.group_stock_multi_locations',
-        'stock.group_stock_multi_warehouses',
-        'stock.group_adv_location',
     ]
     env.ref('base.group_user').write({
         'implied_ids': [Command.link(env.ref(xid).id) for xid in groups],
     })
 
 
-def _setup_warehouses(env, company):
+def _setup_warehouse(env, company):
     """Frisair Werkplaats: own warehouse and workshop, with a spare parts
-    shelf and a location per service van. Stoqflow Fulfilment: the
-    fulfilment partner's warehouse storing the airco units and the mounting
-    kits."""
+    shelf and a location per service van."""
     wks = env['stock.warehouse'].search([('company_id', '=', company.id)], limit=1)
     wks.write({'name': 'Frisair Werkplaats', 'code': 'FRW'})
     # Renaming the code does not rename existing sequences; align them
@@ -288,38 +204,16 @@ def _setup_warehouses(env, company):
             'usage': 'internal',
         }), 'location_%s' % key)
 
-    stoqflow_partner = env['res.partner'].create({
-        'name': 'Stoqflow Fulfilment Centre',
-        'is_company': True,
-        'comment': 'Fulfilmentpartner die onze airco-units en montagekits opslaat en uitlevert.',
-    })
-    sqf = env['stock.warehouse'].create({
-        'name': 'Stoqflow Fulfilment',
-        'code': 'SQF',
-        'company_id': company.id,
-        'partner_id': stoqflow_partner.id,
-        'manufacture_to_resupply': False,
-        'resupply_wh_ids': [Command.link(wks.id)],
-    })
-    _xmlid(sqf, 'warehouse_stoqflow')
-    # Sales are shipped by Stoqflow by default, also when entered in the backend
-    env.ref('base.user_admin').property_warehouse_id = sqf
-
     # Repairs are done on site by the workshop: the unit stays at the
     # customer, parts come from the spare parts shelf (or a van, chosen on
-    # the repair order). Stoqflow does not repair: new repair orders take the
-    # operation type of the user's default warehouse (Stoqflow), so that
-    # warehouse points to the workshop's type and its own is archived.
+    # the repair order).
     wks.repair_type_id.write({
         'name': 'Herstellingen op locatie',
         'default_location_src_id': spare.id,
         'default_product_location_src_id': env.ref('stock.stock_location_customers').id,
         'default_product_location_dest_id': env.ref('stock.stock_location_customers').id,
     })
-    sqf_repair_type = sqf.repair_type_id
-    sqf.repair_type_id = wks.repair_type_id
-    sqf_repair_type.active = False
-    return wks, sqf, dict(vans, spare=spare)
+    return wks, dict(vans, spare=spare)
 
 
 # ---------------------------------------------------------------------------
@@ -397,15 +291,6 @@ def _setup_partners(env):
         return key, _xmlid(partner, 'partner_%s' % key)
 
     return dict([
-        # Suppliers
-        company_partner('nordklima', 'Nordklima Distribution GmbH', 'Kältestrasse 12', '50829',
-                        'Köln', 'de', 'orders@nordklima.example'),
-        company_partner('techniparts', 'Techniparts Installatie NV', 'Noorderlaan 140', '2030',
-                        'Antwerpen', 'be', 'verkoop@techniparts.example'),
-        company_partner('koperklim', 'KoperKlim BV', 'Esp 210', '5633 AA',
-                        'Eindhoven', 'nl', 'order@koperklim.example'),
-        company_partner('klimaparts', 'Klimaparts Service NV', 'Skaldenstraat 61', '9042',
-                        'Gent', 'be', 'service@klimaparts.example'),
         # Customers of the package sales
         person('claes', 'Familie Claes', 'Kessel-Dorp 27', '2560', 'Nijlen',
                'gert.claes@example.com', '+32 475 12 34 56'),
@@ -423,7 +308,7 @@ def _setup_partners(env):
                'elke.maes@example.com', '+32 468 11 22 33'),
         person('peeters', 'Thomas Peeters', 'Boomsesteenweg 77', '2840', 'Rumst',
                'thomas.peeters@example.com', '+32 494 55 66 77'),
-        # Customers of the open orders
+        # Customers whose package is still to be installed, and a quotation
         person('verbruggen', 'Ann Verbruggen', 'Tervuursesteenweg 45', '3190', 'Boortmeerbeek',
                'ann.verbruggen@example.com', '+32 476 33 44 55'),
         company_partner('goossens', 'Notariskantoor Goossens', 'Kartuizersvest 3', '2500', 'Lier',
@@ -439,9 +324,6 @@ def _setup_partners(env):
                'bart.wuyts@example.com', '+32 497 13 57 91'),
         company_partner('garage', 'Garage Peeters & Zn', 'Antwerpsesteenweg 400', '2630', 'Aartselaar',
                         'be', 'garage@peeterszn.example', phone='+32 3 877 66 55'),
-        # Colleague installer buying units and spare parts
-        company_partner('verhaegen', 'Koeltechniek Verhaegen', 'Ambachtenlaan 22', '3001', 'Leuven',
-                        'be', 'bestel@verhaegen-koeltechniek.example', phone='+32 16 40 50 60'),
     ])
 
 
@@ -449,7 +331,7 @@ def _setup_partners(env):
 # Products
 # ---------------------------------------------------------------------------
 
-def _setup_products(env, partners, serviq, wks, sqf):
+def _setup_products(env, serviq):
     Category = env['product.category']
     root = Category.create({'name': 'Klimaattechniek'})
     cat_units = Category.create({'name': 'Airco-units', 'parent_id': root.id})
@@ -459,15 +341,9 @@ def _setup_products(env, partners, serviq, wks, sqf):
     cat_packages = Category.create({'name': 'Installatiepakketten', 'parent_id': root.id})
     cat_services = Category.create({'name': 'Diensten', 'parent_id': root.id})
 
-    route_buy = env.ref('purchase_stock.route_warehouse0_buy')
-    route_manufacture = env.ref('mrp.route_warehouse0_manufacture')
-    route_resupply = env['stock.route'].search([
-        ('supplied_wh_id', '=', sqf.id), ('supplier_wh_id', '=', wks.id),
-    ], limit=1)
     roles, category = serviq['roles'], serviq['category']
 
-    def product(key, name, code, categ, cost, price, vendor=None, delay=0, weight=0.0,
-                role=None, routes=None, **extra):
+    def product(key, name, code, categ, cost, price, role=None, **extra):
         vals = dict({
             'name': name,
             'default_code': code,
@@ -476,97 +352,85 @@ def _setup_products(env, partners, serviq, wks, sqf):
             'is_storable': True,
             'standard_price': cost,
             'list_price': price,
-            'weight': weight,
             'serviq_role_id': role.id if role else False,
-            'route_ids': [Command.set(routes.ids)] if routes else False,
         }, **extra)
-        if vendor:
-            vals['seller_ids'] = [Command.create({
-                'partner_id': vendor.id, 'price': cost, 'delay': delay, 'min_qty': 1,
-            })]
         tmpl = _xmlid(env['product.template'].create(vals), 'product_%s' % key)
         return tmpl.product_variant_id
 
-    # Airco units: serial-tracked, bought straight into the Stoqflow
-    # warehouse; the serial numbers are registered on the receipt.
+    # Airco units of the (fictional) brand Nordklima, one serial number per
+    # unit.
     units = {}
     for power, kw, out_cost, in_cost in [('25', '2,5', 520.0, 260.0),
                                          ('35', '3,5', 610.0, 290.0),
                                          ('50', '5,0', 840.0, 360.0)]:
-        for side, role, label, cost, weight in [
-            ('out', 'outdoor', 'buitenunit', out_cost, 32.0 + int(power) / 10),
-            ('in', 'indoor', 'binnenunit wandmodel', in_cost, 9.0 + int(power) / 25),
+        for side, role, label, cost in [
+            ('out', 'outdoor', 'buitenunit', out_cost),
+            ('in', 'indoor', 'binnenunit wandmodel', in_cost),
         ]:
             key = '%s_%s' % (side, power)
             units[key] = product(
                 key, 'Nordklima Aero %s %s kW' % (label, kw), 'NK-AERO-%s-%s' % (side.upper(), power),
-                cat_units, cost, round(cost * 1.6, -1), partners['nordklima'], 21, weight,
-                roles[role], route_buy, tracking='serial',
+                cat_units, cost, round(cost * 1.6, -1), roles[role], tracking='serial',
                 description_sale='Split airco, koudemiddel R32, energieklasse A++',
             )
             units[key].product_tmpl_id.serviq_category_id = category
 
-    # Parts of the mounting kits, bought into the workshop
+    # Contents of the mounting kits; shown inside the installations
     parts = {}
-    for key, name, code, cost, vendor, delay, weight in [
-        ('pipe_s', 'Koperleiding geïsoleerd 1/4"-3/8" (5 m)', 'KK-CU-1438-5', 38.0, 'koperklim', 10, 3.2),
-        ('pipe_l', 'Koperleiding geïsoleerd 1/4"-1/2" (5 m)', 'KK-CU-1412-5', 46.0, 'koperklim', 10, 3.9),
-        ('bracket', 'Muurbeugel buitenunit 450 mm', 'TP-MB-450', 22.0, 'techniparts', 5, 4.1),
-        ('feet', 'Trillingsdempers buitenunit (set van 4)', 'TP-TD-4', 6.5, 'techniparts', 5, 0.6),
-        ('drain', 'Condensafvoerslang 16 mm (5 m)', 'TP-CA-16-5', 4.8, 'techniparts', 5, 0.4),
-        ('cable', 'Verbindingskabel 5G1,5 (5 m)', 'TP-KB-5G15-5', 9.9, 'techniparts', 5, 0.7),
-        ('trunking', 'Leidinggoot 80 mm met bochten (set)', 'TP-LG-80', 18.5, 'techniparts', 5, 2.0),
+    for key, name, code, cost in [
+        ('pipe_s', 'Koperleiding geïsoleerd 1/4"-3/8" (5 m)', 'KK-CU-1438-5', 38.0),
+        ('pipe_l', 'Koperleiding geïsoleerd 1/4"-1/2" (5 m)', 'KK-CU-1412-5', 46.0),
+        ('bracket', 'Muurbeugel buitenunit 450 mm', 'TP-MB-450', 22.0),
+        ('feet', 'Trillingsdempers buitenunit (set van 4)', 'TP-TD-4', 6.5),
+        ('drain', 'Condensafvoerslang 16 mm (5 m)', 'TP-CA-16-5', 4.8),
+        ('cable', 'Verbindingskabel 5G1,5 (5 m)', 'TP-KB-5G15-5', 9.9),
+        ('trunking', 'Leidinggoot 80 mm met bochten (set)', 'TP-LG-80', 18.5),
     ]:
-        parts[key] = product(key, name, code, cat_parts, cost, round(cost * 1.8, 2), partners[vendor],
-                             delay, weight, routes=route_buy, sale_ok=False)
+        parts[key] = product(key, name, code, cat_parts, cost, round(cost * 1.8, 2), sale_ok=False)
 
-    # Mounting kits: assembled in the workshop, resupplied to Stoqflow
+    # Mounting kits: a bill of materials of installation material
     kits = {}
     for key, name, code, price, pipe in [
         ('kit_s', 'Montagekit split 2,5-3,5 kW', 'FRW-MK-S', 249.0, 'pipe_s'),
         ('kit_l', 'Montagekit split 5,0 kW', 'FRW-MK-L', 289.0, 'pipe_l'),
     ]:
         kits[key] = product(
-            key, name, code, cat_kits, 0.0, price, weight=11.5, role=roles['mounting_kit'],
-            routes=route_manufacture | route_resupply, purchase_ok=False,
+            key, name, code, cat_kits, 150.0, price, roles['mounting_kit'],
             description_sale='Samengesteld in onze werkplaats in Mechelen.',
         )
         bom = env['mrp.bom'].create({
             'product_tmpl_id': kits[key].product_tmpl_id.id,
             'product_qty': 1,
             'type': 'normal',
-            'picking_type_id': wks.manu_type_id.id,
             'bom_line_ids': [
                 Command.create({'product_id': parts[part].id, 'product_qty': 1})
                 for part in (pipe, 'bracket', 'feet', 'drain', 'cable', 'trunking')
             ],
         })
         _xmlid(bom, 'bom_%s' % key)
-        kits[key].product_tmpl_id.button_bom_cost()
 
-    # Spare parts: kept in the workshop and the vans, never at Stoqflow
+    # Spare parts: on the workshop shelf and in the service vans, used in repairs
     spare = {}
-    for key, name, code, cost, price, vendor, delay in [
-        ('pcb', 'Printplaat binnenunit Aero', 'NK-SP-PCB-IN', 68.0, 145.0, 'nordklima', 14),
-        ('fan_motor', 'Ventilatormotor buitenunit Aero', 'NK-SP-FAN-OUT', 92.0, 189.0, 'nordklima', 14),
-        ('eev', 'Elektronisch expansieventiel Aero', 'NK-SP-EEV', 41.0, 95.0, 'nordklima', 14),
-        ('remote', 'Afstandsbediening IR Aero', 'NK-SP-REMOTE', 14.0, 39.0, 'nordklima', 14),
-        ('pump', 'Condenspomp mini', 'KP-CP-MINI', 48.0, 109.0, 'klimaparts', 3),
-        ('ntc', 'Temperatuursensor NTC 10k', 'KP-NTC-10K', 6.0, 24.0, 'klimaparts', 3),
-        ('filter', 'Filterset binnenunit Aero', 'KP-FLT-AERO', 7.5, 19.5, 'klimaparts', 3),
+    for key, name, code, cost, price in [
+        ('pcb', 'Printplaat binnenunit Aero', 'NK-SP-PCB-IN', 68.0, 145.0),
+        ('fan_motor', 'Ventilatormotor buitenunit Aero', 'NK-SP-FAN-OUT', 92.0, 189.0),
+        ('eev', 'Elektronisch expansieventiel Aero', 'NK-SP-EEV', 41.0, 95.0),
+        ('remote', 'Afstandsbediening IR Aero', 'NK-SP-REMOTE', 14.0, 39.0),
+        ('pump', 'Condenspomp mini', 'KP-CP-MINI', 48.0, 109.0),
+        ('ntc', 'Temperatuursensor NTC 10k', 'KP-NTC-10K', 6.0, 24.0),
+        ('filter', 'Filterset binnenunit Aero', 'KP-FLT-AERO', 7.5, 19.5),
     ]:
-        spare[key] = product(key, name, code, cat_spare, cost, price, partners[vendor], delay, 0.5,
-                             roles['spare_part'], route_buy)
+        spare[key] = product(key, name, code, cat_spare, cost, price, roles['spare_part'])
 
     # Installation packages: a kit BoM of an outdoor unit, an indoor unit and
-    # a mounting kit. The delivery from Stoqflow holds the three components.
+    # a mounting kit. The delivery holds the three components.
     packages = {}
     for power, kw, kit, price in [('25', '2,5', 'kit_s', 1690.0), ('35', '3,5', 'kit_s', 1890.0),
                                   ('50', '5,0', 'kit_l', 2390.0)]:
         key = 'package_%s' % power
         packages[power] = product(
             key, 'Installatiepakket split airco %s kW' % kw, 'FRW-PKG-%s' % power, cat_packages,
-            0.0, price, role=roles['package'], is_storable=False, purchase_ok=False,
+            0.0, price, roles['package'], is_storable=False, purchase_ok=False,
             serviq_category_id=category.id,
             description_sale='Buitenunit, binnenunit wandmodel en montagekit Nordklima Aero %s kW' % kw)
         bom = env['mrp.bom'].create({
@@ -592,121 +456,56 @@ def _setup_products(env, partners, serviq, wks, sqf):
 
     return {
         'units': units, 'parts': parts, 'kits': kits, 'spare': spare,
-        'packages': packages, 'services': services, 'route_resupply': route_resupply,
+        'packages': packages, 'services': services,
     }
 
 
 # ---------------------------------------------------------------------------
-# Airco units bought into the Stoqflow warehouse
+# Opening inventory
 # ---------------------------------------------------------------------------
 
-def _run_unit_purchases(env, partners, products, sqf):
-    units = products['units']
-    nordklima = partners['nordklima']
-    # Opening stock, received at Stoqflow with the serial numbers
-    _purchase(env, nordklima, [
-        (units['out_25'], 6), (units['in_25'], 6),
-        (units['out_35'], 8), (units['in_35'], 8),
-        (units['out_50'], 3), (units['in_50'], 3),
-    ], sqf.in_type_id, days_ago=40, receive=True)
-    _purchase(env, nordklima, [
-        (units['out_35'], 6), (units['in_35'], 6),
-        (units['out_25'], 4), (units['in_25'], 4),
-    ], sqf.in_type_id, days_ago=16, receive=True)
-    # On its way: still to be received at Stoqflow
-    _purchase(env, nordklima, [
-        (units['out_50'], 4), (units['in_50'], 4),
-        (units['out_35'], 6), (units['in_35'], 6),
-    ], sqf.in_type_id, days_ago=3)
-
-
-# ---------------------------------------------------------------------------
-# Mounting kits: parts bought into the workshop, assembled, resupplied
-# ---------------------------------------------------------------------------
-
-def _run_kit_assembly(env, partners, products, wks, sqf):
-    parts, kits = products['parts'], products['kits']
-    for vendor, lines in [
-        ('koperklim', [('pipe_s', 30), ('pipe_l', 10)]),
-        ('techniparts', [('bracket', 40), ('feet', 40), ('drain', 40), ('cable', 40), ('trunking', 40)]),
-    ]:
-        _purchase(env, partners[vendor], [(parts[k], q) for k, q in lines],
-                  wks.in_type_id, days_ago=38, receive=True)
-    # Reorder of copper pipe, still a request for quotation
-    env['purchase.order'].create({
-        'partner_id': partners['koperklim'].id,
-        'user_id': env.ref('base.user_admin').id,
-        'picking_type_id': wks.in_type_id.id,
-        'order_line': [Command.create({'product_id': parts['pipe_s'].id, 'product_qty': 30})],
-    })
-
-    # Assembly in the workshop
-    _manufacture(env, kits['kit_s'], 20, wks, days_ago=33, produce=True)
-    _manufacture(env, kits['kit_l'], 8, wks, days_ago=32, produce=True)
-    _manufacture(env, kits['kit_s'], 6, wks, days_ago=0)  # ready to produce
-
-    # Resupply the Stoqflow warehouse: workshop -> transit -> Stoqflow
-    route = products['route_resupply']
-    _resupply(env, kits['kit_s'], 14, sqf, route, days_ago=30, receive=True)
-    _resupply(env, kits['kit_l'], 6, sqf, route, days_ago=30, receive=True)
-    # Shipped from the workshop, still to be received at Stoqflow
-    _resupply(env, kits['kit_s'], 4, sqf, route, days_ago=1, receive=False)
-
-
-def _resupply(env, product, qty, sqf, route, days_ago=0, receive=False):
-    """Replenish the Stoqflow warehouse from the workshop. The workshop leg is
-    always shipped; the receipt at Stoqflow is only done when receive=True."""
-    # A one-off manual orderpoint drives the resupply route; Odoo removes it
-    # again once it has nothing left to order.
-    orderpoint = env['stock.warehouse.orderpoint'].create({
-        'product_id': product.id, 'warehouse_id': sqf.id, 'location_id': sqf.lot_stock_id.id,
-        'product_min_qty': 0, 'product_max_qty': 0, 'trigger': 'manual',
-        'route_id': route.id, 'qty_to_order_manual': qty,
-    })
-    existing = env['stock.picking'].search([])
-    orderpoint.action_replenish()
-    orderpoint.exists().unlink()
-    pickings = env['stock.picking'].search([('id', 'not in', existing.ids)])
-    outgoing = pickings.filtered(lambda p: p.location_dest_id != sqf.lot_stock_id)
-    incoming = pickings - outgoing
-    for picking in outgoing:
-        _validate(picking, _days_ago(days_ago))
-    if receive:
-        for picking in incoming:
-            _validate(picking, _days_ago(max(days_ago - 1, 0)))
-
-
-# ---------------------------------------------------------------------------
-# Spare parts: workshop shelf, service vans, sales to a colleague installer
-# ---------------------------------------------------------------------------
-
-def _run_spare_parts(env, partners, products, wks, locations):
+def _setup_opening_stock(env, products, wks, locations):
+    """Stock at the start of the demo, as an inventory adjustment: units with
+    their serial numbers and mounting kits in the warehouse, spare parts on
+    the shelf and in the vans. The printed circuit board is out of stock (a
+    repair waits for it)."""
+    Quant = env['stock.quant']
+    stock, shelf = wks.lot_stock_id, locations['spare']
+    date = _days_ago(45)
+    quants = Quant
+    for key, qty in [('out_25', 8), ('in_25', 8), ('out_35', 10), ('in_35', 10),
+                     ('out_50', 5), ('in_50', 5)]:
+        product = products['units'][key]
+        for _unit in range(qty):
+            lot = env['stock.lot'].create({
+                'name': _next_serial(product, date), 'product_id': product.id,
+            })
+            quants |= Quant.create({
+                'product_id': product.id, 'location_id': stock.id, 'lot_id': lot.id,
+                'inventory_quantity': 1,
+            })
     spare = products['spare']
-    shelf = locations['spare']
-    _purchase(env, partners['nordklima'], [
-        (spare['fan_motor'], 3), (spare['eev'], 3), (spare['remote'], 6),
-    ], wks.in_type_id, days_ago=36, receive=True, location_dest=shelf)
-    _purchase(env, partners['klimaparts'], [
-        (spare['pump'], 6), (spare['ntc'], 12), (spare['filter'], 20),
-    ], wks.in_type_id, days_ago=36, receive=True, location_dest=shelf)
-    # Printed circuit boards on order, out of stock (a repair is waiting)
-    _purchase(env, partners['nordklima'], [(spare['pcb'], 3)], wks.in_type_id, days_ago=2,
-              location_dest=shelf)
-
-    # Each service van carries a basic set
-    for van in ('van_1', 'van_2'):
-        _transfer(env, wks.int_type_id, shelf, locations[van], [
-            (spare['pump'], 2), (spare['ntc'], 4), (spare['filter'], 4), (spare['remote'], 1),
-        ], days_ago=34)
-
-    # Colleague installer buying spare parts from the workshop
-    _sell(env, partners['verhaegen'], [(spare['fan_motor'], 1), (spare['ntc'], 2)], wks,
-          days_ago=11, deliver=True)
-    _sell(env, partners['verhaegen'], [(spare['eev'], 1), (spare['filter'], 4)], wks, days_ago=0)
+    for location, lines in [
+        (stock, [(products['kits']['kit_s'], 15), (products['kits']['kit_l'], 6)]),
+        (shelf, [(spare['fan_motor'], 2), (spare['eev'], 3), (spare['remote'], 4),
+                 (spare['pump'], 2), (spare['ntc'], 4), (spare['filter'], 12)]),
+        (locations['van_1'], [(spare['pump'], 2), (spare['ntc'], 4), (spare['filter'], 4),
+                              (spare['remote'], 1)]),
+        (locations['van_2'], [(spare['pump'], 2), (spare['ntc'], 4), (spare['filter'], 4),
+                              (spare['remote'], 1)]),
+    ]:
+        for product, qty in lines:
+            quants |= Quant.create({
+                'product_id': product.id, 'location_id': location.id, 'inventory_quantity': qty,
+            })
+    quants.action_apply_inventory()
+    moves = env['stock.move'].search([('is_inventory', '=', True)])
+    moves.date = date
+    moves.move_line_ids.date = date
 
 
 # ---------------------------------------------------------------------------
-# Installation packages sold and delivered by Stoqflow -> installations
+# Installation packages sold and delivered -> installations
 # ---------------------------------------------------------------------------
 
 def _create_installation(env, serviq, customer, package, lots, note=None):
@@ -733,9 +532,9 @@ def _create_installation(env, serviq, customer, package, lots, note=None):
     return installation
 
 
-def _run_package_sales(env, partners, products, serviq, sqf):
-    """Packages sold to end customers and delivered by Stoqflow on the
-    installation day. Each delivered package becomes an installation with
+def _run_package_sales(env, partners, products, serviq, wks):
+    """Packages sold to end customers and delivered on the installation
+    day. Each delivered package becomes an installation with
     the serials of the delivery, and gets its commissioning: done for the
     older ones, planned or still to plan for the most recent ones."""
     packages, installation_service = products['packages'], products['services']['installation']
@@ -753,7 +552,7 @@ def _run_package_sales(env, partners, products, serviq, sqf):
         ('peeters', 'peeters', '35', 1, 2, None),
     ]:
         package = packages[power]
-        so = _sell(env, partners[customer], [(package, qty), (installation_service, qty)], sqf,
+        so = _sell(env, partners[customer], [(package, qty), (installation_service, qty)], wks,
                    days_ago=days_ago, deliver=True)
         lots = so.picking_ids.move_line_ids.lot_id
         for unit in range(qty):
@@ -801,20 +600,18 @@ def _setup_older_installations(env, partners, products, serviq):
 
 
 # ---------------------------------------------------------------------------
-# Open orders, still waiting to be delivered by Stoqflow
+# Packages sold, still to be installed
 # ---------------------------------------------------------------------------
 
-def _run_open_orders(env, partners, products, sqf):
-    packages, units = products['packages'], products['units']
+def _run_open_orders(env, partners, products, wks):
+    packages = products['packages']
     installation_service = products['services']['installation']
-    _sell(env, partners['verbruggen'], [(packages['35'], 1), (installation_service, 1)], sqf, days_ago=1)
+    _sell(env, partners['verbruggen'], [(packages['35'], 1), (installation_service, 1)], wks, days_ago=1)
     _sell(env, partners['goossens'], [
         (packages['50'], 1), (packages['25'], 1), (installation_service, 2),
-    ], sqf, days_ago=0)
-    # Loose units for a colleague installer, shipped by Stoqflow
-    _sell(env, partners['verhaegen'], [(units['out_35'], 2), (units['in_35'], 2)], sqf, days_ago=0)
+    ], wks, days_ago=0)
     # Quotation not yet confirmed
-    _sell(env, partners['desmet'], [(packages['35'], 1), (installation_service, 1)], sqf,
+    _sell(env, partners['desmet'], [(packages['35'], 1), (installation_service, 1)], wks,
           confirm=False)
 
 
@@ -822,7 +619,7 @@ def _run_open_orders(env, partners, products, sqf):
 # Repairs on installed units, found by serial number
 # ---------------------------------------------------------------------------
 
-def _run_repairs(env, partners, products, serviq, wks, locations, installations):
+def _run_repairs(env, products, serviq, wks, locations, installations):
     spare, services = products['spare'], products['services']
     admin = env.ref('base.user_admin')
     Tag = env['repair.tags']
@@ -914,7 +711,7 @@ def _run_repairs(env, partners, products, serviq, wks, locations, installations)
           description='<p>Herstelling %s: testrun na vervanging ventilatormotor.</p>' % ro.name)
 
     # 3. Paid, confirmed: printed circuit board of an older indoor unit,
-    #    accepted by the customer, waiting for the board on order.
+    #    accepted by the customer, waiting for the board (out of stock).
     mertens = installations['mertens']
     ro = repair('mertens_pcb', mertens, 'in',
                 '<p>Binnenunit start niet meer, display knippert. Printplaat defect. Buiten '
@@ -924,7 +721,7 @@ def _run_repairs(env, partners, products, serviq, wks, locations, installations)
     ro.action_validate()
     ro.schedule_date = fields.Datetime.now() + timedelta(days=13)
     activity(ro, 'mail.mail_activity_data_todo', 3, 'Levering printplaat opvolgen',
-             'Printplaat besteld bij Nordklima; bij ontvangst het bezoek bevestigen.')
+             'Printplaat besteld bij de fabrikant; bij ontvangst het bezoek bevestigen.')
     _task(env, serviq, mertens, serviq['repair'], 13,
           description='<p>Herstelling %s: printplaat binnenunit vervangen.</p>' % ro.name)
 
@@ -969,32 +766,3 @@ def _run_repairs(env, partners, products, serviq, wks, locations, installations)
     _task(env, serviq, garage, serviq['replacement'], 9,
           description='<p>Vervanging van de installatie na herstelling %s (geannuleerd).</p>'
           % ro.name)
-
-
-# ---------------------------------------------------------------------------
-# Replenishment rules
-# ---------------------------------------------------------------------------
-
-def _setup_orderpoints(env, products, wks, sqf):
-    """Replenishment rules with a manual trigger: they show up in the
-    replenishment report but do not create orders by themselves."""
-    Orderpoint = env['stock.warehouse.orderpoint']
-    route_buy = env.ref('purchase_stock.route_warehouse0_buy')
-    for product in products['units'].values():
-        Orderpoint.create({
-            'product_id': product.id, 'warehouse_id': sqf.id, 'location_id': sqf.lot_stock_id.id,
-            'product_min_qty': 3, 'product_max_qty': 10, 'trigger': 'manual',
-            'route_id': route_buy.id,
-        })
-    for product in products['kits'].values():
-        Orderpoint.create({
-            'product_id': product.id, 'warehouse_id': sqf.id, 'location_id': sqf.lot_stock_id.id,
-            'product_min_qty': 4, 'product_max_qty': 12, 'trigger': 'manual',
-            'route_id': products['route_resupply'].id,
-        })
-    for product in list(products['parts'].values()) + list(products['spare'].values()):
-        Orderpoint.create({
-            'product_id': product.id, 'warehouse_id': wks.id, 'location_id': wks.lot_stock_id.id,
-            'product_min_qty': 2, 'product_max_qty': 10, 'trigger': 'manual',
-            'route_id': route_buy.id,
-        })
