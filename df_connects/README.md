@@ -42,6 +42,11 @@ Voorraad per entiteit kan als lijst of als object:
 Het laatste geval (enkel een totaal) komt in een standaardentiteit met de
 naam van de leverancier.
 
+Naast de hoeveelheid heeft elke voorraadlijn **Op voorraad**: standaard
+"hoeveelheid > 0", maar een koppeling kan het zelf zetten voor leveranciers
+die enkel aangeven óf er voorraad is (zoals het centrale magazijn van Van
+Marcke).
+
 ## Synchronisatie
 
 - **Nu synchroniseren** op de koppeling, of automatisch: per koppeling een
@@ -82,7 +87,7 @@ class DfConnectsConnection(models.Model):
 
     # optioneel: eigen parsing in plaats van de veldkoppeling; geef
     # {'ean', 'code', 'name', 'price', 'currency',
-    #  'stock': [(entiteitscode, entiteitsnaam, hoeveelheid)]}
+    #  'stock': [(entiteitscode, entiteitsnaam, hoeveelheid[, op voorraad])]}
     def _parse_record_mijnleverancier(self, raw):
         ...
 ```

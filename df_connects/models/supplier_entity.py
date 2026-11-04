@@ -63,6 +63,10 @@ class DfConnectsSupplierStock(models.Model):
     product_id = fields.Many2one(related='supplier_product_id.product_id',
                                  store=True, string='Product')
     quantity = fields.Float(string='Beschikbaar', digits='Product Unit')
+    available = fields.Boolean(
+        string='Op voorraad',
+        help='In stock in this entity. For suppliers that only give '
+             'availability, the quantity stays 0.')
 
     _entity_uniq = models.Constraint(
         'unique(supplier_product_id, entity_id)',

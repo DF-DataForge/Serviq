@@ -266,7 +266,7 @@ class DfConnectsConnection(models.Model):
                 '(%(entities)s entiteit(en)). Velden: %(keys)s',
                 code=sample['code'] or '-', ean=sample['ean'] or '-',
                 price=sample['price'],
-                qty=sum(q for _c, _n, q in sample['stock']),
+                qty=sum(line[2] for line in sample['stock']),
                 entities=len(sample['stock']),
                 keys=', '.join(sorted(records[0])[:30])
                 if isinstance(records[0], dict) else '-')
@@ -459,7 +459,8 @@ class DfConnectsConnection(models.Model):
                 if uuid not in seen and sp.active])
             if missing:
                 missing.write({'active': False})
-                missing.stock_ids.write({'quantity': 0.0})
+                missing.stock_ids.write({'quantity': 0.0,
+                                         'available': False})
                 stats['archived'] = len(missing)
         return stats
 
@@ -482,11 +483,14 @@ class DfConnectsConnection(models.Model):
         return cache[code]
 
     def _get_entities(self, stock, entities):
-        """Map the parsed stock [(code, name, qty)] on entity records,
-        creating new entities. Returns {entity: qty}."""
+        """Map the parsed stock [(code, name, qty[, available])] on entity
+        records, creating new entities. Returns {entity: (qty, available)};
+        ``available`` is None when the supplier only gives a quantity."""
         result = {}
         Entity = self.env['df.connects.supplier.entity']
-        for code, name, qty in stock:
+        for line in stock:
+            code, name, qty = line[:3]
+            available = line[3] if len(line) > 3 else None
             entity = entities.get(code)
             if not entity:
                 entity = Entity.create({
@@ -498,7 +502,12 @@ class DfConnectsConnection(models.Model):
                 entities[code] = entity
             elif name and entity.name == entity.code and name != code:
                 entity.name = name
-            result[entity] = result.get(entity, 0.0) + qty
+            old_qty, old_available = result.get(entity, (0.0, None))
+            if available is None:
+                available = old_available
+            elif old_available:
+                available = True
+            result[entity] = (old_qty + qty, available)
         return result
 
     # ------------------------------------------------------------------------
@@ -517,7 +526,10 @@ class DfConnectsConnection(models.Model):
 
     def _parse_record(self, raw):
         """Parsed product: {'ean', 'code', 'name', 'price', 'currency',
-        'stock': [(entity code, entity name, quantity)]}."""
+        'stock': [(entity code, entity name, quantity[, available])]}.
+        ``available`` (optional) is for suppliers that tell whether an entity
+        has stock without giving the quantity; without it, available means
+        quantity > 0."""
         self.ensure_one()
         method = getattr(self, '_parse_record_%s' % self.connector_type,
                          self._parse_record_mapping)

@@ -49,6 +49,10 @@ class DfConnectsSupplierProduct(models.Model):
     entity_count = fields.Integer(
         string='# entiteiten met voorraad',
         compute='_compute_quantity_total', store=True)
+    available = fields.Boolean(
+        string='Op voorraad', compute='_compute_quantity_total', store=True,
+        help='In stock in at least one entity of the supplier (some '
+             'suppliers only tell whether there is stock, not how much).')
     product_id = fields.Many2one(
         'product.product', string='Product', index=True,
         help='Odoo product this supplier product is linked to. Filled '
@@ -65,12 +69,13 @@ class DfConnectsSupplierProduct(models.Model):
         'unique(connection_id, uuid)',
         'Dit product bestaat al voor deze koppeling.')
 
-    @api.depends('stock_ids.quantity')
+    @api.depends('stock_ids.quantity', 'stock_ids.available')
     def _compute_quantity_total(self):
         for rec in self:
-            quantities = rec.stock_ids.mapped('quantity')
-            rec.quantity_total = sum(quantities)
-            rec.entity_count = len([q for q in quantities if q > 0])
+            rec.quantity_total = sum(rec.stock_ids.mapped('quantity'))
+            in_stock = rec.stock_ids.filtered('available')
+            rec.entity_count = len(in_stock)
+            rec.available = bool(in_stock)
 
     @api.depends('name', 'supplier_code')
     def _compute_display_name(self):
@@ -80,25 +85,31 @@ class DfConnectsSupplierProduct(models.Model):
                 else (rec.name or rec.uuid)
 
     def _set_stock(self, quantities):
-        """Set the stock per entity from {entity: qty}. Entities no longer
-        returned keep their line with quantity 0."""
+        """Set the stock per entity from {entity: (qty, available)}.
+        Entities no longer returned keep their line, with quantity 0 and not
+        available."""
         self.ensure_one()
         lines = {line.entity_id: line for line in self.stock_ids}
         Stock = self.env['df.connects.supplier.stock']
         to_create = []
-        for entity, qty in quantities.items():
+        for entity, (qty, available) in quantities.items():
+            vals = {'quantity': qty,
+                    'available': qty > 0 if available is None
+                    else bool(available)}
             line = lines.pop(entity, None)
             if line:
-                if line.quantity != qty:
-                    line.quantity = qty
+                if (line.quantity, line.available) != (vals['quantity'],
+                                                       vals['available']):
+                    line.write(vals)
             else:
-                to_create.append({'supplier_product_id': self.id,
-                                  'entity_id': entity.id, 'quantity': qty})
+                to_create.append(dict(vals, supplier_product_id=self.id,
+                                      entity_id=entity.id))
         if to_create:
             Stock.create(to_create)
-        stale = Stock.union(*lines.values()).filtered('quantity')
+        stale = Stock.union(*lines.values()).filtered(
+            lambda line: line.quantity or line.available)
         if stale:
-            stale.write({'quantity': 0.0})
+            stale.write({'quantity': 0.0, 'available': False})
 
     def _find_product(self):
         """Odoo product matching this supplier product: same barcode as the

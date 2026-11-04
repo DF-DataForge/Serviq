@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import json
 from datetime import timedelta
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlsplit
 
 from odoo import fields
 from odoo.tests import TransactionCase
@@ -13,17 +13,33 @@ REQUEST = 'odoo.addons.df_connects.models.connection.requests.request'
 TOKEN = MODULE + '.requests.post'
 API = 'https://api.vanmarcke.com'
 
-DETAILS = {'products': [
-    {'productId': '20017648', 'supplierBarcode': '3456330114691',
-     'descriptionShort': 'Delabie douchezitting wit'},
-    {'productId': '20017649', 'supplierBarcode': '',
-     'descriptionShort': 'Sifon 32 mm'},
-]}
-PRICES = [
-    {'productId': '20017648', 'netPrice': 212.4, 'currency': 'EUR',
-     'stock': {'quantity': 7}},
-    {'productId': '20017649', 'netPrice': '4,15', 'stock': {'quantity': 0}},
-]
+
+def prices(net, gross):
+    return [{'priceType': 'LIST', 'value': gross, 'currencyIso': 'EUR',
+             'formattedValue': '%s €' % gross},
+            {'priceType': 'NET', 'value': net, 'currencyIso': 'EUR'},
+            {'priceType': 'RECUPEL', 'value': 0.5, 'currencyIso': 'EUR'}]
+
+
+# Shapes after the Products - v2 specification (ProductListWithPriceStock,
+# ProductPricesStockBulkResponse, ProductStock, ProductList).
+SEAT = {
+    'productId': '087953', 'barcode': '', 'supplierBarcode': '3456330114691',
+    'supplierReference': '510400',
+    'descriptions': [
+        {'languageCode': 'fr', 'type': 'short', 'value': 'Siège de douche'},
+        {'languageCode': 'nl', 'type': 'long', 'value': 'Delabie - zitting'},
+        {'languageCode': 'nl', 'type': 'short', 'value': 'Douchezitting'},
+    ],
+    'prices': prices(212.4, 361.85),
+    'stock': {'stockAvailable': True},
+}
+SIPHON = {
+    'productId': '120965', 'supplierBarcode': '123', 'barcode': None,
+    'descriptions': [], 'prices': [{'priceType': 'LIST', 'value': 4.15,
+                                     'currencyIso': 'EUR'}],
+    'stock': {'stockAvailable': False},
+}
 
 
 class TestVanMarcke(TransactionCase):
@@ -42,11 +58,10 @@ class TestVanMarcke(TransactionCase):
             'api_key': 'app-key',
             'username': 'API-APP1-P123456',
             'password': 'pw',
-            'vm_scope': 'supplierinfo',
         })
         cls.product = cls.env['product.product'].create({
             'name': 'Douchezitting', 'barcode': '3456330114691'})
-        for code in ('20017648', '20017649', '99999999'):
+        for code in ('087953', '120965', '999999'):
             cls.env['product.supplierinfo'].create({
                 'partner_id': cls.vm.id,
                 'product_tmpl_id': cls.product.product_tmpl_id.id,
@@ -60,6 +75,14 @@ class TestVanMarcke(TransactionCase):
         super().setUp()
         self.calls = []
         self.token_calls = []
+        for target, fake in ((TOKEN, self._fake_token),
+                             (REQUEST, self._fake_api)):
+            patcher = patch(target, side_effect=fake)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        patcher = patch(MODULE + '.MIN_INTERVAL', 0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def _fake_token(self, url, data=None, auth=None, **kwargs):
         self.token_calls.append((url, data, auth, kwargs['headers']))
@@ -68,31 +91,41 @@ class TestVanMarcke(TransactionCase):
 
     def _fake_api(self, method, url, **kwargs):
         self.calls.append((method, url, kwargs))
-        if url.endswith('/bulk/detail'):
-            return FakeResponse(DETAILS)
-        if url.endswith('/bulk/pricesAndStock'):
-            return FakeResponse(PRICES)
-        if '/stock/0101' in url:
-            qty = 3 if '/20017648/' in url else 1
-            return FakeResponse({'storeId': '0101', 'quantity': qty})
-        if url == API + '/v1/stores':
-            return FakeResponse({'stores': [
-                {'storeId': '0101', 'name': 'Van Marcke Gent'},
-                {'storeId': '0202', 'name': 'Van Marcke Kortrijk'}]})
+        path = urlsplit(url).path
+        if path == '/v2/products/bulk/detail':
+            return FakeResponse({'products': [SEAT, SIPHON]})
+        if path == '/v2/products/bulk/pricesAndStock':
+            return FakeResponse({'products': [
+                {k: p[k] for k in ('productId', 'prices', 'stock')}
+                for p in (SEAT, SIPHON)]})
+        if path.endswith('/stock/0101'):
+            level = 3 if '/087953/' in path else 0
+            return FakeResponse({'stockLevel': level,
+                                 'stockAvailable': bool(level)})
+        if path == '/v2/products':
+            offset = kwargs['params'].get('offset', 0)
+            products = [dict(SEAT, prices=None, stock=None)] \
+                if offset == 0 else []
+            return FakeResponse({'products': products, 'nextUrl': None})
+        if path == '/v1/stores':
+            page = kwargs['params']['currentPage']
+            stores = [[{'name': '0101', 'displayName': 'Van Marcke Gent'},
+                       {'name': '0202', 'displayName': 'Kortrijk'}],
+                      [{'name': '0303', 'displayName': 'Luik'}]][page]
+            return FakeResponse({'stores': stores, 'pagination': {
+                'currentPage': page, 'totalPages': 2}})
         return FakeResponse({'errors': [{'code': 'notFound'}]}, status=404)
 
     def _sync(self):
-        with patch(TOKEN, side_effect=self._fake_token), \
-                patch(REQUEST, side_effect=self._fake_api), \
-                patch(MODULE + '.MIN_INTERVAL', 0):
-            self.connection.action_sync()
+        self.connection.action_sync()
         self.assertEqual(self.connection.last_sync_state, 'ok',
                          self.connection.last_sync_message)
 
     def test_defaults(self):
         self.assertEqual(self.connection.base_url, API)
         self.assertEqual(self.connection.auth_type, 'none')
-        self.assertEqual(self.connection.map_stock_path, 'dfStock')
+        self.assertEqual((self.connection.vm_country,
+                          self.connection.vm_channel), ('be', 'b2b'))
 
     def test_sync(self):
         self._sync()
@@ -103,39 +136,53 @@ class TestVanMarcke(TransactionCase):
                                 'username': 'API-APP1-P123456',
                                 'password': 'pw'})
         self.assertEqual(auth, ('client', 'secret'))
+        self.assertEqual(headers['x-api-key'], 'app-key')
         self.assertEqual(len(self.token_calls), 1, 'token cached')
-        # Bulk calls with all product numbers, then store stock per product.
+        # One bulk call with details, prices and stock, then store stock.
         method, url, kwargs = self.calls[0]
-        self.assertEqual((method, url),
-                         ('POST', API + '/v2/products/bulk/detail'))
+        split = urlsplit(url)
+        self.assertEqual((method, split.path),
+                         ('POST', '/v2/products/bulk/detail'))
+        self.assertEqual(parse_qs(split.query), {
+            'catalogCountry': ['be'], 'channel': ['b2b'],
+            'language': ['nl'], 'includePriceAndStock': ['true']})
         self.assertEqual(kwargs['json'], {
-            'productIds': ['20017648', '20017649', '99999999']})
+            'productIds': ['087953', '120965', '999999']})
         self.assertEqual(kwargs['headers']['x-api-key'], 'app-key')
         self.assertEqual(kwargs['headers']['Authorization'], 'Bearer tok1')
-        self.assertEqual(kwargs['params'], {'country': 'BE', 'language': 'nl'})
-        self.assertEqual(self.calls[1][1],
-                         API + '/v2/products/bulk/pricesAndStock')
-        self.assertEqual(len(self.calls), 4)
+        self.assertEqual(urlsplit(self.calls[1][1]).path,
+                         '/v2/products/087953/stock/0101')
+        self.assertEqual(len(self.calls), 3)
 
         products = self.connection.supplier_product_ids
-        self.assertEqual(len(products), 2, '99999999 unknown at Van Marcke')
-        seat = products.filtered(lambda p: p.supplier_code == '20017648')
+        self.assertEqual(len(products), 2, '999999 unknown at Van Marcke')
+        seat = products.filtered(lambda p: p.supplier_code == '087953')
         self.assertEqual(seat.uuid, '3456330114691')
-        self.assertEqual(seat.name, 'Delabie douchezitting wit')
-        self.assertEqual(seat.price, 212.4)
+        self.assertEqual(seat.name, 'Douchezitting')
+        self.assertEqual(seat.price, 212.4, 'net price')
         self.assertEqual(seat.product_id, self.product)
-        self.assertEqual(seat.quantity_total, 10)
-        stock = {line.entity_id.name: line.quantity for line in seat.stock_ids}
-        self.assertEqual(stock, {'Centraal magazijn': 7, 'Gent': 3})
-        siphon = products.filtered(lambda p: p.supplier_code == '20017649')
-        self.assertEqual(siphon.uuid, 'S%s-20017649' % self.vm.id)
-        self.assertEqual(siphon.price, 4.15)
-        self.assertEqual(siphon.quantity_total, 1)
+        self.assertTrue(seat.available)
+        stock = {line.entity_id.name: (line.quantity, line.available)
+                 for line in seat.stock_ids}
+        self.assertEqual(stock, {'Centraal magazijn': (0, True),
+                                 'Gent': (3, True)})
+        self.assertEqual(seat.quantity_total, 3)
+        siphon = products.filtered(lambda p: p.supplier_code == '120965')
+        # Invalid EAN: the product number is the UUID.
+        self.assertEqual(siphon.uuid, 'S%s-120965' % self.vm.id)
+        self.assertEqual(siphon.price, 4.15, 'no net price: list price')
+        self.assertFalse(siphon.available)
 
-    def test_token_reuse_and_refresh(self):
+    def test_list_price(self):
+        self.connection.vm_price_type = 'LIST'
+        self._sync()
+        seat = self.connection.supplier_product_ids.filtered(
+            lambda p: p.supplier_code == '087953')
+        self.assertEqual(seat.price, 361.85)
+
+    def test_token_refresh(self):
         self._sync()
         self.assertEqual(self.connection.sudo().vm_access_token, 'tok1')
-        # Expired: refreshed with the refresh token.
         self.connection.sudo().vm_token_expires = \
             fields.Datetime.now() - timedelta(minutes=1)
         self._sync()
@@ -151,48 +198,60 @@ class TestVanMarcke(TransactionCase):
             if answers:
                 return answers.pop()
             return self._fake_api(method, url, **kwargs)
-        with patch(TOKEN, side_effect=self._fake_token), \
-                patch(REQUEST, side_effect=fake), \
-                patch(MODULE + '.MIN_INTERVAL', 0):
-            self.connection.action_sync()
-        self.assertEqual(self.connection.last_sync_state, 'ok',
-                         self.connection.last_sync_message)
+        with patch(REQUEST, side_effect=fake):
+            self._sync()
         self.assertEqual(len(self.token_calls), 2)
         self.assertEqual(self.calls[0][2]['headers']['Authorization'],
                          'Bearer tok2')
 
-    def test_client_credentials_and_codes(self):
+    def test_client_credentials_prices_only(self):
         self.connection.write({
             'vm_grant_type': 'client_credentials', 'vm_scope': 'codes',
-            'vm_product_codes': '20017648\n20017648, 20017649',
+            'vm_product_codes': '087953\n087953, 120965',
             'vm_fetch_details': False})
         self.store.vm_store_stock = False
         self._sync()
         self.assertEqual(self.token_calls[0][1],
                          {'grant_type': 'client_credentials'})
         self.assertEqual(len(self.calls), 1)
+        split = urlsplit(self.calls[0][1])
+        self.assertEqual(split.path, '/v2/products/bulk/pricesAndStock')
+        self.assertEqual(parse_qs(split.query), {'catalogCountry': ['be']})
         self.assertEqual(self.calls[0][2]['json'],
-                         {'productIds': ['20017648', '20017649']})
+                         {'productIds': ['087953', '120965']})
         seat = self.connection.supplier_product_ids.filtered(
-            lambda p: p.supplier_code == '20017648')
-        # Without details no EAN: the product number is the UUID.
-        self.assertEqual(seat.uuid_source, 'code')
-        self.assertEqual(seat.quantity_total, 7)
+            lambda p: p.supplier_code == '087953')
+        self.assertEqual(seat.uuid_source, 'code', 'no details, no EAN')
+        self.assertTrue(seat.available)
+
+    def test_catalog(self):
+        self.connection.vm_scope = 'catalog'
+        self.store.vm_store_stock = False
+        self._sync()
+        listing = [c for c in self.calls
+                   if urlsplit(c[1]).path == '/v2/products']
+        self.assertEqual(listing[0][2]['params'], {
+            'catalogCountry': 'be', 'channel': 'b2b', 'language': 'nl',
+            'excludeArchived': 'true', 'limit': 100, 'offset': 0})
+        # Listing has the details, prices and stock come from the bulk call.
+        self.assertEqual(urlsplit(self.calls[-1][1]).path,
+                         '/v2/products/bulk/pricesAndStock')
+        seat = self.connection.supplier_product_ids
+        self.assertEqual(seat.uuid, '3456330114691')
+        self.assertEqual(seat.price, 212.4)
 
     def test_fetch_stores(self):
-        with patch(TOKEN, side_effect=self._fake_token), \
-                patch(REQUEST, side_effect=self._fake_api), \
-                patch(MODULE + '.MIN_INTERVAL', 0):
-            self.connection.action_vm_fetch_stores()
+        self.connection.action_vm_fetch_stores()
         entities = self.connection.entity_ids
-        self.assertEqual(sorted(entities.mapped('code')), ['0101', '0202'])
+        self.assertEqual(sorted(entities.mapped('code')),
+                         ['0101', '0202', '0303'])
         self.assertEqual(self.store.name, 'Gent', 'existing name kept')
         self.assertFalse(entities.filtered(
             lambda e: e.code == '0202').vm_store_stock)
 
     def test_missing_credentials(self):
         self.connection.vm_client_secret = False
-        with patch(REQUEST, side_effect=AssertionError('no call')):
-            self.connection.action_sync()
+        self.connection.action_sync()
         self.assertEqual(self.connection.last_sync_state, 'error')
         self.assertIn('client secret', self.connection.last_sync_message)
+        self.assertFalse(self.calls)

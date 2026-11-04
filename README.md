@@ -25,7 +25,7 @@ zonder klantnamen, logo's of hardgecodeerde producten.
 | Module | Inhoud |
 |---|---|
 | `df_connects` | Koppelingen met externe leveranciers via API: producten met UUID (EAN indien beschikbaar, anders leveranciersproductcode), leveranciersproductcode, prijs en beschikbare hoeveelheid per entiteit van de leverancier. Hangt enkel af van `product`, niet van Serviq. Zie `df_connects/README.md` |
-| `df_connects_vanmarcke` | Van Marcke-koppeling voor `df_connects`: OAuth 2.0 (service user of client credentials), Products API v2 (details, nettoprijs, voorraad centraal magazijn en winkels), Stores API. Zie `df_connects_vanmarcke/README.md` |
+| `df_connects_vanmarcke` | Van Marcke-koppeling voor `df_connects`: OAuth 2.0 (service user of client credentials), Products API v2 (EAN, omschrijving, netto- of brutoprijs, beschikbaarheid centraal magazijn, hoeveelheid per winkel), Stores API. Zie `df_connects_vanmarcke/README.md` |
 
 Alle optionele modules zijn aan of uit te zetten via
 **Installaties > Configuratie > Instellingen** (aanvinken installeert de

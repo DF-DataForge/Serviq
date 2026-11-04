@@ -5,7 +5,7 @@
         <field name="model">df.connects.supplier.product</field>
         <field name="arch" type="xml">
             <list string="Leveranciersproducten" create="0"
-                  decoration-muted="quantity_total &lt;= 0">
+                  decoration-muted="not available">
                 <field name="uuid"/>
                 <field name="uuid_source" optional="hide"/>
                 <field name="ean" optional="show"/>
@@ -16,6 +16,7 @@
                 <field name="price" widget="monetary"/>
                 <field name="currency_id" column_invisible="True"/>
                 <field name="quantity_total" sum="Totaal"/>
+                <field name="available" optional="show"/>
                 <field name="entity_count" optional="hide"/>
                 <field name="product_id" optional="show"/>
                 <field name="last_seen" optional="hide"/>
@@ -57,6 +58,7 @@
                             <field name="price" widget="monetary"/>
                             <field name="currency_id" groups="base.group_multi_currency"/>
                             <field name="quantity_total"/>
+                            <field name="available"/>
                             <field name="last_seen"/>
                             <field name="product_id"/>
                             <field name="company_id" groups="base.group_multi_company"/>
@@ -68,6 +70,7 @@
                                 <list>
                                     <field name="entity_id"/>
                                     <field name="quantity" sum="Totaal"/>
+                                    <field name="available"/>
                                     <field name="write_date" string="Bijgewerkt op"/>
                                 </list>
                             </field>
@@ -95,8 +98,8 @@
                 <field name="partner_id"/>
                 <field name="connection_id"/>
                 <field name="product_id"/>
-                <filter name="available" string="Beschikbaar" domain="[('quantity_total', '>', 0)]"/>
-                <filter name="unavailable" string="Niet beschikbaar" domain="[('quantity_total', '&lt;=', 0)]"/>
+                <filter name="available" string="Op voorraad" domain="[('available', '=', True)]"/>
+                <filter name="unavailable" string="Niet op voorraad" domain="[('available', '=', False)]"/>
                 <separator/>
                 <filter name="with_ean" string="Met EAN" domain="[('uuid_source', '=', 'ean')]"/>
                 <filter name="without_ean" string="Zonder EAN" domain="[('uuid_source', '=', 'code')]"/>
@@ -135,6 +138,7 @@
                 <field name="connection_id" optional="hide"/>
                 <field name="entity_id"/>
                 <field name="quantity" sum="Totaal"/>
+                <field name="available"/>
                 <field name="write_date" string="Bijgewerkt op" optional="show"/>
             </list>
         </field>
@@ -161,7 +165,7 @@
                 <field name="product_id"/>
                 <field name="entity_id"/>
                 <field name="connection_id"/>
-                <filter name="available" string="Beschikbaar" domain="[('quantity', '>', 0)]"/>
+                <filter name="available" string="Op voorraad" domain="[('available', '=', True)]"/>
                 <group>
                     <filter name="group_by_entity" string="Entiteit" context="{'group_by': 'entity_id'}"/>
                     <filter name="group_by_connection" string="Koppeling" context="{'group_by': 'connection_id'}"/>

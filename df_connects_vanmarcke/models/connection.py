@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Van Marcke connector, after the OpenAPI specifications of the Van Marcke
+developer portal (Products - v2, Stores - v1, OAuth - v1)."""
 import logging
 import re
 import threading
@@ -10,7 +12,7 @@ import requests
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
-from odoo.addons.df_connects.models.tools import get_path, to_float, to_text
+from odoo.addons.df_connects.models.tools import normalize_ean, to_text
 
 _logger = logging.getLogger(__name__)
 
@@ -21,49 +23,32 @@ API_URLS = {
 PRODUCTS_PATH = '/v2/products'
 STORES_PATH = '/v1/stores'
 TOKEN_PATH = '/v1/oauth/token'
+# Bulk endpoints take at most 50 product ids.
+BULK_SIZE = 50
 # Van Marcke allows 1 call every 20 ms (API Security Policies).
 MIN_INTERVAL = 0.02
 MAX_RETRIES = 3
 CENTRAL_ENTITY = 'central'
+STORES_PAGE_SIZE = 100
 
 _rate_lock = threading.Lock()
 _last_call = {'time': 0.0}
 
-# Defaults written on the connection when its type is set to Van Marcke.
-# Paths with "|" try several field names: the response schemas are only
-# published in the developer portal, check them with "Ruwe gegevens
-# bewaren" and adjust where needed.
+# Written on the connection when its type is Van Marcke: the catalog
+# listing GET /v2/products pages with limit / offset and returns
+# {"products": [...], "nextUrl": ...}.
 VANMARCKE_DEFAULTS = {
     'products_endpoint': PRODUCTS_PATH,
     'auth_type': 'none',
     'http_method': 'GET',
-    'pagination': 'page',
-    'page_param': 'page',
-    'page_start': 0,
-    'page_size_param': 'pageSize',
-    'page_size': 50,
-    'records_path': False,
-    'extra_params': '{"country": "BE", "language": "nl"}',
-    'map_code': 'productId|id',
-    'map_ean': 'supplierBarcode|ean|gtin|barcode|eanCode',
-    'map_name': 'descriptionShort|descriptionShortNl|commercialDescription|'
-                'description|name',
-    'map_price': 'netPrice|price.netPrice|prices.netPrice|netPrice.value|'
-                 'price.value|price',
-    'map_currency': 'currency|currencyIso|price.currency|netPrice.currency',
-    'map_quantity': False,
-    'map_stock_path': 'dfStock',
-    'map_stock_entity': 'entity',
-    'map_stock_entity_name': 'name',
-    'map_stock_quantity': 'quantity',
+    'pagination': 'offset',
+    'offset_param': 'offset',
+    'page_size_param': 'limit',
+    'page_size': 100,
+    'records_path': 'products',
+    'map_code': 'productId',
+    'map_ean': 'supplierBarcode',
 }
-
-
-def _number_or_none(value):
-    """Quantity from a JSON value: numbers and numeric strings only."""
-    if value is None or isinstance(value, (dict, list, bool)):
-        return None
-    return to_float(value, None)
 
 
 class DfConnectsConnection(models.Model):
@@ -99,6 +84,21 @@ class DfConnectsConnection(models.Model):
     vm_token_expires = fields.Datetime(string='Token geldig tot',
                                        copy=False, readonly=True)
 
+    vm_country = fields.Selection(
+        [('be', 'België'), ('fr', 'Frankrijk'), ('lu', 'Luxemburg')],
+        string='Catalogusland', default='be')
+    vm_channel = fields.Selection(
+        [('b2b', 'B2B'), ('b2c', 'B2C'), ('diy', 'DIY')],
+        string='Kanaal', default='b2b')
+    vm_language = fields.Selection(
+        [('nl', 'Nederlands'), ('fr', 'Frans'), ('de', 'Duits'),
+         ('en', 'Engels')], string='Taal', default='nl')
+    vm_price_type = fields.Selection(
+        [('NET', 'Nettoprijs'), ('LIST', 'Brutoprijs (lijstprijs)')],
+        string='Prijs', default='NET',
+        help='Price type taken from the price list of the product. When it '
+             'is missing (e.g. no net price with client credentials) the '
+             'other one is used.')
     vm_scope = fields.Selection([
         ('supplierinfo', 'Producten uit de leveranciersprijslijst'),
         ('codes', 'Lijst van productnummers'),
@@ -115,34 +115,15 @@ class DfConnectsConnection(models.Model):
              'new lines.')
     vm_fetch_details = fields.Boolean(
         string='Productdetails ophalen', default=True,
-        help='Call /bulk/detail for the EAN and description, besides '
-             '/bulk/pricesAndStock for price and stock.')
-    vm_bulk_size = fields.Integer(string='Producten per bulkoproep',
-                                  default=50)
-    vm_ids_key = fields.Char(
-        string='Sleutel productnummers in body', default='productIds',
-        help='Key of the list of product numbers in the body of the bulk '
-             'calls.')
-    vm_records_path = fields.Char(
-        string='Pad lijst in bulkantwoord',
-        help='Path of the list of products in the bulk responses. Empty: '
-             'the response itself, or the first list in it.')
-    vm_map_product_id = fields.Char(
-        string='Veld productnummer in antwoord', default='productId|id')
-    vm_map_central_stock = fields.Char(
-        string='Veld voorraad centraal magazijn',
-        default='stock.quantity|stock.availableQuantity|stockQuantity|'
-                'availableQuantity|centralStock|stock')
+        help='Fetch the EAN and description with the price and stock '
+             '(/bulk/detail with price and stock, one call per 50 products). '
+             'Without: only /bulk/pricesAndStock, faster but without EAN, '
+             'so the product number is the UUID.')
+    vm_exclude_archived = fields.Boolean(
+        string='Gearchiveerde producten overslaan', default=True,
+        help='Full catalog: skip the products with status "archived".')
     vm_central_name = fields.Char(string='Naam centraal magazijn',
                                   default='Centraal magazijn')
-    vm_map_store_stock = fields.Char(
-        string='Veld voorraad winkel',
-        default='quantity|availableQuantity|stock.quantity|stockQuantity|'
-                'stock')
-    vm_map_store_id = fields.Char(string='Veld winkelnummer',
-                                  default='storeId|id|code')
-    vm_map_store_name = fields.Char(string='Veld winkelnaam',
-                                    default='name|displayName|description')
 
     @api.onchange('connector_type', 'vm_environment')
     def _onchange_vanmarcke(self):
@@ -163,15 +144,15 @@ class DfConnectsConnection(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
-        if 'vm_environment' in vals or 'vm_grant_type' in vals \
-                or 'vm_client_id' in vals or 'username' in vals:
+        if {'vm_environment', 'vm_grant_type', 'vm_client_id',
+                'username'} & set(vals):
             # Other credentials: the cached token no longer applies.
             vals = dict(vals, vm_access_token=False, vm_refresh_token=False,
                         vm_token_expires=False)
         return super().write(vals)
 
     # ------------------------------------------------------------------------
-    # Authentication
+    # Authentication (OAuth - v1)
     # ------------------------------------------------------------------------
     def _vm_api_url(self, path=''):
         self.ensure_one()
@@ -199,6 +180,7 @@ class DfConnectsConnection(models.Model):
                               'Van Marcke in.'))
         token_data = None
         if conn.vm_refresh_token:
+            # Refresh tokens are valid for 365 days.
             token_data = conn._vm_token_request({
                 'grant_type': 'refresh_token',
                 'refresh_token': conn.vm_refresh_token,
@@ -291,7 +273,7 @@ class DfConnectsConnection(models.Model):
             if response.status_code == 429 and attempt < MAX_RETRIES:
                 try:
                     delay = float(response.headers.get('Retry-After') or 0)
-                except (TypeError, ValueError):
+                except (TypeError, ValueError, AttributeError):
                     delay = 0
                 time.sleep(min(delay or 2 ** attempt, 30))
                 continue
@@ -306,8 +288,15 @@ class DfConnectsConnection(models.Model):
                 time.sleep(wait)
             _last_call['time'] = time.monotonic()
 
+    def _vm_params(self, *names):
+        """Query parameters of the Products / Stores API."""
+        values = {'catalogCountry': self.vm_country or 'be',
+                  'channel': self.vm_channel or 'b2b',
+                  'language': self.vm_language or 'nl'}
+        return {name: values[name] for name in names}
+
     # ------------------------------------------------------------------------
-    # Fetching
+    # Fetching (Products - v2)
     # ------------------------------------------------------------------------
     def _vm_product_codes(self):
         """Van Marcke product numbers to fetch for the scopes "supplierinfo"
@@ -330,133 +319,206 @@ class DfConnectsConnection(models.Model):
                 known.mapped('supplier_code')
         return list(dict.fromkeys(c.strip() for c in codes if c and c.strip()))
 
-    def _vm_extract_list(self, payload, path=None):
-        """List of records in a response: at ``path``, the response itself,
-        or the first list of objects in it."""
-        path = path if path is not None else self.vm_records_path
-        if path:
-            payload = get_path(payload, path)
-        if isinstance(payload, list):
-            return [r for r in payload if isinstance(r, dict)]
-        if isinstance(payload, dict):
-            for value in payload.values():
-                if isinstance(value, list) and value \
-                        and isinstance(value[0], dict):
-                    return value
-            return [payload]
-        return []
-
-    def _vm_bulk(self, endpoint, codes):
-        """POST a bulk endpoint for ``codes``; returns {code: record}."""
-        payload = self._request(
-            self._get_url('%s/bulk/%s' % (PRODUCTS_PATH, endpoint)),
-            body={self.vm_ids_key or 'productIds': codes}, method='POST')
-        result = {}
-        for record in self._vm_extract_list(payload):
-            code = to_text(get_path(record, self.vm_map_product_id))
-            if code:
-                result[code] = record
-        return result
+    def _vm_bulk(self, endpoint, codes, params):
+        """POST /v2/products/bulk/<endpoint> for ``codes`` (at most 50);
+        returns {product id: product}."""
+        url = self._get_url('%s/bulk/%s' % (PRODUCTS_PATH, endpoint))
+        query = '&'.join('%s=%s' % item for item in params.items())
+        payload = self._request('%s?%s' % (url, query) if query else url,
+                                body={'productIds': codes}, method='POST')
+        products = payload.get('products') if isinstance(payload, dict) \
+            else None
+        return {to_text(p.get('productId')): p for p in products or []
+                if isinstance(p, dict) and p.get('productId')}
 
     def _vm_store_stock(self, code, store):
+        """GET /v2/products/{productId}/stock/{storeId}: {stockLevel,
+        stockAvailable}, or None when Van Marcke does not know it."""
+        url = self._get_url('%s/%s/stock/%s?catalogCountry=%s' % (
+            PRODUCTS_PATH, code, store.code, self.vm_country or 'be'))
         try:
-            payload = self._request(self._get_url('%s/%s/stock/%s' % (
-                PRODUCTS_PATH, code, store.code)), method='GET')
+            return self._request(url, method='GET')
         except UserError as e:
-            if '404' in str(e.args[0] if e.args else e):
-                return 0.0
+            if ' 404 ' in str(e.args[0] if e.args else e):
+                return None
             raise
-        record = self._vm_extract_list(payload)[:1]
-        qty = _number_or_none(get_path(record[0], self.vm_map_store_stock)) \
-            if record else None
-        return qty or 0.0
 
-    def _vm_listing_chunks(self):
-        """Chunks of {code: listing record}: from the catalog listing, or
-        from the product numbers of the scope."""
-        size = max(1, min(self.vm_bulk_size or 50, 50))
+    def _vm_chunks(self):
+        """Chunks of {product id: product from the listing or {}}."""
         if self.vm_scope == 'catalog':
             chunk = {}
-            for record in self._fetch_records_rest_json():
-                code = to_text(get_path(record, self.vm_map_product_id))
+            for product in self._fetch_records_rest_json():
+                code = to_text(product.get('productId')) \
+                    if isinstance(product, dict) else False
                 if not code:
                     continue
-                chunk[code] = record
-                if len(chunk) >= size:
+                chunk[code] = product
+                if len(chunk) >= BULK_SIZE:
                     yield chunk
                     chunk = {}
             if chunk:
                 yield chunk
             return
         codes = self._vm_product_codes()
-        for start in range(0, len(codes), size):
-            yield {code: {} for code in codes[start:start + size]}
+        for start in range(0, len(codes), BULK_SIZE):
+            yield {code: {} for code in codes[start:start + BULK_SIZE]}
 
     def _fetch_records_vanmarcke(self):
-        """Merged record per product: listing, details and prices and stock,
-        with the stock per entity in "dfStock" (central warehouse and the
-        stores with "Winkelvoorraad ophalen")."""
+        """Product per product id, with its prices and stock, and the stock
+        of the stores marked "Winkelvoorraad ophalen" in "vmStoreStock"."""
         self.ensure_one()
         stores = self.env['df.connects.supplier.entity'].search([
             ('connection_id', '=', self.id), ('vm_store_stock', '=', True),
             ('code', '!=', CENTRAL_ENTITY)])
-        for chunk in self._vm_listing_chunks():
+        catalog = self.vm_scope == 'catalog'
+        for chunk in self._vm_chunks():
             codes = list(chunk)
-            details = self._vm_bulk('detail', codes) \
-                if self.vm_fetch_details else {}
-            prices = self._vm_bulk('pricesAndStock', codes)
+            if self.vm_fetch_details and not catalog:
+                # One call for details, prices and stock.
+                products = self._vm_bulk('detail', codes, dict(
+                    self._vm_params('catalogCountry', 'channel', 'language'),
+                    includePriceAndStock='true'))
+            else:
+                # The catalog listing already has the details.
+                products = self._vm_bulk(
+                    'pricesAndStock', codes,
+                    self._vm_params('catalogCountry'))
             for code in codes:
-                if code not in details and code not in prices \
-                        and not chunk[code]:
+                if code not in products and not chunk[code]:
                     # Unknown at Van Marcke: not returned, so archived.
                     continue
-                record = dict(chunk[code])
-                record.update(details.get(code, {}))
-                price_stock = prices.get(code, {})
-                record.update(price_stock)
-                record.setdefault('productId', code)
-                stock = []
-                central = _number_or_none(
-                    get_path(price_stock, self.vm_map_central_stock))
-                if central is not None:
-                    stock.append({'entity': CENTRAL_ENTITY,
-                                  'name': self.vm_central_name or False,
-                                  'quantity': central})
-                for store in stores:
-                    stock.append({'entity': store.code, 'name': store.name,
-                                  'quantity': self._vm_store_stock(
-                                      code, store)})
-                record['dfStock'] = stock
-                yield record
+                product = dict(chunk[code])
+                product.update(products.get(code, {}))
+                product['productId'] = code
+                product['vmStoreStock'] = [
+                    (store, self._vm_store_stock(code, store))
+                    for store in stores]
+                yield product
+
+    def _fetch_records_rest_json(self):
+        if self.connector_type != 'vanmarcke':
+            return super()._fetch_records_rest_json()
+        return self._vm_fetch_listing()
+
+    def _vm_fetch_listing(self):
+        """Catalog listing GET /v2/products, page by page with limit /
+        offset (the base pagination), with the catalog parameters."""
+        params = self._vm_params('catalogCountry', 'channel', 'language')
+        if self.vm_exclude_archived:
+            params['excludeArchived'] = 'true'
+        conn = self.with_context(df_connects_vm_listing_params=params)
+        return super(DfConnectsConnection, conn)._fetch_records_rest_json()
+
+    def _request(self, url, params=None, body=None, method=None):
+        extra = self.env.context.get('df_connects_vm_listing_params')
+        if self.connector_type == 'vanmarcke' and extra and method is None:
+            params = dict(extra, **(params or {}))
+        return super()._request(url, params=params, body=body, method=method)
+
+    def _parse_record_vanmarcke(self, product):
+        """Parse a product of the Products API v2: productId, EAN from
+        supplierBarcode (or barcode), description in the language of the
+        connection, net or list price, central stock (availability only)
+        and store stock (stockLevel)."""
+        ean = False
+        for key in ('supplierBarcode', 'barcode'):
+            ean = normalize_ean(product.get(key))
+            if ean:
+                break
+        price, currency = self._vm_price(product.get('prices') or [])
+        stock = []
+        central = product.get('stock')
+        if isinstance(central, dict) and 'stockAvailable' in central:
+            # The central warehouse only tells whether there is stock.
+            stock.append((CENTRAL_ENTITY, self.vm_central_name or False, 0.0,
+                          bool(central.get('stockAvailable'))))
+        for store, store_stock in product.get('vmStoreStock') or []:
+            store_stock = store_stock if isinstance(store_stock, dict) else {}
+            level = store_stock.get('stockLevel')
+            qty = float(level) if isinstance(level, (int, float)) else 0.0
+            available = store_stock.get('stockAvailable')
+            stock.append((store.code, store.name, qty,
+                          bool(available) if available is not None
+                          else qty > 0))
+        return {
+            'ean': ean,
+            'code': to_text(product.get('productId')),
+            'name': self._vm_description(product.get('descriptions') or []),
+            'price': price,
+            'currency': currency,
+            'stock': stock,
+        }
+
+    def _vm_price(self, prices):
+        """(value, currency) of the configured price type, or of the other
+        one when it is missing."""
+        by_type = {p.get('priceType'): p for p in prices
+                   if isinstance(p, dict) and p.get('value') is not None}
+        wanted = self.vm_price_type or 'NET'
+        other = 'LIST' if wanted == 'NET' else 'NET'
+        price = by_type.get(wanted) or by_type.get(other)
+        if not price:
+            return 0.0, False
+        return float(price['value']), to_text(price.get('currencyIso'))
+
+    def _vm_description(self, descriptions):
+        """Description in the language of the connection, preferring the
+        short one."""
+        language = self.vm_language or 'nl'
+        candidates = [d for d in descriptions
+                      if isinstance(d, dict) and d.get('value')]
+        in_language = [d for d in candidates
+                       if (d.get('languageCode') or '').lower() == language]
+        for group in (in_language, candidates):
+            if not group:
+                continue
+            short = [d for d in group
+                     if 'short' in (d.get('type') or '').lower()]
+            return to_text((short or group)[0]['value'])
+        return False
 
     # ------------------------------------------------------------------------
-    # Stores
+    # Stores (Stores - v1)
     # ------------------------------------------------------------------------
     def action_vm_fetch_stores(self):
-        """Create an entity per Van Marcke store (Stores API), to choose the
-        stores whose stock is fetched."""
+        """Create an entity per Van Marcke store, to choose the stores whose
+        stock is fetched. GET /v1/stores pages with currentPage (from 0)
+        and pageSize; the store id is "name", its label "displayName"."""
         self.ensure_one()
         if self.connector_type != 'vanmarcke':
             raise UserError(_('Enkel voor een koppeling met Van Marcke.'))
-        payload = self._request(self._get_url(STORES_PATH), method='GET')
         Entity = self.env['df.connects.supplier.entity'].with_context(
             active_test=False)
         existing = {e.code: e for e in Entity.search(
             [('connection_id', '=', self.id)])}
         created = 0
-        for record in self._vm_extract_list(payload, path=''):
-            code = to_text(get_path(record, self.vm_map_store_id))
-            if not code:
-                continue
-            name = to_text(get_path(record, self.vm_map_store_name)) or code
-            entity = existing.get(code)
-            if entity:
-                if entity.name in (entity.code, False):
-                    entity.name = name
-            else:
-                existing[code] = Entity.create({
-                    'connection_id': self.id, 'code': code, 'name': name})
-                created += 1
+        page = 0
+        while True:
+            payload = self._request(self._get_url(STORES_PATH), params=dict(
+                self._vm_params('catalogCountry'),
+                pageSize=STORES_PAGE_SIZE, currentPage=page), method='GET')
+            stores = payload.get('stores') if isinstance(payload, dict) \
+                else None
+            for store in stores or []:
+                code = to_text(store.get('name'))
+                if not code:
+                    continue
+                name = to_text(store.get('displayName')) or code
+                entity = existing.get(code)
+                if entity:
+                    if entity.name == entity.code:
+                        entity.name = name
+                else:
+                    existing[code] = Entity.create({
+                        'connection_id': self.id, 'code': code,
+                        'name': name})
+                    created += 1
+            pagination = (payload.get('pagination') or {}) \
+                if isinstance(payload, dict) else {}
+            page += 1
+            if not stores or page >= (pagination.get('totalPages') or 1) \
+                    or page >= 100:
+                break
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -470,4 +532,3 @@ class DfConnectsConnection(models.Model):
                 'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
             },
         }
-
