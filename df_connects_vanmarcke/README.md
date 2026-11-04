@@ -12,9 +12,39 @@ Koppeling van `df_connects` met de API's van Van Marcke
    de **Application Key** (header `x-api-key`) staat in *My Workspace* van de
    portal.
 3. Voor nettoprijzen van jullie klantnummer: maak een **service user** aan
-   (Service Users API, na aanmelden met een Van Marcke-account) en gebruik
-   die gebruikersnaam en dat wachtwoord. Met *client credentials* zijn de
-   antwoorden algemeen, zonder klantprijzen.
+   met de knop **Service user aanmaken** op de koppeling (zie hieronder).
+   Met *client credentials* zijn de antwoorden algemeen, zonder klantprijzen.
+
+## Service user aanmaken
+
+Registreer bij Van Marcke als *Redirect URL / Callback URL* per omgeving:
+
+| Omgeving | Redirect URL |
+|---|---|
+| Test (staging) | `https://staging.platsr.be/df_connects_vanmarcke/oauth/callback` |
+| Productie | `https://platsr.be/df_connects_vanmarcke/oauth/callback` |
+
+Standaard gebruikt de koppeling `<web.base.url>/df_connects_vanmarcke/oauth/callback`
+(zichtbaar als *Redirect URL (gebruikt)*); vul *Redirect URL* in als die
+afwijkt van wat bij Van Marcke geregistreerd is: ze moet exact gelijk zijn.
+
+1. Vul client ID, client secret en Application Key in en sla op.
+2. Klik **Service user aanmaken**: je gaat naar de aanmeldpagina van Van
+   Marcke. Meld aan met een Van Marcke-account (myblue) van het klantnummer
+   waarvoor de nettoprijzen gelden.
+3. Van Marcke stuurt je terug naar Odoo (OAuth *Authorization Code*): de
+   koppeling ruilt de code voor een token van die gebruiker, maakt met
+   `POST /v1/serviceusers` de service user aan en bewaart gebruikersnaam en
+   wachtwoord op de koppeling ("Aanmelden als" wordt *Service user*). Het
+   persoonlijke account en zijn token worden niet bewaard. Het resultaat
+   verschijnt in de chatter; Van Marcke mailt de gegevens ook naar wie
+   aanmeldde.
+4. Bestaat er al een service user voor dit klantnummer en deze applicatie,
+   gebruik dan **Wachtwoord service user vernieuwen** (`GET /v1/serviceusers`
+   en `POST /{userId}/resetpassword`).
+
+Een aanmelding is 15 minuten geldig en kan maar één keer gebruikt worden.
+Enkel beheerders van de leverancierskoppelingen kunnen dit.
 
 ## Instellen
 

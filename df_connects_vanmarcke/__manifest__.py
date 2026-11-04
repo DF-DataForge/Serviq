@@ -29,7 +29,7 @@ portal and with "Ruwe gegevens bewaren".
     'category': 'Supply Chain',
     'author': 'Data Forge',
     'website': 'https://www.data-forge.be',
-    'depends': ['df_connects'],
+    'depends': ['df_connects', 'web'],
     'data': [
         'views/connection_views.xml',
     ],

@@ -232,6 +232,10 @@ class DfConnectsConnection(models.Model):
                 token_data = response.json()
             except ValueError:
                 token_data = None
+        if token_data and not token_data.get('access_token') \
+                and token_data.get('accessToken'):
+            # The OAuth spec names it accessToken, the docs access_token.
+            token_data['access_token'] = token_data['accessToken']
         if token_data and token_data.get('access_token'):
             token_data['_grant_type'] = data['grant_type']
             return token_data

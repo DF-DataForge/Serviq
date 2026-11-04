@@ -9,6 +9,14 @@
                 <button name="action_vm_fetch_stores" type="object" string="Winkels ophalen"
                         invisible="not id or connector_type != 'vanmarcke'"
                         groups="df_connects.group_df_connects_manager"/>
+                <button name="action_vm_create_service_user" type="object" string="Service user aanmaken"
+                        invisible="not id or connector_type != 'vanmarcke' or username"
+                        groups="df_connects.group_df_connects_manager"
+                        confirm="Je wordt doorgestuurd naar de aanmeldpagina van Van Marcke. Meld aan met een Van Marcke-account (myblue) van het klantnummer waarvoor de service user aangemaakt wordt."/>
+                <button name="action_vm_reset_service_user" type="object" string="Wachtwoord service user vernieuwen"
+                        invisible="not id or connector_type != 'vanmarcke'"
+                        groups="df_connects.group_df_connects_manager"
+                        confirm="Je wordt doorgestuurd naar de aanmeldpagina van Van Marcke. Het wachtwoord van de bestaande service user wordt vervangen: andere toepassingen die het gebruiken, moeten het nieuwe krijgen."/>
             </xpath>
             <!-- Request, authentication and field mapping follow the Van
                  Marcke API specification. -->
@@ -34,7 +42,10 @@
                         <field name="password" password="True"
                                invisible="vm_grant_type != 'password'"/>
                         <field name="vm_token_expires" invisible="not vm_token_expires"/>
+                        <field name="vm_service_user_company" invisible="not vm_service_user_company"/>
                         <field name="vm_token_url" placeholder="(standaard)"/>
+                        <field name="vm_redirect_uri" placeholder="(standaard)"/>
+                        <field name="vm_redirect_uri_used" readonly="1"/>
                     </group>
                     <group string="Producten">
                         <field name="vm_scope" required="connector_type == 'vanmarcke'"/>
