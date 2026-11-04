@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_connection_user,df.connects.connection user,model_df_connects_connection,group_df_connects_user,1,0,0,0
+access_connection_manager,df.connects.connection manager,model_df_connects_connection,group_df_connects_manager,1,1,1,1
+access_supplier_product_user,df.connects.supplier.product user,model_df_connects_supplier_product,group_df_connects_user,1,1,0,0
+access_supplier_product_manager,df.connects.supplier.product manager,model_df_connects_supplier_product,group_df_connects_manager,1,1,1,1
+access_supplier_entity_user,df.connects.supplier.entity user,model_df_connects_supplier_entity,group_df_connects_user,1,0,0,0
+access_supplier_entity_manager,df.connects.supplier.entity manager,model_df_connects_supplier_entity,group_df_connects_manager,1,1,1,1
+access_supplier_stock_user,df.connects.supplier.stock user,model_df_connects_supplier_stock,group_df_connects_user,1,0,0,0
+access_supplier_stock_manager,df.connects.supplier.stock manager,model_df_connects_supplier_stock,group_df_connects_manager,1,1,1,1
+access_sync_log_user,df.connects.sync.log user,model_df_connects_sync_log,group_df_connects_user,1,0,0,0
+access_sync_log_manager,df.connects.sync.log manager,model_df_connects_sync_log,group_df_connects_manager,1,1,1,1

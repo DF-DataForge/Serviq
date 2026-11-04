@@ -20,6 +20,13 @@ zonder klantnamen, logo's of hardgecodeerde producten.
 | `serviq_flow_refrigerant` | optioneel | Flow: registratie van een koeltechnisch systeem en zijn koudemiddellogboek (F-gassenverordening): ton CO2-eq, logboek- en lekcontroleplicht, gecertificeerde technicus/bedrijf, flesbalans, PDF-logboek |
 | `serviq_demo_hvac` | nee, alleen demo | Demobedrijf: Belgische airco-installateur, alleen de installatieflows: units met serienummers, montagekits, reserveonderdelen, installatiepakketten, installaties met inbedrijfstelling, onderhoud en herstellingen, enkele weken historiek, een technieker die de interventies afwerkt in het portaal. Zie `serviq_demo_hvac/README.md` en de demo-walkthrough `serviq_demo_hvac/WALKTHROUGH.md` |
 
+## Onafhankelijke componenten
+
+| Module | Inhoud |
+|---|---|
+| `df_connects` | Koppelingen met externe leveranciers via API: producten met UUID (EAN indien beschikbaar, anders leveranciersproductcode), leveranciersproductcode, prijs en beschikbare hoeveelheid per entiteit van de leverancier. Hangt enkel af van `product`, niet van Serviq. Zie `df_connects/README.md` |
+| `df_connects_vanmarcke` | Van Marcke-koppeling voor `df_connects`: OAuth 2.0 (service user of client credentials), Products API v2 (EAN, omschrijving, netto- of brutoprijs, beschikbaarheid centraal magazijn, hoeveelheid per winkel), Stores API. Zie `df_connects_vanmarcke/README.md` |
+
 Alle optionele modules zijn aan of uit te zetten via
 **Installaties > Configuratie > Instellingen** (aanvinken installeert de
 module, uitvinken verwijdert ze). Geïnstalleerde flows kunnen daarnaast

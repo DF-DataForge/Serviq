@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_df_connects_root" name="Leverancierskoppelingen"
+              web_icon="df_connects,static/description/icon.png"
+              groups="group_df_connects_user" sequence="45"/>
+    <menuitem id="menu_df_connects_supplier_products" parent="menu_df_connects_root"
+              name="Leveranciersproducten" action="supplier_product_action" sequence="10"/>
+    <menuitem id="menu_df_connects_stock" parent="menu_df_connects_root"
+              name="Voorraad per entiteit" action="supplier_stock_action" sequence="20"/>
+    <menuitem id="menu_df_connects_config" parent="menu_df_connects_root"
+              name="Configuratie" sequence="100"/>
+    <menuitem id="menu_df_connects_connections" parent="menu_df_connects_config"
+              name="Koppelingen" action="connection_action" sequence="10"/>
+    <menuitem id="menu_df_connects_entities" parent="menu_df_connects_config"
+              name="Entiteiten" action="supplier_entity_action" sequence="20"/>
+    <menuitem id="menu_df_connects_logs" parent="menu_df_connects_config"
+              name="Synchronisaties" action="sync_log_action" sequence="30"/>
+</odoo>
