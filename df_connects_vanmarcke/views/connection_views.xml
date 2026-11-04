@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="connection_view_form" model="ir.ui.view">
+        <field name="name">df.connects.connection.form.vanmarcke</field>
+        <field name="model">df.connects.connection</field>
+        <field name="inherit_id" ref="df_connects.connection_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_vm_fetch_stores" type="object" string="Winkels ophalen"
+                        invisible="not id or connector_type != 'vanmarcke'"
+                        groups="df_connects.group_df_connects_manager"/>
+            </xpath>
+            <!-- Request and authentication are fixed by Van Marcke. -->
+            <xpath expr="//page[@name='connection']/group[1]" position="attributes">
+                <attribute name="invisible">connector_type == 'vanmarcke'</attribute>
+            </xpath>
+            <xpath expr="//page[@name='connection']/group[2]/group[1]" position="attributes">
+                <attribute name="invisible">connector_type == 'vanmarcke' and vm_scope != 'catalog'</attribute>
+            </xpath>
+            <xpath expr="//page[@name='connection']/group[1]" position="before">
+                <group invisible="connector_type != 'vanmarcke'">
+                    <group string="Van Marcke">
+                        <field name="vm_environment" required="connector_type == 'vanmarcke'"/>
+                        <field name="vm_grant_type" required="connector_type == 'vanmarcke'"/>
+                        <field name="vm_client_id"/>
+                        <field name="vm_client_secret" password="True"/>
+                        <field name="api_key" string="Application Key (x-api-key)" password="True"/>
+                        <field name="username" string="Service user"
+                               invisible="vm_grant_type != 'password'"/>
+                        <field name="password" password="True"
+                               invisible="vm_grant_type != 'password'"/>
+                        <field name="vm_token_expires" invisible="not vm_token_expires"/>
+                    </group>
+                    <group string="Producten">
+                        <field name="vm_scope" required="connector_type == 'vanmarcke'"/>
+                        <field name="vm_product_codes" invisible="vm_scope != 'codes'"
+                               placeholder="20017648, 20017649, ..."/>
+                        <field name="vm_fetch_details"/>
+                        <field name="vm_bulk_size"/>
+                        <field name="timeout"/>
+                    </group>
+                    <div class="text-muted" colspan="2">
+                        Client ID, client secret en Application Key krijg je van Van Marcke na de
+                        registratie van de applicatie (api-support@vanmarcke.com). Een service user
+                        geeft de nettoprijzen van jullie klantnummer; met client credentials zijn de
+                        antwoorden algemeen. Quotum: 50.000 oproepen per dag.
+                    </div>
+                </group>
+            </xpath>
+            <!-- Stock per entity is built by the Van Marcke connector. -->
+            <xpath expr="//page[@name='mapping']/group[1]/group[2]" position="attributes">
+                <attribute name="invisible">connector_type == 'vanmarcke'</attribute>
+            </xpath>
+            <xpath expr="//page[@name='mapping']/group[1]" position="after">
+                <group string="Van Marcke" invisible="connector_type != 'vanmarcke'">
+                    <group string="Bulkoproepen">
+                        <field name="vm_ids_key"/>
+                        <field name="vm_records_path"/>
+                        <field name="vm_map_product_id"/>
+                        <field name="vm_map_central_stock"/>
+                        <field name="vm_central_name"/>
+                    </group>
+                    <group string="Winkels">
+                        <field name="vm_map_store_stock"/>
+                        <field name="vm_map_store_id"/>
+                        <field name="vm_map_store_name"/>
+                        <field name="vm_token_url"/>
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//page[@name='entities']//field[@name='quantity_total']" position="after">
+                <field name="vm_store_stock" column_invisible="parent.connector_type != 'vanmarcke'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

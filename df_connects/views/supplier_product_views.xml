@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="supplier_product_view_list" model="ir.ui.view">
+        <field name="name">df.connects.supplier.product.list</field>
+        <field name="model">df.connects.supplier.product</field>
+        <field name="arch" type="xml">
+            <list string="Leveranciersproducten" create="0"
+                  decoration-muted="quantity_total &lt;= 0">
+                <field name="uuid"/>
+                <field name="uuid_source" optional="hide"/>
+                <field name="ean" optional="show"/>
+                <field name="supplier_code"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="connection_id" optional="hide"/>
+                <field name="price" widget="monetary"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="quantity_total" sum="Totaal"/>
+                <field name="entity_count" optional="hide"/>
+                <field name="product_id" optional="show"/>
+                <field name="last_seen" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="supplier_product_view_form" model="ir.ui.view">
+        <field name="name">df.connects.supplier.product.form</field>
+        <field name="model">df.connects.supplier.product</field>
+        <field name="arch" type="xml">
+            <form string="Leveranciersproduct" create="0">
+                <header>
+                    <button name="action_link_product" type="object" string="Product zoeken"
+                            invisible="product_id"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_product" type="object" class="oe_stat_button"
+                                icon="fa-cube" invisible="not product_id" string="Product"/>
+                    </div>
+                    <widget name="web_ribbon" title="Gearchiveerd" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Identificatie">
+                            <field name="uuid"/>
+                            <field name="uuid_source"/>
+                            <field name="ean"/>
+                            <field name="supplier_code"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Aanbod">
+                            <field name="partner_id"/>
+                            <field name="connection_id"/>
+                            <field name="price" widget="monetary"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                            <field name="quantity_total"/>
+                            <field name="last_seen"/>
+                            <field name="product_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Voorraad per entiteit" name="stock">
+                            <field name="stock_ids">
+                                <list>
+                                    <field name="entity_id"/>
+                                    <field name="quantity" sum="Totaal"/>
+                                    <field name="write_date" string="Bijgewerkt op"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Ruwe gegevens" name="raw" invisible="not raw_data"
+                              groups="df_connects.group_df_connects_manager">
+                            <field name="raw_data" widget="code" options="{'mode': 'javascript'}"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="supplier_product_view_search" model="ir.ui.view">
+        <field name="name">df.connects.supplier.product.search</field>
+        <field name="model">df.connects.supplier.product</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Product"
+                       filter_domain="['|', '|', '|', ('name', 'ilike', self), ('uuid', 'ilike', self), ('ean', 'ilike', self), ('supplier_code', 'ilike', self)]"/>
+                <field name="uuid"/>
+                <field name="ean"/>
+                <field name="supplier_code"/>
+                <field name="partner_id"/>
+                <field name="connection_id"/>
+                <field name="product_id"/>
+                <filter name="available" string="Beschikbaar" domain="[('quantity_total', '>', 0)]"/>
+                <filter name="unavailable" string="Niet beschikbaar" domain="[('quantity_total', '&lt;=', 0)]"/>
+                <separator/>
+                <filter name="with_ean" string="Met EAN" domain="[('uuid_source', '=', 'ean')]"/>
+                <filter name="without_ean" string="Zonder EAN" domain="[('uuid_source', '=', 'code')]"/>
+                <separator/>
+                <filter name="linked" string="Gekoppeld aan product" domain="[('product_id', '!=', False)]"/>
+                <filter name="unlinked" string="Niet gekoppeld" domain="[('product_id', '=', False)]"/>
+                <separator/>
+                <filter name="archived" string="Gearchiveerd" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_by_partner" string="Leverancier" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_by_uuid" string="UUID" context="{'group_by': 'uuid'}"/>
+                    <filter name="group_by_product" string="Product" context="{'group_by': 'product_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="supplier_product_action" model="ir.actions.act_window">
+        <field name="name">Leveranciersproducten</field>
+        <field name="res_model">df.connects.supplier.product</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">Nog geen leveranciersproducten</p>
+            <p>Synchroniseer een koppeling om de producten van de leverancier op te halen.</p>
+        </field>
+    </record>
+
+    <!-- Stock per entity, for an analysis over suppliers and entities. -->
+    <record id="supplier_stock_view_list" model="ir.ui.view">
+        <field name="name">df.connects.supplier.stock.list</field>
+        <field name="model">df.connects.supplier.stock</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="supplier_product_id"/>
+                <field name="product_id" optional="show"/>
+                <field name="connection_id" optional="hide"/>
+                <field name="entity_id"/>
+                <field name="quantity" sum="Totaal"/>
+                <field name="write_date" string="Bijgewerkt op" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="supplier_stock_view_pivot" model="ir.ui.view">
+        <field name="name">df.connects.supplier.stock.pivot</field>
+        <field name="model">df.connects.supplier.stock</field>
+        <field name="arch" type="xml">
+            <pivot string="Voorraad leveranciers">
+                <field name="supplier_product_id" type="row"/>
+                <field name="entity_id" type="col"/>
+                <field name="quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="supplier_stock_view_search" model="ir.ui.view">
+        <field name="name">df.connects.supplier.stock.search</field>
+        <field name="model">df.connects.supplier.stock</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="supplier_product_id"/>
+                <field name="product_id"/>
+                <field name="entity_id"/>
+                <field name="connection_id"/>
+                <filter name="available" string="Beschikbaar" domain="[('quantity', '>', 0)]"/>
+                <group>
+                    <filter name="group_by_entity" string="Entiteit" context="{'group_by': 'entity_id'}"/>
+                    <filter name="group_by_connection" string="Koppeling" context="{'group_by': 'connection_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="supplier_stock_action" model="ir.actions.act_window">
+        <field name="name">Voorraad per entiteit</field>
+        <field name="res_model">df.connects.supplier.stock</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="context">{'search_default_available': 1}</field>
+    </record>
+
+    <record id="supplier_entity_view_list" model="ir.ui.view">
+        <field name="name">df.connects.supplier.entity.list</field>
+        <field name="model">df.connects.supplier.entity</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" create="0">
+                <field name="sequence" widget="handle"/>
+                <field name="connection_id" readonly="1"/>
+                <field name="partner_id" optional="hide"/>
+                <field name="code" readonly="1"/>
+                <field name="name"/>
+                <field name="quantity_total"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="supplier_entity_action" model="ir.actions.act_window">
+        <field name="name">Entiteiten</field>
+        <field name="res_model">df.connects.supplier.entity</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">Nog geen entiteiten</p>
+            <p>Entiteiten (magazijnen, vestigingen of dochterbedrijven van de leverancier)
+               worden aangemaakt bij de synchronisatie.</p>
+        </field>
+    </record>
+</odoo>

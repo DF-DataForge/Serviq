@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_template_form_view" model="ir.ui.view">
+        <field name="name">product.template.form.df.connects</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_df_supplier_products" type="object"
+                        class="oe_stat_button" icon="fa-truck"
+                        groups="df_connects.group_df_connects_user"
+                        invisible="not df_supplier_product_count">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="df_supplier_qty" widget="float" options="{'digits': [16, 0]}"/>
+                        </span>
+                        <span class="o_stat_text">Bij leveranciers</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

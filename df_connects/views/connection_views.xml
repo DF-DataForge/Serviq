@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="connection_view_list" model="ir.ui.view">
+        <field name="name">df.connects.connection.list</field>
+        <field name="model">df.connects.connection</field>
+        <field name="arch" type="xml">
+            <list string="Leverancierskoppelingen">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="connector_type" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+                <field name="supplier_product_count" string="Producten"/>
+                <field name="auto_sync" optional="show"/>
+                <field name="last_sync"/>
+                <field name="last_sync_state" widget="badge"
+                       decoration-success="last_sync_state == 'ok'"
+                       decoration-danger="last_sync_state == 'error'"/>
+                <field name="next_sync" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="connection_view_form" model="ir.ui.view">
+        <field name="name">df.connects.connection.form</field>
+        <field name="model">df.connects.connection</field>
+        <field name="arch" type="xml">
+            <form string="Leverancierskoppeling">
+                <header>
+                    <button name="action_sync" type="object" string="Nu synchroniseren"
+                            class="btn-primary" invisible="not id"/>
+                    <button name="action_test_connection" type="object" string="Verbinding testen"
+                            invisible="not id" groups="df_connects.group_df_connects_manager"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_supplier_products" type="object"
+                                class="oe_stat_button" icon="fa-cubes">
+                            <field name="supplier_product_count" widget="statinfo" string="Producten"/>
+                        </button>
+                        <button name="action_view_entities" type="object"
+                                class="oe_stat_button" icon="fa-building-o">
+                            <field name="entity_count" widget="statinfo" string="Entiteiten"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Gearchiveerd" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="bv. Leverancier X - productcatalogus"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="connector_type"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-danger" role="alert"
+                         invisible="last_sync_state != 'error'">
+                        <field name="last_sync_message" readonly="1"/>
+                    </div>
+                    <notebook>
+                        <page string="Verbinding" name="connection">
+                            <group>
+                                <group string="Aanvraag">
+                                    <field name="base_url" placeholder="https://api.leverancier.be/v1"/>
+                                    <field name="products_endpoint"/>
+                                    <field name="http_method"/>
+                                    <field name="timeout"/>
+                                    <field name="verify_ssl"/>
+                                </group>
+                                <group string="Authenticatie">
+                                    <field name="auth_type"/>
+                                    <field name="api_key_name"
+                                           invisible="auth_type not in ('api_key_header', 'api_key_query')"/>
+                                    <field name="api_key" password="True"
+                                           invisible="auth_type not in ('api_key_header', 'api_key_query', 'bearer')"/>
+                                    <field name="username" invisible="auth_type != 'basic'"/>
+                                    <field name="password" password="True" invisible="auth_type != 'basic'"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Paginering">
+                                    <field name="pagination"/>
+                                    <field name="page_param" invisible="pagination != 'page'"/>
+                                    <field name="page_start" invisible="pagination != 'page'"/>
+                                    <field name="offset_param" invisible="pagination != 'offset'"/>
+                                    <field name="next_link_path" invisible="pagination != 'next_link'"/>
+                                    <field name="page_size_param" invisible="pagination == 'none'"/>
+                                    <field name="page_size" invisible="pagination == 'none'"/>
+                                    <field name="max_pages" invisible="pagination == 'none'"/>
+                                </group>
+                                <group string="Extra">
+                                    <field name="extra_params" placeholder='{"lang": "nl"}'/>
+                                    <field name="extra_headers" placeholder='{"Accept-Language": "nl-BE"}'/>
+                                    <field name="request_body" invisible="http_method != 'POST'"
+                                           placeholder='{"filter": {"active": true}}'/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Veldkoppeling" name="mapping">
+                            <p class="text-muted">
+                                Paden in het JSON-antwoord van de leverancier: sleutels gescheiden door
+                                een punt, lijstindexen tussen haken of als getal
+                                (bv. <code>data.items</code>, <code>prices[0].amount</code>).
+                                Meerdere alternatieven scheiden met <code>|</code>: het eerste gevonden
+                                veld telt (bv. <code>ean|gtin|barcode</code>).
+                                Een product met een geldige EAN krijgt de EAN als UUID, anders de
+                                leveranciersproductcode.
+                            </p>
+                            <group>
+                                <group string="Product">
+                                    <field name="records_path" placeholder="(het antwoord zelf is de lijst)"/>
+                                    <field name="map_ean"/>
+                                    <field name="map_code"/>
+                                    <field name="map_name"/>
+                                    <field name="map_price"/>
+                                    <field name="map_currency"/>
+                                </group>
+                                <group string="Beschikbare hoeveelheid">
+                                    <field name="map_stock_path"/>
+                                    <field name="map_stock_entity"/>
+                                    <field name="map_stock_entity_name"/>
+                                    <field name="map_stock_quantity"/>
+                                    <field name="map_quantity"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Opties en planning" name="options">
+                            <group>
+                                <group string="Opties">
+                                    <field name="link_products"/>
+                                    <field name="update_supplierinfo"/>
+                                    <field name="archive_missing"/>
+                                    <field name="store_raw_data"/>
+                                </group>
+                                <group string="Planning">
+                                    <field name="auto_sync"/>
+                                    <label for="sync_interval_number" string="Interval" invisible="not auto_sync"/>
+                                    <div class="o_row" invisible="not auto_sync">
+                                        <field name="sync_interval_number" class="oe_inline"/>
+                                        <field name="sync_interval_type" class="oe_inline"/>
+                                    </div>
+                                    <field name="next_sync" invisible="not auto_sync"/>
+                                    <field name="last_sync"/>
+                                    <field name="last_sync_state"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Entiteiten" name="entities">
+                            <field name="entity_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="quantity_total"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Historiek" name="history">
+                            <field name="log_ids" readonly="1">
+                                <list limit="20" decoration-danger="state == 'error'">
+                                    <field name="date"/>
+                                    <field name="state"/>
+                                    <field name="duration"/>
+                                    <field name="count_read"/>
+                                    <field name="count_created"/>
+                                    <field name="count_updated"/>
+                                    <field name="count_archived"/>
+                                    <field name="count_skipped"/>
+                                    <field name="message"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="connection_view_search" model="ir.ui.view">
+        <field name="name">df.connects.connection.search</field>
+        <field name="model">df.connects.connection</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <filter name="error" string="Fout bij laatste synchronisatie"
+                        domain="[('last_sync_state', '=', 'error')]"/>
+                <filter name="auto" string="Automatisch" domain="[('auto_sync', '=', True)]"/>
+                <separator/>
+                <filter name="archived" string="Gearchiveerd" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="connection_action" model="ir.actions.act_window">
+        <field name="name">Koppelingen</field>
+        <field name="res_model">df.connects.connection</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Stel een koppeling met een leverancier in</p>
+            <p>Een koppeling haalt via de API van de leverancier de producten op met hun EAN,
+               leveranciersproductcode, prijs en beschikbare hoeveelheid per entiteit.</p>
+        </field>
+    </record>
+
+    <record id="sync_log_view_list" model="ir.ui.view">
+        <field name="name">df.connects.sync.log.list</field>
+        <field name="model">df.connects.sync.log</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" decoration-danger="state == 'error'">
+                <field name="date"/>
+                <field name="connection_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'ok'" decoration-danger="state == 'error'"/>
+                <field name="duration" optional="hide"/>
+                <field name="count_read"/>
+                <field name="count_created"/>
+                <field name="count_updated"/>
+                <field name="count_archived"/>
+                <field name="count_skipped" optional="hide"/>
+                <field name="message"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="sync_log_view_search" model="ir.ui.view">
+        <field name="name">df.connects.sync.log.search</field>
+        <field name="model">df.connects.sync.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="connection_id"/>
+                <filter name="error" string="Fouten" domain="[('state', '=', 'error')]"/>
+                <group>
+                    <filter name="group_connection" string="Koppeling" context="{'group_by': 'connection_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="sync_log_action" model="ir.actions.act_window">
+        <field name="name">Synchronisaties</field>
+        <field name="res_model">df.connects.sync.log</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

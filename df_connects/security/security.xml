@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record model="res.groups.privilege" id="res_groups_privilege_df_connects">
+        <field name="name">Leverancierskoppelingen</field>
+        <field name="sequence">50</field>
+        <field name="category_id" ref="base.module_category_supply_chain"/>
+    </record>
+
+    <record id="group_df_connects_user" model="res.groups">
+        <field name="name">Gebruiker</field>
+        <field name="comment">Gebruiker: raadpleegt de producten, prijzen en voorraad van de leveranciers en start een synchronisatie.</field>
+        <field name="sequence">10</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="privilege_id" ref="res_groups_privilege_df_connects"/>
+    </record>
+
+    <record id="group_df_connects_manager" model="res.groups">
+        <field name="name">Beheerder</field>
+        <field name="comment">Beheerder: stelt de koppelingen in, met hun API-sleutels.</field>
+        <field name="sequence">20</field>
+        <field name="implied_ids" eval="[(4, ref('group_df_connects_user'))]"/>
+        <field name="privilege_id" ref="res_groups_privilege_df_connects"/>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+
+    <record id="rule_connection_company" model="ir.rule">
+        <field name="name">Leverancierskoppeling: multi-company</field>
+        <field name="model_id" ref="model_df_connects_connection"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_supplier_product_company" model="ir.rule">
+        <field name="name">Leveranciersproduct: multi-company</field>
+        <field name="model_id" ref="model_df_connects_supplier_product"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_supplier_entity_company" model="ir.rule">
+        <field name="name">Entiteit leverancier: multi-company</field>
+        <field name="model_id" ref="model_df_connects_supplier_entity"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_supplier_stock_company" model="ir.rule">
+        <field name="name">Voorraad leverancier: multi-company</field>
+        <field name="model_id" ref="model_df_connects_supplier_stock"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_sync_log_company" model="ir.rule">
+        <field name="name">Synchronisatie: multi-company</field>
+        <field name="model_id" ref="model_df_connects_sync_log"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>
