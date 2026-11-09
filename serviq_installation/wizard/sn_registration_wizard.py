@@ -15,7 +15,13 @@ class SnRegistrationWizard(models.TransientModel):
     1. is the serial known in the system (stock.lot)?
     2. is the serial currently in a customer location?
     3. is it in the *correct* customer location, i.e. the customer-specific
-       location of the system's distributor?
+       location of the system's distributor (without distributors: the
+       customer location of the customer)?
+
+    The location checks follow the serial-number validation (settings):
+    without validation every known serial is accepted, with validation on
+    customer any customer location is correct, with validation on
+    distributor only the one of the distributor.
 
     Only serials in the correct customer location can be accepted. Unknown
     serials can be created directly in that location; serials sitting in
@@ -90,11 +96,16 @@ class SnRegistrationWizard(models.TransientModel):
             res['line_id'] = lines[0].id
         return res
 
-    @api.depends('installation_id.distributor_id')
+    @api.depends('installation_id.distributor_id',
+                 'installation_id.customer_id')
     def _compute_correct_location(self):
+        on_distributor = self.env['serviq.installation'] \
+            ._serviq_sn_validation() == 'distributor'
         for wiz in self:
             wiz.correct_location_id = \
-                wiz.distributor_id.property_stock_customer
+                wiz.distributor_id.property_stock_customer \
+                if on_distributor \
+                else wiz.installation_id.customer_id.property_stock_customer
 
     @api.depends('installation_id.line_ids.lot_id',
                  'installation_id.line_ids.serial_photo')
@@ -183,7 +194,19 @@ class SnRegistrationWizard(models.TransientModel):
     # Checks
     # ------------------------------------------------------------------
     def _get_correct_location(self):
+        """Location a serial is created in or moved to: the customer
+        location of the distributor with validation on distributor, else
+        the one of the customer."""
         self.ensure_one()
+        if self.env['serviq.installation']._serviq_sn_validation() \
+                != 'distributor':
+            customer = self.installation_id.customer_id
+            location = customer.property_stock_customer
+            if not location:
+                raise UserError(_(
+                    'Klant "%s" heeft geen klantlocatie gekoppeld.',
+                    customer.display_name or '-'))
+            return location
         distributor = self.installation_id.distributor_id
         if not distributor:
             raise UserError(_(
@@ -264,23 +287,41 @@ class SnRegistrationWizard(models.TransientModel):
             quants = self.env['stock.quant'].sudo().search([
                 ('lot_id', '=', lot.id), ('quantity', '>', 0),
             ])
-            correct_quants = quants.filtered(
-                lambda q: q.location_id == correct_loc)
+            mode = self.env['serviq.installation']._serviq_sn_validation()
             customer_quants = quants.filtered(
                 lambda q: q.location_id.usage == 'customer')
             internal_quants = quants.filtered(
                 lambda q: q.location_id.usage == 'internal')
-            if correct_quants:
+            if mode == 'customer':
+                correct_quants = customer_quants
+            elif mode == 'distributor':
+                correct_quants = quants.filtered(
+                    lambda q: q.location_id == correct_loc)
+            else:
+                correct_quants = quants
+            if mode == 'none':
+                # No validation: a known serial is accepted wherever it is.
+                current = quants[:1].location_id
+                vals.update(
+                    state='ok',
+                    check_in_customer_location=bool(customer_quants),
+                    check_correct_location=True,
+                    current_location_id=current.id,
+                    status_message=_(
+                        'Serienummer "%s" is gekend en kan geaccepteerd '
+                        'worden (geen validatie van de locatie).', serial))
+            elif correct_quants:
+                current = correct_quants[0].location_id
                 vals.update(
                     state='ok',
                     check_in_customer_location=True,
                     check_correct_location=True,
-                    current_location_id=correct_loc.id,
+                    current_location_id=current.id,
                     status_message=_(
                         'Serienummer "%(serial)s" bevindt zich in de juiste '
                         'klantlocatie "%(location)s" en kan geaccepteerd '
                         'worden.',
-                        serial=serial, location=correct_loc.display_name))
+                        serial=serial, location=current.display_name))
             elif customer_quants:
                 current = customer_quants[0].location_id
                 vals.update(
@@ -303,8 +344,7 @@ class SnRegistrationWizard(models.TransientModel):
                         'Serienummer "%(serial)s" bevindt zich nog in de '
                         'interne voorraad ("%(current)s"). Controleer de '
                         'levering: een serienummer kan niet geïnstalleerd '
-                        'worden zolang het niet aan de distributeur geleverd '
-                        'is.',
+                        'worden zolang het niet geleverd is.',
                         serial=serial, current=current.display_name))
             else:
                 vals.update(

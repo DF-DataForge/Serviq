@@ -10,7 +10,7 @@
                 <field name="product_tmpl_id"/>
                 <field name="category_id" optional="show"/>
                 <field name="customer_id" optional="show"/>
-                <field name="distributor_id" optional="show"/>
+                <field name="distributor_id" optional="show" groups="serviq_installation.group_serviq_distributor"/>
                 <field name="installer_id" optional="hide"/>
                 <field name="lot_id" optional="hide"/>
                 <field name="state" widget="badge"
@@ -47,7 +47,7 @@
                 <header>
                     <button name="%(installation_action_per_distributor)d"
                             type="action" string="Per distributeur"
-                            display="always"/>
+                            display="always" groups="serviq_installation.group_serviq_distributor"/>
                     <button name="%(installation_action_per_installer)d"
                             type="action" string="Per installateur"
                             display="always"/>
@@ -70,7 +70,7 @@
                             <field t-if="record.customer_id.raw_value" name="customer_id"/>
                             <t t-else="">-</t>
                         </div>
-                        <div class="sq-in-card-line" title="Distributeur">
+                        <div class="sq-in-card-line" title="Distributeur" groups="serviq_installation.group_serviq_distributor">
                             <i class="fa fa-truck"/>
                             <field t-if="record.distributor_id.raw_value" name="distributor_id"/>
                             <t t-else="">-</t>
@@ -102,7 +102,7 @@
                 <field name="line_ids" string="Serienummer component"
                        filter_domain="[('line_ids.lot_id.name', 'ilike', self)]"/>
                 <field name="customer_id"/>
-                <field name="distributor_id"/>
+                <field name="distributor_id" groups="serviq_installation.group_serviq_distributor"/>
                 <field name="installer_id"/>
                 <field name="category_id"/>
                 <separator/>
@@ -131,7 +131,7 @@
                     <filter string="Categorie" name="group_by_category"
                             context="{'group_by': 'category_id'}"/>
                     <filter string="Distributeur" name="group_by_distributor"
-                            context="{'group_by': 'distributor_id'}"/>
+                            context="{'group_by': 'distributor_id'}" groups="serviq_installation.group_serviq_distributor"/>
                     <filter string="Installateur" name="group_by_installer"
                             context="{'group_by': 'installer_id'}"/>
                     <filter string="Klant" name="group_by_customer"
@@ -222,7 +222,7 @@
                             <h5><i class="fa fa-users me-2"/>Contacten</h5>
                             <group name="contacts">
                                 <field name="customer_id" readonly="is_locked"/>
-                                <field name="distributor_id" readonly="is_locked"/>
+                                <field name="distributor_id" readonly="is_locked" groups="serviq_installation.group_serviq_distributor"/>
                                 <field name="installer_id" readonly="is_locked"/>
                                 <field name="contact_person_name" readonly="is_locked"/>
                                 <field name="contact_person_phone" widget="phone" readonly="is_locked"/>
@@ -247,7 +247,7 @@
                                     <field name="rack_number" optional="hide"/>
                                     <field name="product_tmpl_id"/>
                                     <field name="role_id" optional="show"/>
-                                    <field name="distributor_id" optional="hide"/>
+                                    <field name="distributor_id" optional="hide" groups="serviq_installation.group_serviq_distributor"/>
                                     <field name="product_qty" column_invisible="True"/>
                                     <field name="lot_id"
                                            context="{'serviq_distributor': distributor_id, 'serviq_product_tmpl': product_tmpl_id, 'serviq_outside_stock': search_outside_stock, 'default_product_id': product_variant_id, 'serviq_create_lot_in_stock': True}"/>

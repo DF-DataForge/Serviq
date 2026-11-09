@@ -14,7 +14,7 @@
                     <group>
                         <field name="product_tmpl_id"/>
                         <field name="rack_number" invisible="rack_number == 0"/>
-                        <field name="distributor_id"/>
+                        <field name="distributor_id" groups="serviq_installation.group_serviq_distributor"/>
                         <field name="correct_location_id"/>
                         <field name="pending_count"/>
                         <field name="serial_number"

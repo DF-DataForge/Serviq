@@ -5,7 +5,9 @@ from odoo.exceptions import UserError
 
 class FirstInstallationFlow(models.AbstractModel):
     """Register the installation at its first installation: installation
-    product + serial number from the customer stock of the distributor."""
+    product + serial number from the stock the serial-number validation
+    (settings) allows: of the distributor, delivered to a customer, or
+    any stock without validation."""
     _name = 'serviq.portal.flow.handler.first_installation'
     _inherit = 'serviq.portal.flow.handler'
     _description = 'Portaalflow: eerste installatie'
@@ -23,17 +25,18 @@ class FirstInstallationFlow(models.AbstractModel):
     def _flow_values(self, task, flow, partner, is_internal):
         if task.serviq_installation_id:
             return {'fi_installation': task.serviq_installation_id}
-        distributors = self._flow_distributors(task, partner, is_internal)
+        locations = self._flow_lot_locations(task, partner, is_internal)
         products = self._fi_products()
-        lots = self._flow_available_lots(distributors, products)
+        lots = self._flow_available_lots(locations, products)
         return {
             'fi_installation': task.serviq_installation_id,
             # Only products with a serial available in the stock.
             'fi_products': products.filtered(
                 lambda p: p in lots.product_id.product_tmpl_id),
             'fi_lots': lots,
-            'fi_has_distributor_stock': bool(
-                distributors.mapped('property_stock_customer')),
+            'fi_has_distributor_stock': bool(locations),
+            'fi_sn_validation': self.env['serviq.installation']
+            ._serviq_sn_validation(),
         }
 
     @api.model
@@ -52,23 +55,28 @@ class FirstInstallationFlow(models.AbstractModel):
         if not product_tmpl:
             raise UserError(_('Dit product is geen installatieproduct.'))
 
-        # The serial must be available in the stock of a distributor the
-        # user works with; that distributor becomes the distributor of the
-        # installation.
-        distributors = self._flow_distributors(task, partner, is_internal)
-        lot = self._flow_available_lots(distributors, product_tmpl) \
+        # The serial must be available where the serial-number validation
+        # allows it: in the stock of a distributor the user works with
+        # (that distributor becomes the distributor of the installation),
+        # delivered to a customer, or anywhere without validation.
+        locations = self._flow_lot_locations(task, partner, is_internal)
+        lot = self._flow_available_lots(locations, product_tmpl) \
             .filtered(lambda l: l.id == lot_id)
         if not lot:
-            raise UserError(_(
-                'Dit serienummer is niet beschikbaar in de voorraad van de '
-                'distributeur.'))
+            mode = self.env['serviq.installation']._serviq_sn_validation()
+            raise UserError(
+                _('Dit serienummer is niet beschikbaar in de voorraad van de '
+                  'distributeur.') if mode == 'distributor'
+                else _('Dit serienummer is niet geleverd aan een klant.')
+                if mode == 'customer'
+                else _('Dit serienummer is niet beschikbaar.'))
         quant = self.env['stock.quant'].search([
             ('lot_id', '=', lot.id), ('quantity', '>', 0),
-            ('location_id', 'in',
-             distributors.mapped('property_stock_customer').ids),
+            ('location_id', 'in', locations.ids),
         ], limit=1)
-        distributor = distributors.filtered(
-            lambda d: d.property_stock_customer == quant.location_id)[:1]
+        distributor = self._flow_distributors(
+            task, partner, is_internal).filtered(
+                lambda d: d.property_stock_customer == quant.location_id)[:1]
 
         commercial = partner.commercial_partner_id
         installer = task.serviq_installer_id

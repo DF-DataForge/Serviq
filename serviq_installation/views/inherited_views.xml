@@ -20,7 +20,8 @@
                 <field name="serviq_installer_id"
                        invisible="not serviq_installation_id"/>
                 <field name="serviq_distributor_id"
-                       invisible="not serviq_installation_id"/>
+                       invisible="not serviq_installation_id"
+                       groups="serviq_installation.group_serviq_distributor"/>
             </field>
         </field>
     </record>
@@ -64,10 +65,11 @@
                 </button>
             </div>
             <xpath expr="//field[@name='category_id']" position="after">
-                <field name="serviq_is_distributor"/>
+                <field name="serviq_is_distributor" groups="serviq_installation.group_serviq_distributor"/>
                 <field name="serviq_is_installer"/>
                 <field name="serviq_can_install_for_ids" widget="many2many_tags"
-                       invisible="not serviq_is_installer"/>
+                       invisible="not serviq_is_installer"
+                       groups="serviq_installation.group_serviq_distributor"/>
             </xpath>
         </field>
     </record>

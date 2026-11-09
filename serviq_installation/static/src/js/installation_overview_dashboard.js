@@ -35,6 +35,7 @@ class InstallationOverviewDashboard extends Component {
             loading: true,
             data: {
                 overall: {},
+                use_distributors: false,
                 per_distributor: [],
                 per_installer: [],
                 sections: [],

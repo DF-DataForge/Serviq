@@ -23,6 +23,14 @@
         <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
 
+    <!-- Feature group (Installaties > Configuratie > Instellingen >
+         "Werken met distributeurs"): implied by all internal users when
+         the setting is on. Without it the distributor fields, filters and
+         dashboard rows are hidden and the distributor logic is skipped. -->
+    <record id="group_serviq_distributor" model="res.groups">
+        <field name="name">Serviq: werken met distributeurs</field>
+    </record>
+
     <record id="installation_company_rule" model="ir.rule">
         <field name="name">Installatie: multi-company</field>
         <field name="model_id" ref="model_serviq_installation"/>

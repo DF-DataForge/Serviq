@@ -192,7 +192,7 @@
                                     <i class="fa fa-user"/>
                                     <t t-esc="m2oName(rec.customer_id)"/>
                                 </div>
-                                <div class="sq-in-card-line">
+                                <div t-if="state.data.use_distributors" class="sq-in-card-line">
                                     <i class="fa fa-truck"/>
                                     <t t-esc="m2oName(rec.distributor_id)"/>
                                 </div>
@@ -264,8 +264,8 @@
                     </div>
 
                     <div class="sq-in-columns">
-                        <!-- Per distributor -->
-                        <div class="sq-in-section">
+                        <!-- Per distributor (setting "Werken met distributeurs") -->
+                        <div t-if="state.data.use_distributors" class="sq-in-section">
                             <h4><i class="fa fa-truck me-2"/>Per distributeur</h4>
                             <table class="table table-sm table-hover sq-in-table">
                                 <thead>

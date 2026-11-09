@@ -15,7 +15,10 @@ A portal user is matched through its **commercial partner** (its company):
 it sees the installations where that company is the distributor or the
 installer, and the interventions where it is the installer or the
 distributor (`serviq_is_distributor` / `serviq_is_installer` on the contact
-or the company). Internal users see everything. The pages read with
+or the company). Without the setting *Werken met distributeurs* there is
+no distributor role and the distributor is left out of the pages
+(`use_distributors` in the values of the templates). Internal users see
+everything. The pages read with
 `sudo()` after an explicit access check; record rules
 (`security/security.xml`) keep direct access in line with that.
 
@@ -50,8 +53,11 @@ shown on the page). An optional live check is available on
 
 The handler is called with `sudo()`; `partner` is the contact of the user,
 `is_internal` tells whether it is an internal user. Helpers:
-`_flow_distributors`, `_flow_available_lots`, `_flow_find_lot`,
-`_flow_post` (chatter message in the name of the user).
+`_flow_distributors` (empty without distributors), `_flow_lot_locations`
+(stock locations the serials may come from, following the serial-number
+validation: the customer locations of those distributors, every customer
+location, or every internal and customer location), `_flow_available_lots`,
+`_flow_find_lot`, `_flow_post` (chatter message in the name of the user).
 
 The template is rendered with the values of the intervention page (`task`,
 `installation`, `partner`, `is_internal`, `is_closed`, `state_labels`, ...),

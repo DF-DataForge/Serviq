@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Serviq Installaties',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'summary': 'Installaties bij klanten: componenten, serienummers, '
                'interventies, planning en overzichtsdashboard',
     'description': """
@@ -21,6 +21,9 @@ numbers, its customer / distributor / installer and its interventions.
 * Status follows the interventions (commissioning, service).
 * Overview dashboard with counts per distributor / installer, planning
   calendar, slot picker and hours overview.
+* Working with distributors is optional (setting "Werken met
+  distributeurs"): without it the installer works for its own customers
+  and the distributor fields and checks are left out.
 * Optional modules installable from the settings: logistic dashboards
   (serviq_logistics), the installer / distributor portal (serviq_portal) and
   its flows (serviq_flow_*).
@@ -43,6 +46,7 @@ numbers, its customer / distributor / installer and its interventions.
         'data/sequence.xml',
         'data/intervention_type_data.xml',
         'data/ir_cron.xml',
+        'data/distributor_data.xml',
         'views/installation_views.xml',
         'views/configuration_views.xml',
         'views/inherited_views.xml',
