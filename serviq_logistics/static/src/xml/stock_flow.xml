@@ -32,7 +32,7 @@
                     <label class="mb-0 fw-semibold" for="sq_sf_warehouse">Magazijn</label>
                     <select id="sq_sf_warehouse" class="form-select form-select-sm sq-sf-select" t-on-change="onSelect">
                         <t t-foreach="state.warehouses" t-as="wh" t-key="wh.id">
-                            <option t-att-value="wh.id" t-att-selected="state.selected === String(wh.id)" t-esc="wh.name"/>
+                            <option t-att-value="wh.id" t-att-selected="isSelected(wh)" t-esc="wh.name"/>
                         </t>
                         <option value="all" t-att-selected="state.selected === 'all'">Alle magazijnen</option>
                     </select>
