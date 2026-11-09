@@ -26,8 +26,9 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" for="sq_rp_serial">Nieuw serienummer</label>
-                    <input id="sq_rp_serial" type="text" name="serial" class="form-control"
-                           required="required" autocomplete="off"/>
+                    <input id="sq_rp_serial" type="text" name="serial" class="form-control sq-scan"
+                           required="required" autocomplete="off"
+                           placeholder="Typ of scan het serienummer"/>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" for="sq_rp_note">Opmerking</label>

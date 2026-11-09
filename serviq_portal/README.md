@@ -9,7 +9,7 @@ Portal for installers and distributors under `/my/installations`:
 | `/my/installations/<id>` | installation: components, serial numbers, interventions |
 | `/my/installations/interventions` | interventions, one tab per intervention type |
 | `/my/installations/planning` | planning calendar (month / week / day) |
-| `/my/installations/intervention/<id>` | intervention: data, flows, report, hours, mark done |
+| `/my/installations/intervention/<id>` | intervention: data, flows, report, time & km, mark done |
 
 A portal user is matched through its **commercial partner** (its company):
 it sees the installations where that company is the distributor or the
@@ -18,6 +18,51 @@ distributor (`serviq_is_distributor` / `serviq_is_installer` on the contact
 or the company). Internal users see everything. The pages read with
 `sudo()` after an explicit access check; record rules
 (`security/security.xml`) keep direct access in line with that.
+
+On a tablet or phone (below 1200px wide) the intervention lists show every
+row as a card (label / value lines, the action as a full-width button).
+
+The planning calendar colours an open intervention with the colour of its
+intervention type (`serviq.intervention.type.color`, Odoo colour index,
+same palette as the backend planning) and a finished one green, with a
+legend. Finished or cancelled interventions leave "Nog niet ingepland".
+
+## Time and kilometres
+
+The "Tijd & km" card of the intervention page logs, in one form:
+
+| Field | Timesheet line (`serviq_time_type`) |
+| --- | --- |
+| Vertrek naar klant -> Aankomst bij klant (optional) | `Heenrit` (`travel`), with "Km heen" |
+| Aankomst bij klant -> Vertrek bij klant | `Interventie` (`intervention`) |
+| Vertrek bij klant -> Terug aangekomen (optional) | `Terugrit` (`travel_back`), with "Km terug" |
+
+The lines are created in that order and listed chronologically (portal and
+the timesheet tab of the task, with columns for the type and the km). Each
+line keeps its start and end (`serviq_start` / `serviq_end`, UTC); the
+kilometres are stored on the line of their ride (`serviq_km`, total on the
+task as `serviq_km_total`).
+
+Whenever timed lines are added, changed or removed, the planning of the
+task follows the time on site: planned start = first arrival, end = last
+departure (without a planned start field: the deadline = first arrival).
+The rides do not move the planning.
+
+Timesheets need an employee: an installer without one gets an employee
+record (no user, linked to the contact as work contact, job title "Externe
+installateur") the first time they log time; the contact form shows it and
+offers "Werknemer aanmaken". The rights popup of the hours overview
+(`res.partner.serviq_get_installer_rights`) is extended with the portal
+access, role, users, employee and the available flows.
+
+## Scanning serial numbers
+
+Any `input` or `select` with the class `sq-scan` gets a camera button
+(`static/src/interactions/serial_scanner.js`, Odoo's barcode dialog;
+hidden when the browser has no camera). On an input the scanned value is
+filled in and `input` / `change` are fired, so live checks run; on a select
+the option whose `data-scan-value` (else its text) matches is selected.
+The serial fields of the bundled flows use it.
 
 ## Flows
 

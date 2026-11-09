@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Serviq Flow: eerste installatie',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'summary': 'Portaalflow: installatie registreren bij de eerste '
                'installatie (product en serienummer)',
     'description': """

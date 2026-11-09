@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from markupsafe import Markup
+
 from odoo import _, fields, models
 
 
@@ -39,3 +41,34 @@ class InstallationReplacement(models.Model):
                  component=self.product_tmpl_id.display_name,
                  old=self.old_lot_id.name or '-',
                  new=self.new_lot_id.name or '-')
+
+    def _installation_log_body(self, partner=None):
+        """Chatter message on the installation: the component with its
+        original and new serial. When the installation was registered on
+        that same intervention, the original component was only known
+        through that registration: say so, so it stays visible here."""
+        self.ensure_one()
+        installation = self.installation_id
+        task = self.task_id
+        title = _('Component vervangen op interventie %(task)s',
+                  task=task.name) if task else _('Component vervangen')
+        if partner:
+            title = _('%(title)s door %(name)s', title=title,
+                      name=partner.name)
+        parts = [Markup('<b>%s</b>') % title,
+                 Markup('• %s: %s') % (
+                     _('Component'), self.product_tmpl_id.display_name or '-')]
+        original = Markup('• %s: <b>%s</b>') % (
+            _('Oorspronkelijk serienummer'), self.old_lot_id.name or '-')
+        if task and task.serviq_installation_id == installation \
+                and installation.create_date and task.create_date \
+                and installation.create_date >= task.create_date:
+            original += Markup(' (%s)') % _(
+                'geregistreerd bij de aanmaak van deze installatie op deze '
+                'interventie')
+        parts.append(original)
+        parts.append(Markup('• %s: <b>%s</b>') % (
+            _('Nieuw serienummer'), self.new_lot_id.name or '-'))
+        if self.note:
+            parts.append(Markup('• %s: %s') % (_('Opmerking'), self.note))
+        return Markup('<br/>').join(parts)

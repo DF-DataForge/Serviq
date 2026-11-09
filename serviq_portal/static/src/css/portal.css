@@ -60,5 +60,92 @@
     overflow: hidden;
 }
 .sq-portal .sq-chip:hover { filter: brightness(.97); }
-.sq-portal .sq-chip-done { border-left-color: #198754; background: #e8f5ee; }
+/* Chip colours: the colour of the intervention type (Odoo colour index
+   0-11, same palette as the backend planning), green once done. */
+.sq-portal .sq-chip-color-0 { background: rgba(130, 140, 150, .14); border-left-color: hsl(210, 10%, 55%); }
+.sq-portal .sq-chip-color-1 { background: rgba(240, 96, 80, .14); border-left-color: hsl(6, 84%, 60%); }
+.sq-portal .sq-chip-color-2 { background: rgba(244, 164, 96, .14); border-left-color: hsl(28, 87%, 66%); }
+.sq-portal .sq-chip-color-3 { background: rgba(247, 205, 31, .14); border-left-color: hsl(48, 93%, 54%); }
+.sq-portal .sq-chip-color-4 { background: rgba(108, 193, 237, .14); border-left-color: hsl(200, 78%, 68%); }
+.sq-portal .sq-chip-color-5 { background: rgba(129, 73, 104, .14); border-left-color: hsl(327, 28%, 40%); }
+.sq-portal .sq-chip-color-6 { background: rgba(235, 126, 127, .14); border-left-color: hsl(359, 74%, 71%); }
+.sq-portal .sq-chip-color-7 { background: rgba(44, 131, 151, .14); border-left-color: hsl(191, 55%, 38%); }
+.sq-portal .sq-chip-color-8 { background: rgba(71, 85, 119, .14); border-left-color: hsl(223, 25%, 37%); }
+.sq-portal .sq-chip-color-9 { background: rgba(214, 20, 95, .14); border-left-color: hsl(337, 83%, 46%); }
+.sq-portal .sq-chip-color-10 { background: rgba(48, 195, 129, .14); border-left-color: hsl(153, 60%, 48%); }
+.sq-portal .sq-chip-color-11 { background: rgba(147, 101, 184, .14); border-left-color: hsl(273, 37%, 56%); }
+.sq-portal .sq-chip-done { background: rgba(44, 150, 80, .14); border-left-color: hsl(140, 55%, 38%); }
 .sq-portal .sq-chip-current { outline: 2px solid var(--sq-accent); }
+.sq-portal .sq-cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    font-size: .75rem;
+    color: #6c757d;
+}
+.sq-portal .sq-cal-legend-item { display: inline-flex; align-items: center; gap: 4px; }
+.sq-portal .sq-cal-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border-left: 3px solid transparent;
+}
+
+/* Serial inputs with a camera scan button (serial_scanner.js) */
+.sq-scan-btn { flex: 0 0 auto; }
+
+/* Intervention lists on a tablet or phone: below 1200px wide every row
+   becomes a card with label / value lines, so no column falls off the
+   screen. Desktop keeps the table. */
+@media (max-width: 1199.98px) {
+    .sq-portal .sq-responsive-table thead { display: none; }
+    .sq-portal .sq-responsive-table,
+    .sq-portal .sq-responsive-table tbody {
+        display: block;
+        width: 100%;
+    }
+    .sq-portal .sq-responsive-table tr {
+        display: block;
+        margin-bottom: .75rem;
+        padding: .75rem .9rem;
+        border: 1px solid var(--sq-border);
+        border-radius: .6rem;
+        background: var(--body-bg, #fff);
+    }
+    .sq-portal .sq-responsive-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: .75rem;
+        padding: .25rem 0;
+        border: 0;
+        text-align: right;
+    }
+    .sq-portal .sq-responsive-table td[data-label]::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        font-size: .75rem;
+        font-weight: 600;
+        letter-spacing: .03em;
+        color: #6c757d;
+        text-align: left;
+    }
+    /* Name as the title of the card, the action as a full-width button. */
+    .sq-portal .sq-responsive-table td.sq-rt-title {
+        display: block;
+        text-align: left;
+        font-size: 1rem;
+        padding-bottom: .5rem;
+    }
+    .sq-portal .sq-responsive-table td.sq-rt-action {
+        display: block;
+        padding-top: .6rem;
+    }
+    .sq-portal .sq-responsive-table td.sq-rt-action .btn {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        line-height: 2;
+    }
+}

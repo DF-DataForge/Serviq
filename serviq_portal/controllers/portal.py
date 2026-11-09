@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from urllib.parse import quote, urlencode
 
+import pytz
 from werkzeug.exceptions import NotFound
 
 from odoo import _, fields, http
@@ -358,6 +359,7 @@ class ServiqPortal(CustomerPortal):
                                       for p in installers]
             else:
                 data['installers'] = []
+        self._serviq_planning_mark_done(data)
 
         def url(scope_, day, installer=installer_id):
             args = {'scope': scope_, 'date': day}
@@ -370,8 +372,29 @@ class ServiqPortal(CustomerPortal):
             self._serviq_values(
                 'serviq_planning', cal=data, scope=scope,
                 installer_id=installer_id, url=url,
+                legend=data.get('legend') or [],
                 weekday_labels=[_('Ma'), _('Di'), _('Wo'), _('Do'),
                                 _('Vr'), _('Za'), _('Zo')]))
+
+    @staticmethod
+    def _serviq_planning_mark_done(data):
+        """Calendar chips are green once the intervention is finished
+        (end date, done / folded stage or field service 'done'), and
+        finished or cancelled interventions without a date leave the
+        'Nog niet ingepland' list."""
+        items = [item for day_items in data['tasks_by_day'].values()
+                 for item in day_items] + data['without_date']
+        tasks = request.env['project.task'].sudo().browse(
+            list({item['id'] for item in items})).exists()
+        finished = {task.id for task in tasks
+                    if task.date_end or task._serviq_is_finished()}
+        canceled = {task.id for task in tasks
+                    if task.state == '1_canceled'}
+        for item in items:
+            item['done'] = bool(item.get('done')) or item['id'] in finished
+        data['without_date'] = [
+            item for item in data['without_date']
+            if not item['done'] and item['id'] not in canceled]
 
     # ------------------------------------------------------------------
     # Intervention page
@@ -411,6 +434,8 @@ class ServiqPortal(CustomerPortal):
             self._serviq_user_info()
         timesheets_enabled = 'timesheet_ids' in task._fields \
             and 'account.analytic.line' in request.env
+        timesheets = task._serviq_timesheets_chronological() \
+            if timesheets_enabled else False
         return request.render(
             'serviq_portal.portal_intervention_detail',
             self._serviq_values(
@@ -421,8 +446,11 @@ class ServiqPortal(CustomerPortal):
                 maps_url=self._task_maps_url(task),
                 plan_field=task._serviq_plan_field(),
                 timesheets_enabled=timesheets_enabled,
-                timesheets=task.timesheet_ids if timesheets_enabled
-                else False,
+                timesheets=timesheets,
+                time_type_labels=dict(
+                    request.env['account.analytic.line']
+                    ._fields['serviq_time_type']._description_selection(
+                        request.env)) if timesheets_enabled else {},
                 flow_sections=self._serviq_flow_sections(
                     task, partner, is_internal),
                 message=message, error=error))
@@ -450,23 +478,48 @@ class ServiqPortal(CustomerPortal):
             task.id, anchor='report', message=_('Rapport opgeslagen.'))
 
     @staticmethod
-    def _serviq_employee(partner):
-        """Employee linked to the user or to its contact."""
+    def _serviq_employee(partner, company=None, create=False):
+        """Employee linked to the user or to its contact. With `create`, an
+        external installer without one gets an employee record of their own
+        (no user, linked to their contact), since timesheets need an
+        active employee; later registrations reuse it."""
         if 'hr.employee' not in request.env:
             return None
         Employee = request.env['hr.employee'].sudo()
         employee = Employee.search(
             [('user_id', '=', request.env.user.id)], limit=1)
-        if not employee and 'work_contact_id' in Employee._fields:
-            employee = Employee.search(
-                [('work_contact_id', '=', partner.id)], limit=1)
+        if not employee:
+            employee = partner.sudo().serviq_employee_id
+        if not employee and create:
+            employee = partner.sudo()._serviq_get_or_create_employee(
+                company, origin=_('uurregistratie in het portaal'))
         return employee
+
+    @staticmethod
+    def _serviq_parse_local(value):
+        """datetime of a datetime-local input ('YYYY-MM-DDTHH:MM'), None
+        when empty; raises ValueError when invalid."""
+        value = (value or '').strip()
+        return datetime.strptime(value, '%Y-%m-%dT%H:%M') if value else None
+
+    @staticmethod
+    def _serviq_parse_km(value):
+        """Kilometres of a number input (',' accepted as decimal mark);
+        raises ValueError when invalid or negative."""
+        km = float((value or '0').strip().replace(',', '.') or 0)
+        if km < 0:
+            raise ValueError(km)
+        return km
 
     @http.route(['/my/installations/intervention/<int:task_id>/hours'],
                 type='http', auth='user', website=True, methods=['POST'])
     def serviq_intervention_hours(self, task_id, **post):
-        """Log the hours worked (arrival -> departure) as a timesheet line
-        of the intervention."""
+        """Log the time of an intervention as timesheet lines, in
+        chronological order: the ride there ('Heenrit', departure to the
+        customer -> arrival, optional), the time on site (arrival ->
+        departure at the customer) and the ride back ('Terugrit', departure
+        at the customer -> back, optional), with the kilometres of each
+        ride. The time on site sets the planning of the intervention."""
         task = self._serviq_task_for_post(task_id)
         if not task:
             return self._serviq_no_access()
@@ -479,43 +532,106 @@ class ServiqPortal(CustomerPortal):
         if 'timesheet_ids' not in task._fields:
             return back(error=_('Uren loggen is niet beschikbaar.'))
         try:
-            arrival = datetime.strptime(
-                (post.get('arrival') or '').strip(), '%Y-%m-%dT%H:%M')
-            departure = datetime.strptime(
-                (post.get('departure') or '').strip(), '%Y-%m-%dT%H:%M')
+            travel_start = self._serviq_parse_local(post.get('travel_start'))
+            arrival = self._serviq_parse_local(post.get('arrival'))
+            departure = self._serviq_parse_local(post.get('departure'))
+            back_end = self._serviq_parse_local(post.get('back_end'))
         except ValueError:
+            return back(error=_('Vul geldige tijden in.'))
+        if not arrival or not departure:
             return back(error=_('Vul een geldige aankomst- en vertrektijd '
                                 'in.'))
         if departure <= arrival:
             return back(error=_('De vertrektijd moet na de aankomsttijd '
                                 'liggen.'))
-        employee = self._serviq_employee(partner)
-        if not employee:
-            return back(error=_('Er is geen werknemer gekoppeld aan uw '
-                                'contact.'))
+        if travel_start and travel_start >= arrival:
+            return back(error=_('Het vertrek naar de klant moet voor de '
+                                'aankomst liggen.'))
+        if back_end and back_end <= departure:
+            return back(error=_('De aankomst na de terugrit moet na het '
+                                'vertrek bij de klant liggen.'))
+        try:
+            km_out = self._serviq_parse_km(post.get('km_out'))
+            km_back = self._serviq_parse_km(post.get('km_back'))
+        except ValueError:
+            return back(error=_('Ongeldig aantal kilometers.'))
+        # The kilometres are logged on the line of their ride.
+        if km_out and not travel_start:
+            return back(error=_('Vul het vertrek naar de klant in om de '
+                                'kilometers van de heenrit te loggen.'))
+        if km_back and not back_end:
+            return back(error=_('Vul de aankomst na de terugrit in om de '
+                                'kilometers van de terugrit te loggen.'))
         if not task.project_id:
             return back(error=_('Deze interventie hoort bij geen project.'))
-        hours = (departure - arrival).total_seconds() / 3600.0
+        employee = self._serviq_employee(
+            partner, company=task.company_id or request.env.company,
+            create=True)
+        if not employee:
+            return back(error=_('Uren loggen is niet beschikbaar.'))
+
+        # The form holds local times; store UTC like every Odoo datetime.
+        tz = pytz.timezone(request.env.user.tz or 'UTC')
+
+        def to_utc(local):
+            return tz.localize(local).astimezone(pytz.utc) \
+                .replace(tzinfo=None)
+
+        def hours_between(begin, end):
+            return (end - begin).total_seconds() / 3600.0
+
+        def line(begin, end, time_type, label, km=0.0):
+            return {
+                'task_id': task.id,
+                'project_id': task.project_id.id,
+                'employee_id': employee.id,
+                'date': begin.date(),
+                'unit_amount': round(hours_between(begin, end), 2),
+                'name': _('%(label)s %(start)s - %(end)s', label=label,
+                          start=begin.strftime('%H:%M'),
+                          end=end.strftime('%H:%M')),
+                'serviq_start': to_utc(begin),
+                'serviq_end': to_utc(end),
+                'serviq_time_type': time_type,
+                'serviq_km': round(km, 1),
+            }
+
+        # Chronological: ride there, time on site, ride back.
+        vals_list = []
+        if travel_start:
+            vals_list.append(line(travel_start, arrival, 'travel',
+                                  _('Heenrit'), km_out))
+        vals_list.append(line(arrival, departure, 'intervention',
+                              _('Interventie')))
+        if back_end:
+            vals_list.append(line(departure, back_end, 'travel_back',
+                                  _('Terugrit'), km_back))
         try:
             with request.env.cr.savepoint():
-                request.env['account.analytic.line'].sudo().create({
-                    'task_id': task.id,
-                    'project_id': task.project_id.id,
-                    'employee_id': employee.id,
-                    'date': arrival.date(),
-                    'unit_amount': round(hours, 2),
-                    'name': _('Interventie %(start)s - %(end)s',
-                              start=arrival.strftime('%H:%M'),
-                              end=departure.strftime('%H:%M')),
-                })
+                request.env['account.analytic.line'].sudo().create(vals_list)
         except (UserError, ValidationError, AccessError) as exc:
             return back(error=exc.args[0] if exc.args else str(exc))
-        task.message_post(body=_(
-            'Uren gelogd door %(name)s: %(hours).2f u (%(start)s - %(end)s).',
-            name=employee.name, hours=hours,
-            start=arrival.strftime('%d/%m/%Y %H:%M'),
-            end=departure.strftime('%H:%M')), author_id=partner.id)
-        return back(message=_('Uren gelogd.'))
+
+        parts = [_('Tijd gelogd door %(name)s:', name=employee.name)]
+        if travel_start:
+            parts.append(_('heenrit %(hours).2f u (vertrek %(start)s)',
+                           hours=hours_between(travel_start, arrival),
+                           start=travel_start.strftime('%H:%M')))
+        parts.append(_('interventie %(hours).2f u (%(start)s - %(end)s)',
+                       hours=hours_between(arrival, departure),
+                       start=arrival.strftime('%d/%m/%Y %H:%M'),
+                       end=departure.strftime('%H:%M')))
+        if back_end:
+            parts.append(_('terugrit %(hours).2f u (terug %(end)s)',
+                           hours=hours_between(departure, back_end),
+                           end=back_end.strftime('%H:%M')))
+        if km_out or km_back:
+            parts.append(_('km heen %(out).1f, km terug %(back).1f',
+                           out=km_out, back=km_back))
+        task.message_post(body=' '.join(parts[:1]) + ' '
+                          + ', '.join(parts[1:]) + '.',
+                          author_id=partner.id)
+        return back(message=_('Tijd gelogd.'))
 
     @http.route(['/my/installations/intervention/<int:task_id>/state'],
                 type='http', auth='user', website=True, methods=['POST'])

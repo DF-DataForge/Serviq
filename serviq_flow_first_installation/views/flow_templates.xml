@@ -24,7 +24,8 @@
         </t>
         <t t-else="">
             <p class="text-muted">
-                Kies het geplaatste product en zijn serienummer. De installatie wordt aangemaakt
+                Kies het geplaatste product en zijn serienummer (of scan het serienummer met de
+                camera: het product volgt). De installatie wordt aangemaakt
                 met de componenten van het product en aan deze interventie gekoppeld.
             </p>
             <form method="post" t-att-action="flow_action" class="row g-2 align-items-end sq-fi-form">
@@ -39,10 +40,11 @@
                 </div>
                 <div class="col-md-5">
                     <label class="form-label" for="sq_fi_lot">Serienummer</label>
-                    <select id="sq_fi_lot" name="lot_id" class="form-select" required="required">
+                    <select id="sq_fi_lot" name="lot_id" class="form-select sq-scan" required="required">
                         <option value="">Kies een serienummer...</option>
                         <option t-foreach="fi_lots" t-as="lot" t-att-value="lot.id"
                                 t-att-data-product="lot.product_id.product_tmpl_id.id"
+                                t-att-data-scan-value="lot.name"
                                 t-out="lot.name"/>
                     </select>
                 </div>
@@ -57,11 +59,22 @@
                     var product = document.getElementById('sq_fi_product');
                     var lot = document.getElementById('sq_fi_lot');
                     if (!product || !lot) { return; }
-                    product.addEventListener('change', function () {
-                        lot.value = '';
+                    function filterLots() {
                         Array.prototype.forEach.call(lot.options, function (option) {
                             option.hidden = option.value !== '' &amp;&amp; option.dataset.product !== product.value;
                         });
+                    }
+                    product.addEventListener('change', function () {
+                        lot.value = '';
+                        filterLots();
+                    });
+                    // A scanned (or picked) serial selects its product.
+                    lot.addEventListener('change', function () {
+                        var option = lot.options[lot.selectedIndex];
+                        if (option &amp;&amp; option.value &amp;&amp; option.dataset.product !== product.value) {
+                            product.value = option.dataset.product;
+                            filterLots();
+                        }
                     });
                 })();
             </script>

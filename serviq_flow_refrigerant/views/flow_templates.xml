@@ -98,9 +98,10 @@
                     </div>
                     <div class="col-md-2 sq-rf-qty" t-if="rf_cylinders">
                         <label class="form-label" for="sq_rf_cylinder">Fles</label>
-                        <select id="sq_rf_cylinder" name="cylinder_id" class="form-select">
+                        <select id="sq_rf_cylinder" name="cylinder_id" class="form-select sq-scan">
                             <option value="">-</option>
-                            <option t-foreach="rf_cylinders" t-as="cyl" t-att-value="cyl.id">
+                            <option t-foreach="rf_cylinders" t-as="cyl" t-att-value="cyl.id"
+                                    t-att-data-scan-value="cyl.name">
                                 <t t-out="cyl.name"/> (<t t-out="cyl.balance_kg"/> kg)
                             </option>
                         </select>

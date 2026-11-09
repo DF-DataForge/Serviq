@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Serviq Flow: vervanging',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'summary': 'Portaalflow: componenten van een installatie vervangen, '
                'met historiek van de vervangingen',
     'description': """
@@ -12,7 +12,11 @@ installation (role "Vervangbaar", or any component with a serial number
 when it has no role) and enters the serial number of the new part. The
 serial is validated like on the installation (product, not used elsewhere,
 distributor stock), swapped on the component and registered in the
-replacement history (tab "Vervangingen" on the installation).
+replacement history (tab "Vervangingen" on the installation). The
+replacement is logged on the installation with the original and the new
+serial (noting when the original was registered at the creation of the
+installation on that same intervention). Serial numbers can be scanned with
+the camera.
 """,
     'category': 'Services',
     'author': 'Data Forge',
