@@ -401,14 +401,79 @@
     font-weight: 600;
 }
 
-.sq-cal-chip-open {
-    background: rgba(255, 165, 0, 0.12);
-    border-left-color: hsl(38, 92%, 45%);
+/* Calendar chips: green when the intervention is done, otherwise the
+   colour of its intervention type (Odoo colour index 0-11). */
+.sq-cal-chip-done {
+    background: rgba(44, 150, 80, .14);
+    border-left-color: hsl(140, 55%, 38%);
+}
+.sq-cal-chip-color-0 {
+    background: rgba(130, 140, 150, .14);
+    border-left-color: hsl(210, 10%, 55%);
+}
+.sq-cal-chip-color-1 {
+    background: rgba(240, 96, 80, .14);
+    border-left-color: hsl(6, 84%, 60%);
+}
+.sq-cal-chip-color-2 {
+    background: rgba(244, 164, 96, .14);
+    border-left-color: hsl(28, 87%, 66%);
+}
+.sq-cal-chip-color-3 {
+    background: rgba(247, 205, 31, .14);
+    border-left-color: hsl(48, 93%, 54%);
+}
+.sq-cal-chip-color-4 {
+    background: rgba(108, 193, 237, .14);
+    border-left-color: hsl(200, 78%, 68%);
+}
+.sq-cal-chip-color-5 {
+    background: rgba(129, 73, 104, .14);
+    border-left-color: hsl(327, 28%, 40%);
+}
+.sq-cal-chip-color-6 {
+    background: rgba(235, 126, 127, .14);
+    border-left-color: hsl(359, 74%, 71%);
+}
+.sq-cal-chip-color-7 {
+    background: rgba(44, 131, 151, .14);
+    border-left-color: hsl(191, 55%, 38%);
+}
+.sq-cal-chip-color-8 {
+    background: rgba(71, 85, 119, .14);
+    border-left-color: hsl(223, 25%, 37%);
+}
+.sq-cal-chip-color-9 {
+    background: rgba(214, 20, 95, .14);
+    border-left-color: hsl(337, 83%, 46%);
+}
+.sq-cal-chip-color-10 {
+    background: rgba(48, 195, 129, .14);
+    border-left-color: hsl(153, 60%, 48%);
+}
+.sq-cal-chip-color-11 {
+    background: rgba(147, 101, 184, .14);
+    border-left-color: hsl(273, 37%, 56%);
 }
 
-.sq-cal-chip-done {
-    background: rgba(36, 140, 148, 0.12);
-    border-left-color: hsl(185, 60%, 35%);
+.sq-cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+.sq-cal-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.sq-cal-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border-left: 3px solid transparent;
 }
 
 /* ---------- Slot picker ('Inplannen via kalender') ---------- */
@@ -538,7 +603,6 @@
 }
 
 .sq-hours-group-installer { border-top: 3px solid #17a2b8; }
-.sq-hours-group-employee { border-top: 3px solid #714b67; }
 .sq-hours-group-distributor { border-top: 3px solid #fd7e14; }
 .sq-hours-group-type { border-top: 3px solid #28a745; }
 

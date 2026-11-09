@@ -9,6 +9,7 @@ _FIELDS = {
     'serviq_dash_incoming': 'incoming',
     'serviq_dash_outgoing': 'outgoing',
     'serviq_dash_spare': 'spare',
+    'serviq_dash_flow': 'flow',
 }
 
 
@@ -22,6 +23,7 @@ class ResUsers(models.Model):
     serviq_dash_incoming = fields.Boolean('Inkomende goederen', compute='_compute_serviq_dash', inverse='_inverse_serviq_dash')
     serviq_dash_outgoing = fields.Boolean('Uitgaande goederen', compute='_compute_serviq_dash', inverse='_inverse_serviq_dash')
     serviq_dash_spare = fields.Boolean('Reserveonderdelen', compute='_compute_serviq_dash', inverse='_inverse_serviq_dash')
+    serviq_dash_flow = fields.Boolean('Voorraadstroom', compute='_compute_serviq_dash', inverse='_inverse_serviq_dash')
 
     def _serviq_dash_groups(self):
         return {name: self.env.ref(DASHBOARDS[key][0], raise_if_not_found=False)

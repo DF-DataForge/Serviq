@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_installation.InstallationKanbanView" t-inherit="web.KanbanView" t-inherit-mode="primary">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <SystemFilterBar filters="sqFilters" onChange.bind="onSqFiltersChange"/>
+        </xpath>
+    </t>
+    <t t-name="serviq_installation.InstallationListView" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <SystemFilterBar filters="sqFilters" onChange.bind="onSqFiltersChange"/>
+        </xpath>
+    </t>
+</templates>

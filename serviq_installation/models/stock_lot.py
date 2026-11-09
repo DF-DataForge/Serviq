@@ -9,6 +9,15 @@ class StockLot(models.Model):
         'serviq.installation', string='Installatie', index=True, copy=False)
     serviq_sn_photo = fields.Image(
         string='Foto serienummer', max_width=1920, max_height=1920)
+    serviq_linked_installation_ids = fields.Many2many(
+        'serviq.installation', string='Gekoppelde installaties',
+        compute='_compute_serviq_linked_installations',
+        help='Top-level installations this serial is registered on: as '
+             'installation serial, as component serial or via the '
+             'installation link of the serial.')
+    serviq_linked_installation_count = fields.Integer(
+        string='Installaties',
+        compute='_compute_serviq_linked_installations')
 
     @api.model
     def _serviq_distributor_lot_domain(self):
@@ -82,13 +91,43 @@ class StockLot(models.Model):
             Quant._update_available_quantity(
                 lot.product_id, location, 1.0, lot_id=lot)
 
+    def _compute_serviq_linked_installations(self):
+        Installation = self.env['serviq.installation'].sudo()
+        Line = self.env['serviq.installation.line'].sudo()
+        for lot in self:
+            if not lot.id:
+                lot.serviq_linked_installation_ids = False
+                lot.serviq_linked_installation_count = 0
+                continue
+            installations = lot.sudo().serviq_installation_id
+            installations |= Installation.search([('lot_id', '=', lot.id)])
+            installations |= Line.search(
+                [('lot_id', '=', lot.id)]).installation_id
+            # Sub-installations mirror the serial of their parent component
+            # line; show the top-level installation the user works in.
+            roots = Installation.browse()
+            for installation in installations:
+                seen = set()
+                while installation.parent_line_id.installation_id \
+                        and installation.id not in seen:
+                    seen.add(installation.id)
+                    installation = installation.parent_line_id.installation_id
+                roots |= installation
+            lot.serviq_linked_installation_ids = roots.ids
+            lot.serviq_linked_installation_count = len(roots)
+
     def action_view_serviq_installation(self):
         self.ensure_one()
-        return {
+        installations = self.serviq_linked_installation_ids
+        action = {
             'type': 'ir.actions.act_window',
             'target': 'current',
             'name': _('Installatie'),
-            'views': [[False, 'form']],
             'res_model': 'serviq.installation',
-            'res_id': self.serviq_installation_id.id,
         }
+        if len(installations) == 1:
+            action.update(views=[[False, 'form']], res_id=installations.id)
+        else:
+            action.update(views=[[False, 'list'], [False, 'form']],
+                          domain=[('id', 'in', installations.ids)])
+        return action

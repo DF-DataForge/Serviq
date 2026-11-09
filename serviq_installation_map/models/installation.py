@@ -99,12 +99,14 @@ class Installation(models.Model):
         }
 
     @api.model
-    def get_map_overview_data(self, domain=None):
+    def get_map_overview_data(self, domain=None, filters=None):
         """Top-level installations with a location for the map (narrowed
-        by `domain`): their status and base information, plus how many
-        have no location yet."""
+        by `domain` and the standard installation `filters` of the
+        overview dashboard): their status and base information, plus how
+        many have no location yet."""
         states = dict(self._fields['state']._description_selection(self.env))
-        domain = [('parent_line_id', '=', False)] + list(domain or [])
+        domain = [('parent_line_id', '=', False)] + list(domain or []) \
+            + self._system_filter_domain(filters)
         installations = self.search(domain)
         located = installations.filtered('has_location')
         return {

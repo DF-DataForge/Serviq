@@ -87,7 +87,7 @@
                                         </div>
                                         <div class="d-flex flex-column gap-1">
                                             <div t-foreach="tasksOf(day.date)" t-as="t" t-key="t.id"
-                                                 t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'open' }} {{ t.current ? 'sq-slot-current' : '' }}">
+                                                 t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'color-' + t.color }} {{ t.current ? 'sq-slot-current' : '' }}">
                                                 <strong><t t-if="t.start" t-esc="t.start + ' '"/><t t-esc="t.name"/></strong>
                                             </div>
                                         </div>
@@ -107,7 +107,7 @@
                                             <span class="text-uppercase text-muted" t-esc="weekdayLabels[day.weekday]"/>
                                             <span class="ms-1 fw-bold" t-esc="day.day"/>
                                             <div t-foreach="untimedTasks(day.date)" t-as="t" t-key="t.id"
-                                                 t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'open' }} {{ t.current ? 'sq-slot-current' : '' }} text-start mt-1">
+                                                 t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'color-' + t.color }} {{ t.current ? 'sq-slot-current' : '' }} text-start mt-1">
                                                 <strong t-esc="t.name"/>
                                             </div>
                                         </th>
@@ -120,7 +120,7 @@
                                             t-attf-class="sq-slot {{ isSelected(day.date, time) ? 'sq-slot-selected' : '' }} {{ time.endsWith(':00') ? 'sq-slot-hour' : '' }}"
                                             t-on-click="() => this.selectSlot(day.date, time)">
                                             <div t-foreach="tasksAt(day.date, time)" t-as="t" t-key="t.id"
-                                                 t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'open' }} {{ t.current ? 'sq-slot-current' : '' }}">
+                                                 t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'color-' + t.color }} {{ t.current ? 'sq-slot-current' : '' }}">
                                                 <strong t-esc="t.start + (t.end ? ' - ' + t.end : '') + ' ' + t.name"/>
                                                 <small t-if="t.partner" class="d-block text-truncate">
                                                     <t t-esc="t.partner"/><t t-if="t.city">, <t t-esc="t.city"/></t>

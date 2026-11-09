@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Serviq Installaties: kaart',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'summary': 'Locatie en kaart van de installaties: op de installatie, '
                'op het overzicht en als volledige kaart',
     'description': """

@@ -17,6 +17,8 @@
                 </div>
             </div>
 
+            <SystemFilterBar filters="state.filters" onChange.bind="onFiltersChange"/>
+
             <div class="sq-in-body">
                 <t t-if="state.loading">
                     <div class="sq-in-loading">
@@ -70,8 +72,14 @@
                         </div>
 
                         <div t-attf-class="sq-cal-card {{ state.calendarLoading ? 'opacity-50' : '' }}">
-                            <div class="sq-cal-label">
+                            <div class="sq-cal-label d-flex flex-wrap align-items-center gap-3">
                                 <h4 class="mb-0 text-capitalize" t-esc="cal.label"/>
+                                <div class="sq-cal-legend">
+                                    <span class="sq-cal-legend-item"><span class="sq-cal-dot sq-cal-chip-done"/>Afgerond</span>
+                                    <t t-foreach="cal.legend || []" t-as="lg" t-key="lg_index">
+                                        <span class="sq-cal-legend-item"><span t-attf-class="sq-cal-dot sq-cal-chip-color-{{ lg[0] }}"/><t t-esc="lg[1]"/></span>
+                                    </t>
+                                </div>
                             </div>
 
                             <!-- Month and week share the 7-column grid -->
@@ -100,7 +108,7 @@
                                             </div>
                                             <div class="d-flex flex-column gap-1">
                                                 <a t-foreach="calendarTasks(day.date)" t-as="t" t-key="t.id"
-                                                   href="#" t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'open' }}"
+                                                   href="#" t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'color-' + t.color }}"
                                                    t-on-click.prevent="() => this.openTask(t.id)">
                                                     <strong t-esc="t.name"/>
                                                     <small t-if="t.partner" class="d-block text-truncate">
@@ -117,7 +125,7 @@
                             <!-- Day view: single-column agenda -->
                             <div t-else="" class="p-3">
                                 <a t-foreach="calendarTasks(cal.day)" t-as="t" t-key="t.id"
-                                   href="#" t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'open' }} d-block mb-2 p-2"
+                                   href="#" t-attf-class="sq-cal-chip sq-cal-chip-{{ t.done ? 'done' : 'color-' + t.color }} d-block mb-2 p-2"
                                    t-on-click.prevent="() => this.openTask(t.id)">
                                     <div class="d-flex justify-content-between">
                                         <strong t-esc="t.name"/>
@@ -233,7 +241,7 @@
 
                     <!-- Panels added by other modules (atlas map, ...) -->
                     <t t-foreach="overviewPanels" t-as="panel" t-key="panel[0]">
-                        <t t-component="panel[1]"/>
+                        <t t-component="panel[1]" filters="state.filters"/>
                     </t>
 
                     <!-- Extra sections: interventions, repairs, returns, hours -->
@@ -245,6 +253,8 @@
                                 <h4>
                                     <i t-attf-class="fa {{ section.icon }} me-2"/>
                                     <t t-esc="section.title"/>
+                                    <span t-if="section.unfiltered" class="badge text-bg-light ms-2 fw-normal"
+                                          title="Deze cijfers zijn niet aan een installatie gekoppeld en worden niet gefilterd.">alle installaties</span>
                                 </h4>
                                 <a t-if="section.action" href="#" class="sq-in-section-link"
                                    t-on-click.prevent="() => this.openTile(section)">

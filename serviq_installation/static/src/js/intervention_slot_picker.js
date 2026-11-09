@@ -170,7 +170,9 @@ class InterventionSlotPicker extends Component {
         }
         this.state.saving = true;
         await this.orm.call(
-            "project.task", "serviq_set_planned_slot", [[this.taskId], `${sel.date} ${sel.time}`]
+            "project.task",
+            "serviq_set_planned_slot",
+            [[this.taskId], `${sel.date} ${sel.time}`, this.state.installerId || false]
         );
         this.backToTask();
     }

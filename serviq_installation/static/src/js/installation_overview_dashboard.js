@@ -4,6 +4,7 @@ import { Component, useState, onWillStart } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
+import { SystemFilterBar, loadSystemFilters, systemFiltersDomain } from "./system_filters";
 
 const STATE_LABELS = {
     delivered: _t("Geleverd"),
@@ -17,6 +18,7 @@ const STATE_LABELS = {
 
 class InstallationOverviewDashboard extends Component {
     static template = "serviq_installation.OverviewDashboard";
+    static components = { SystemFilterBar };
     static props = ["*"];
 
     setup() {
@@ -48,18 +50,35 @@ class InstallationOverviewDashboard extends Component {
             selection: null, // { title, domain }
             records: [],
             recordsLoading: false,
+            // Standard filters (category / installer / distributor).
+            filters: loadSystemFilters(),
         });
 
-        onWillStart(async () => {
-            this.state.data = await this.orm.call(
-                "serviq.installation", "get_overview_dashboard_data", []
-            );
-            this.state.loading = false;
-        });
+        onWillStart(() => this.loadData());
+    }
+
+    async loadData() {
+        this.state.data = await this.orm.call(
+            "serviq.installation", "get_overview_dashboard_data", [this.state.filters]
+        );
+        this.state.loading = false;
+    }
+
+    /** New filters: reload the figures and whatever is open. */
+    async onFiltersChange(filters) {
+        this.state.filters = filters;
+        if (this.state.view === "planning" && this.state.calendar) {
+            this.loadCalendar(this.state.calendar.scope, this.state.calendar.anchor);
+        }
+        if (this.state.selection) {
+            const { metric, partnerField, partnerId, title } = this.state.selection;
+            this.showRecords(metric, partnerField, partnerId, title);
+        }
+        await this.loadData();
     }
 
     _buildDomain(metric, partnerField, partnerId) {
-        const domain = [];
+        const domain = systemFiltersDomain(this.state.filters);
         if (["active", "commissioning", "service"].includes(metric)) {
             domain.push(["state", "=", metric]);
         } else if (metric === "not_registered") {
@@ -85,7 +104,7 @@ class InstallationOverviewDashboard extends Component {
      *  dashboard. */
     async showRecords(metric, partnerField, partnerId, title) {
         const domain = this._buildDomain(metric, partnerField, partnerId);
-        this.state.selection = { title, domain };
+        this.state.selection = { title, domain, metric, partnerField, partnerId };
         this.state.recordsLoading = true;
         this.state.records = await this.orm.searchRead(
             "serviq.installation",
@@ -141,7 +160,13 @@ class InstallationOverviewDashboard extends Component {
         this.state.calendar = await this.orm.call(
             "serviq.installation",
             "get_planning_calendar_data",
-            [scope || "month", anchor || false, false, this.state.calendarInstaller || false]
+            [
+                scope || "month",
+                anchor || false,
+                false,
+                this.state.calendarInstaller || false,
+                this.state.filters,
+            ]
         );
         this.state.calendarLoading = false;
     }

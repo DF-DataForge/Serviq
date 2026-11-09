@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="serviq_installation.SystemFilterBar">
+        <div class="sq-in-filters">
+            <div t-if="options.categories.length" class="sq-in-filter">
+                <label class="form-label small mb-0">Categorie</label>
+                <select class="form-select form-select-sm"
+                        t-on-change="(ev) => this.onFilterChange('category', ev)">
+                    <option value="" t-att-selected="!props.filters.category">Alle categorieën</option>
+                    <t t-foreach="options.categories" t-as="cat" t-key="cat.id">
+                        <option t-att-value="cat.id" t-att-selected="props.filters.category == cat.id" t-esc="cat.name"/>
+                    </t>
+                </select>
+            </div>
+            <div class="sq-in-filter">
+                <label class="form-label small mb-0">Installateur</label>
+                <select class="form-select form-select-sm"
+                        t-on-change="(ev) => this.onFilterChange('installer', ev)">
+                    <option value="" t-att-selected="!props.filters.installer">Alle installateurs</option>
+                    <option value="none" t-att-selected="props.filters.installer === 'none'">Geen installateur</option>
+                    <t t-foreach="options.installers" t-as="inst" t-key="inst.id">
+                        <option t-att-value="inst.id" t-att-selected="props.filters.installer == inst.id" t-esc="inst.name"/>
+                    </t>
+                </select>
+            </div>
+            <div class="sq-in-filter">
+                <label class="form-label small mb-0">Distributeur</label>
+                <select class="form-select form-select-sm"
+                        t-on-change="(ev) => this.onFilterChange('distributor', ev)">
+                    <option value="" t-att-selected="!props.filters.distributor">Alle distributeurs</option>
+                    <t t-foreach="options.distributors" t-as="dist" t-key="dist.id">
+                        <option t-att-value="dist.id" t-att-selected="props.filters.distributor == dist.id" t-esc="dist.name"/>
+                    </t>
+                </select>
+            </div>
+            <button t-if="active" type="button" class="btn btn-link btn-sm align-self-end"
+                    t-on-click="clear">
+                <i class="fa fa-times me-1"/>Filters wissen
+            </button>
+        </div>
+    </t>
+</templates>
