@@ -220,7 +220,7 @@ class SnTrackingDashboard(models.AbstractModel):
             location = quant.location_id
             lid = location.id
             if lid not in customer_map:
-                partner = location.partner_id
+                partner = location.serviq_partner_id
                 customer_map[lid] = {
                     'location_id': lid,
                     'partner_id': partner.id if partner else False,

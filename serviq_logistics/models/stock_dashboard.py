@@ -75,8 +75,8 @@ class StockDashboard(models.AbstractModel):
 
             # Track location breakdown
             loc_name = quant.location_id.complete_name
-            if stock_type == 'customer' and quant.location_id.partner_id:
-                loc_name = quant.location_id.partner_id.name
+            if stock_type == 'customer' and quant.location_id.serviq_partner_id:
+                loc_name = quant.location_id.serviq_partner_id.name
             if loc_name not in entry['locations']:
                 entry['locations'][loc_name] = 0.0
             entry['locations'][loc_name] += quant.quantity
@@ -91,7 +91,7 @@ class StockDashboard(models.AbstractModel):
                     'location': quant.location_id.complete_name,
                     'location_id': quant.location_id.id,
                     'owner': owner_name,
-                    'partner': quant.location_id.partner_id.name if quant.location_id.partner_id else '',
+                    'partner': quant.location_id.serviq_partner_id.name if quant.location_id.serviq_partner_id else '',
                 })
 
         # Convert locations dict to list and sort results
