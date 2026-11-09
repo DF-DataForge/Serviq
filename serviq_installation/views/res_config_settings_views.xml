@@ -52,15 +52,25 @@
                             <field name="serviq_service_lead_days"/>
                         </setting>
                     </block>
+                    <block title="Serienummers" name="serviq_serials">
+                        <setting id="serviq_sn_validation" string="Validatie serienummers"
+                                 help="Waar een serienummer moet staan om het op een installatie te gebruiken.">
+                            <field name="serviq_sn_validation" widget="radio"/>
+                            <div class="text-muted small mt-2">
+                                <div><strong>Geen validatie</strong>: alle serienummers worden geaccepteerd.</div>
+                                <div><strong>Validatie op klant</strong>: het serienummer staat in een klantlocatie (Partners/Customers), m.a.w. het is geleverd.</div>
+                                <div><strong>Validatie op distributeur</strong>: het serienummer staat in de eigen klantlocatie van de distributeur van de installatie (of al bij de klant).</div>
+                            </div>
+                            <div class="alert alert-warning small mt-2 mb-0" role="alert"
+                                 invisible="serviq_sn_validation != 'distributor' or group_serviq_distributor">
+                                Zonder <strong>Werken met distributeurs</strong> geldt de validatie op klant.
+                            </div>
+                        </setting>
+                    </block>
                     <block title="Distributeurs" name="serviq_distributors">
                         <setting id="serviq_distributor" string="Werken met distributeurs"
                                  help="De installaties worden via distributeurs verkocht: distributeur op de installaties en interventies, rol distributeur in het portaal, serienummers uit de voorraad van de distributeur. Uitgevinkt werkt u rechtstreeks voor uw eigen klanten.">
                             <field name="group_serviq_distributor"/>
-                        </setting>
-                        <setting id="serviq_check_distributor_stock" string="Controle distributeur-stock"
-                                 invisible="not group_serviq_distributor"
-                                 help="Een serienummer kan enkel op een installatie als het in de klantlocatie van de distributeur staat.">
-                            <field name="serviq_check_distributor_stock"/>
                         </setting>
                         <setting id="serviq_distributor_locations" string="Klantlocatie per distributeur"
                                  invisible="not group_serviq_distributor"

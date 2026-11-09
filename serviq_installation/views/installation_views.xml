@@ -311,8 +311,7 @@
                         <field name="role_id"/>
                         <field name="product_variant_id" invisible="1"/>
                         <field name="distributor_id" invisible="1"/>
-                        <field name="search_outside_stock" widget="boolean_toggle"
-                               groups="serviq_installation.group_serviq_distributor"/>
+                        <field name="search_outside_stock" widget="boolean_toggle"/>
                         <field name="lot_id"
                                context="{'serviq_distributor': distributor_id, 'serviq_product_tmpl': product_tmpl_id, 'serviq_outside_stock': search_outside_stock, 'default_product_id': product_variant_id, 'serviq_create_lot_in_stock': True}"/>
                         <field name="rack_number"/>

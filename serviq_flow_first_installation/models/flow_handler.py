@@ -5,8 +5,9 @@ from odoo.exceptions import UserError
 
 class FirstInstallationFlow(models.AbstractModel):
     """Register the installation at its first installation: installation
-    product + serial number from the customer stock of the distributor
-    (without distributors: of the customer)."""
+    product + serial number from the stock the serial-number validation
+    (settings) allows: of the distributor, delivered to a customer, or
+    any stock without validation."""
     _name = 'serviq.portal.flow.handler.first_installation'
     _inherit = 'serviq.portal.flow.handler'
     _description = 'Portaalflow: eerste installatie'
@@ -34,8 +35,8 @@ class FirstInstallationFlow(models.AbstractModel):
                 lambda p: p in lots.product_id.product_tmpl_id),
             'fi_lots': lots,
             'fi_has_distributor_stock': bool(locations),
-            'fi_use_distributors': self.env['res.partner']
-            ._serviq_distributors_enabled(),
+            'fi_sn_validation': self.env['serviq.installation']
+            ._serviq_sn_validation(),
         }
 
     @api.model
@@ -54,19 +55,21 @@ class FirstInstallationFlow(models.AbstractModel):
         if not product_tmpl:
             raise UserError(_('Dit product is geen installatieproduct.'))
 
-        # The serial must be available in the stock of a distributor the
-        # user works with (without distributors: delivered to the
-        # customer); that distributor becomes the distributor of the
-        # installation.
+        # The serial must be available where the serial-number validation
+        # allows it: in the stock of a distributor the user works with
+        # (that distributor becomes the distributor of the installation),
+        # delivered to a customer, or anywhere without validation.
         locations = self._flow_lot_locations(task, partner, is_internal)
         lot = self._flow_available_lots(locations, product_tmpl) \
             .filtered(lambda l: l.id == lot_id)
         if not lot:
-            raise UserError(_(
-                'Dit serienummer is niet beschikbaar in de voorraad van de '
-                'distributeur.')
-                if self.env['res.partner']._serviq_distributors_enabled()
-                else _('Dit serienummer is niet geleverd aan de klant.'))
+            mode = self.env['serviq.installation']._serviq_sn_validation()
+            raise UserError(
+                _('Dit serienummer is niet beschikbaar in de voorraad van de '
+                  'distributeur.') if mode == 'distributor'
+                else _('Dit serienummer is niet geleverd aan een klant.')
+                if mode == 'customer'
+                else _('Dit serienummer is niet beschikbaar.'))
         quant = self.env['stock.quant'].search([
             ('lot_id', '=', lot.id), ('quantity', '>', 0),
             ('location_id', 'in', locations.ids),

@@ -39,11 +39,12 @@ class InstallationLine(models.Model):
     rack_number = fields.Integer(
         string='Rack', help='Rack / group this component belongs to.')
     search_outside_stock = fields.Boolean(
-        string='Zoek buiten distributeur-stock',
-        help='Allow selecting and saving a serial that is not present in the '
-             'distributor customer stock location. The product match and the '
-             '"not already used / not on another installation" checks still '
-             'apply.')
+        string='Zoek buiten de voorraad',
+        help='Allow selecting and saving a serial that is not where the '
+             'serial-number validation (settings) expects it: in a customer '
+             'location or in the customer location of the distributor. The '
+             'product match and the "not already used / not on another '
+             'installation" checks still apply.')
     note = fields.Char(string='Opmerking')
 
     @api.constrains('lot_id', 'installation_id', 'product_tmpl_id')

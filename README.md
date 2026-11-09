@@ -35,10 +35,22 @@ Ook **werken met distributeurs** is optioneel (Instellingen, blok
 *Distributeurs*; standaard aan). Uitgevinkt werkt de installateur
 rechtstreeks voor zijn eigen klanten: de distributeur verdwijnt van de
 installaties, interventies, contacten, dashboards en het portaal, er
-wordt geen distributeur ingevuld bij levering, de controle op en de
-klantlocaties per distributeur vallen weg, en de serienummers voor de
-eerste installatie komen uit de klantlocatie van de klant in plaats van
-die van de distributeur. Geïnstalleerde flows kunnen daarnaast
+wordt geen distributeur ingevuld bij levering en de klantlocaties per
+distributeur vallen weg.
+
+De **validatie van serienummers** (Instellingen, blok *Serienummers*)
+bepaalt waar een serienummer moet staan om het op een installatie te
+gebruiken, in de backend, het SN-registratievenster en de portaalflows:
+
+| Optie | Een serienummer wordt geaccepteerd als het ... |
+|---|---|
+| Geen validatie (standaard) | ... gekend is, waar het ook staat |
+| Validatie op klant | ... in een klantlocatie staat (Partners/Customers): het is geleverd |
+| Validatie op distributeur | ... in de eigen klantlocatie van de distributeur van de installatie staat (of al bij de klant); zonder *Werken met distributeurs* geldt de validatie op klant |
+
+Ook zonder validatie kan een serienummer niet op twee installaties
+staan en moet het bij het product van de component horen. Per component
+laat *Zoek buiten de voorraad* een serienummer van elders toe. Geïnstalleerde flows kunnen daarnaast
 per flow geactiveerd/gedeactiveerd en aan types interventie gekoppeld worden
 in **Installaties > Configuratie > Flows**.
 

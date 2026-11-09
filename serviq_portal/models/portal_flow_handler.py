@@ -101,14 +101,19 @@ class PortalFlowHandler(models.AbstractModel):
 
     @api.model
     def _flow_lot_locations(self, task, partner, is_internal):
-        """Customer stock locations the serials of an intervention come
-        from: those of the distributors of the user (_flow_distributors),
-        or without distributors (settings) the customer location of the
-        customer of the intervention."""
-        if self.env['res.partner']._serviq_distributors_enabled():
+        """Stock locations the serials of an intervention come from,
+        following the serial-number validation (settings): the customer
+        locations of the distributors of the user (_flow_distributors)
+        with validation on distributor, every customer location with
+        validation on customer, and every internal or customer location
+        without validation."""
+        mode = self.env['serviq.installation']._serviq_sn_validation()
+        if mode == 'distributor':
             return self._flow_distributors(task, partner, is_internal) \
                 .mapped('property_stock_customer')
-        return task.partner_id.commercial_partner_id.property_stock_customer
+        usages = ['customer'] if mode == 'customer' \
+            else ['customer', 'internal']
+        return self.env['stock.location'].search([('usage', 'in', usages)])
 
     @api.model
     def _flow_available_lots(self, locations, product_tmpls=None):

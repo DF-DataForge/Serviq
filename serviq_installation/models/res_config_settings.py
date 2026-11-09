@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models
 
+from .installation import SN_VALIDATION_MODES
+
 
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
@@ -32,11 +34,14 @@ class ResConfigSettings(models.TransientModel):
         help='Installations are sold through distributors: distributor on '
              'the installations and interventions, distributor role in the '
              'portal, serial numbers from the stock of the distributor.')
-    serviq_check_distributor_stock = fields.Boolean(
-        string='Serienummers controleren in distributeur-stock',
-        config_parameter='serviq_installation.check_distributor_stock',
-        help='A serial can only be used on an installation when it is in '
-             'stock in the customer location of its distributor.')
+    serviq_sn_validation = fields.Selection(
+        SN_VALIDATION_MODES, string='Validatie serienummers',
+        config_parameter='serviq_installation.sn_validation',
+        default='none', required=True,
+        help='Where a serial must be in stock to be used on an '
+             'installation: anywhere (no validation), in a customer '
+             'location (delivered), or in the customer location of the '
+             'distributor of the installation.')
     serviq_distributor_locations = fields.Boolean(
         string='Klantlocatie per distributeur',
         config_parameter='serviq_installation.distributor_locations',

@@ -12,6 +12,13 @@ from odoo.tools.misc import format_date
 # commissioning, and to 'Service' while an intervention is planned.
 COMMISSIONING_FROM_STATES = ('delivered', 'installation')
 SERVICE_FROM_STATES = ('active', 'offline')
+# Validation of the serial numbers of the components (settings): where a
+# serial must be in stock to be used on an installation.
+SN_VALIDATION_MODES = [
+    ('none', 'Geen validatie'),
+    ('customer', 'Validatie op klant'),
+    ('distributor', 'Validatie op distributeur'),
+]
 
 
 class Installation(models.Model):
@@ -798,6 +805,44 @@ class Installation(models.Model):
     # ------------------------------------------------------------------
     # Serial-number validation (shared with the portal flows)
     # ------------------------------------------------------------------
+    @api.model
+    def _serviq_sn_validation(self):
+        """Validation of the serial numbers (settings):
+
+        * 'none': every serial is accepted, wherever it is;
+        * 'customer': the serial is in stock in a customer location
+          (Partners/Customers or below), i.e. delivered;
+        * 'distributor': the serial is in stock in the customer-specific
+          location of the distributor of the installation (or already in
+          the customer's location). Without distributors (settings) this
+          falls back to 'customer'.
+        """
+        mode = self.env['ir.config_parameter'].sudo().get_param(
+            'serviq_installation.sn_validation') or 'none'
+        if mode not in dict(SN_VALIDATION_MODES):
+            mode = 'none'
+        if mode == 'distributor' \
+                and not self.env['res.partner']._serviq_distributors_enabled():
+            mode = 'customer'
+        return mode
+
+    def _serviq_sn_stock_domain(self, mode=None):
+        """Domain on stock.quant of the locations a serial of this
+        installation must be in for the validation `mode` (current
+        setting by default); None when nothing is checked: no validation,
+        or validation on distributor without a distributor (location) on
+        the installation."""
+        mode = mode or self._serviq_sn_validation()
+        if mode == 'customer':
+            return [('location_id.usage', '=', 'customer')]
+        if mode == 'distributor':
+            allowed = self.distributor_id.property_stock_customer
+            if not allowed:
+                return None
+            allowed |= self.customer_id.property_stock_customer
+            return [('location_id', 'in', allowed.ids)]
+        return None
+
     def _validate_lot_for_line(self, lot, line=None,
                                expected_product_tmpl=None):
         """Reject `lot` if it cannot be used as a serial inside this
@@ -807,10 +852,11 @@ class Installation(models.Model):
           already this one;
         * lot must not be used on a line of another installation;
         * lot must match the line's product template (when provided);
-        * when the distributor stock check is on (settings), a stock.quant
-          > 0 must exist for the lot in the distributor's customer location
-          (or in the customer's location once delivered), unless the line
-          opted to search outside that stock.
+        * with the serial-number validation (settings, see
+          _serviq_sn_validation) a stock.quant > 0 must exist for the lot
+          in a customer location ('customer') or in the distributor's
+          customer location ('distributor'), unless the line opted to
+          search outside the stock.
         """
         self.ensure_one()
         if not lot or self.env.context.get('skip_lot_validation'):
@@ -850,26 +896,24 @@ class Installation(models.Model):
                 actual=lot.product_id.product_tmpl_id.display_name,
                 expected=expected_product_tmpl.display_name))
 
-        check_stock = self.env['res.partner']._serviq_distributors_enabled() \
-            and self.env['ir.config_parameter'].sudo().get_param(
-                'serviq_installation.check_distributor_stock')
-        outside_stock = bool(line and line.search_outside_stock)
-        if check_stock and not outside_stock and self.distributor_id \
-                and self.distributor_id.property_stock_customer:
-            allowed = self.distributor_id.property_stock_customer
-            if self.customer_id.property_stock_customer:
-                allowed |= self.customer_id.property_stock_customer
-            quant = self.env['stock.quant'].sudo().search([
-                ('lot_id', '=', lot.id),
-                ('location_id', 'in', allowed.ids),
-                ('quantity', '>', 0),
-            ], limit=1)
-            if not quant:
+        if line and line.search_outside_stock:
+            return
+        mode = self._serviq_sn_validation()
+        stock_domain = self._serviq_sn_stock_domain(mode)
+        if stock_domain is None:
+            return
+        if not self.env['stock.quant'].sudo().search_count(
+                [('lot_id', '=', lot.id), ('quantity', '>', 0)]
+                + stock_domain, limit=1):
+            if mode == 'distributor':
                 raise ValidationError(_(
                     'Serienummer "%(serial)s" bevindt zich niet in de '
                     'voorraad van distributeur "%(distributor)s".',
                     serial=lot.name,
                     distributor=self.distributor_id.display_name))
+            raise ValidationError(_(
+                'Serienummer "%s" is niet geleverd: het bevindt zich niet in '
+                'een klantlocatie.', lot.name))
 
     @api.constrains('lot_id', 'distributor_id', 'customer_id', 'line_ids',
                     'line_ids.lot_id')

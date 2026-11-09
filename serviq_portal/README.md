@@ -54,8 +54,9 @@ shown on the page). An optional live check is available on
 The handler is called with `sudo()`; `partner` is the contact of the user,
 `is_internal` tells whether it is an internal user. Helpers:
 `_flow_distributors` (empty without distributors), `_flow_lot_locations`
-(customer stock locations of those distributors, or of the customer of the
-intervention without distributors), `_flow_available_lots`,
+(stock locations the serials may come from, following the serial-number
+validation: the customer locations of those distributors, every customer
+location, or every internal and customer location), `_flow_available_lots`,
 `_flow_find_lot`, `_flow_post` (chatter message in the name of the user).
 
 The template is rendered with the values of the intervention page (`task`,
