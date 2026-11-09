@@ -41,6 +41,11 @@ class StockFlow extends Component {
         }
     }
 
+    /** Templates cannot call String(): compare the ids here. */
+    isSelected(wh) {
+        return this.state.selected === String(wh.id);
+    }
+
     get shownWarehouses() {
         if (this.state.selected === "all") return this.state.warehouses;
         return this.state.warehouses.filter((wh) => String(wh.id) === this.state.selected);
