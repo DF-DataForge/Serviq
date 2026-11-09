@@ -1,0 +1,24 @@
+/* Standard installation filters (category / installer / distributor),
+   shared by the overview dashboard, the hours overview and the kanban and
+   list views of installations. */
+.sq-in-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+    background-color: var(--body-bg, #fff);
+}
+
+.sq-in-filter {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+}
+
+@media (max-width: 767.98px) {
+    .sq-in-filter {
+        flex: 1 1 100%;
+    }
+}

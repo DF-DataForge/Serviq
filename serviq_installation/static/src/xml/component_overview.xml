@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="serviq_installation.ComponentOverviewField">
+        <div class="sq-co">
+            <div class="sq-co-toolbar">
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button"
+                            t-attf-class="btn {{ overview.mode === 'overview' ? 'btn-primary' : 'btn-outline-primary' }}"
+                            t-on-click="() => this.overview.mode = 'overview'">
+                        <i class="fa fa-th-large me-1"/>Overzicht
+                    </button>
+                    <button type="button"
+                            t-attf-class="btn {{ overview.mode === 'list' ? 'btn-primary' : 'btn-outline-primary' }}"
+                            t-on-click="() => this.overview.mode = 'list'">
+                        <i class="fa fa-list me-1"/>Lijst
+                    </button>
+                </div>
+                <span t-if="overview.mode === 'overview'" class="text-muted small">
+                    <t t-if="canEdit">Wijzigingen worden bewaard met Opslaan. Componenten toevoegen of verwijderen doet u in de lijst.</t>
+                    <t t-else="">Alleen-lezen (vergrendelde installatie).</t>
+                </span>
+            </div>
+
+            <t t-if="overview.mode === 'list'" t-call="web.X2ManyField"/>
+            <t t-else="">
+                <t t-set="g" t-value="groups"/>
+                <div t-if="!list.records.length" class="text-muted p-3">Geen componenten.</div>
+
+                <!-- Components holding a sub-installation: a card each, with
+                     its sub-components (like the portal). -->
+                <div t-if="g.holders.length" class="sq-co-grid">
+                    <t t-foreach="g.holders" t-as="rec" t-key="rec.id">
+                        <t t-call="serviq_installation.ComponentOverviewCard"/>
+                    </t>
+                </div>
+
+                <!-- Components without rack, per role -->
+                <div t-foreach="g.roles" t-as="role" t-key="role.id" class="sq-co-row">
+                    <div class="sq-co-row-title" t-esc="role.name"/>
+                    <div class="sq-co-flex">
+                        <t t-foreach="role.records" t-as="rec" t-key="rec.id">
+                            <t t-call="serviq_installation.ComponentOverviewCard"/>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- Per rack / group -->
+                <div t-if="g.racks.length" class="sq-co-racks">
+                    <div t-foreach="g.racks" t-as="rack" t-key="rack.number" class="sq-co-rack">
+                        <div class="sq-co-row-title">Rack <t t-esc="rack.number"/></div>
+                        <t t-foreach="rack.records" t-as="rec" t-key="rec.id">
+                            <t t-call="serviq_installation.ComponentOverviewCard"/>
+                        </t>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <!-- One component: name, role, serial (editable), serial photo and
+         note; for a component with a sub-installation also its
+         sub-components. -->
+    <t t-name="serviq_installation.ComponentOverviewCard">
+        <div t-attf-class="sq-co-comp {{ rec.data.sub_installation_id ? 'sq-co-comp-holder' : '' }}"
+             t-att-style="roleStyle(rec)">
+            <div class="sq-co-comp-head">
+                <i t-attf-class="fa {{ rec.data.sub_installation_id ? 'fa-sitemap' : 'fa-cube' }} me-1 text-muted"/>
+                <span t-if="rec.data.rack_number" class="me-1">Rack <t t-esc="rec.data.rack_number"/> -</span>
+                <span class="fw-semibold" t-esc="m2oName(rec.data.product_tmpl_id) || '-'"/>
+                <span t-if="rec.data.product_qty and rec.data.product_qty !== 1" class="text-muted ms-1">
+                    x <t t-esc="rec.data.product_qty"/>
+                </span>
+                <span t-if="rec.data.role_id" class="badge rounded-pill text-bg-light ms-2"
+                      t-esc="m2oName(rec.data.role_id)"/>
+                <span class="ms-auto d-flex gap-2">
+                    <button t-if="rec.data.sub_installation_id" type="button"
+                            class="btn btn-link btn-sm p-0" title="Subcomponenten openen"
+                            t-on-click="() => this.openSubInstallation(rec)">
+                        <i class="fa fa-external-link"/>
+                    </button>
+                    <button type="button" class="btn btn-link btn-sm p-0" title="Details"
+                            t-on-click="() => this.openDetails(rec)">
+                        <i class="fa fa-pencil"/>
+                    </button>
+                </span>
+            </div>
+            <div class="sq-co-sn">
+                <span class="text-muted">SN:</span>
+                <input t-if="canEdit" type="text" class="form-control form-control-sm"
+                       placeholder="Typ of scan het serienummer"
+                       t-att-value="m2oName(rec.data.lot_id)"
+                       t-on-change="(ev) => this.updateSerial(rec, ev)"/>
+                <code t-elif="rec.data.lot_id" t-esc="m2oName(rec.data.lot_id)"/>
+                <span t-else="" class="text-muted">geen serienummer</span>
+                <t t-set="photo" t-value="photoUrl(rec)"/>
+                <a t-if="photo" t-att-href="photo" target="_blank" title="Foto serienummer">
+                    <img t-att-src="photo" class="sq-co-photo" alt="SN foto"/>
+                </a>
+                <label t-if="canEdit" class="btn btn-link btn-sm p-0 mb-0" title="Foto van het serienummer toevoegen">
+                    <i class="fa fa-camera"/>
+                    <input type="file" accept="image/*" class="d-none"
+                           t-on-change="(ev) => this.onPhoto(rec, ev)"/>
+                </label>
+            </div>
+            <div class="sq-co-note">
+                <input t-if="canEdit" type="text" class="form-control form-control-sm"
+                       placeholder="Opmerking"
+                       t-att-value="rec.data.note || ''"
+                       t-on-change="(ev) => this.update(rec, 'note', ev.target.value)"/>
+                <span t-elif="rec.data.note" class="text-muted" t-esc="rec.data.note"/>
+            </div>
+
+            <t t-if="rec.data.sub_installation_id">
+                <t t-set="subs" t-value="subLinesOf(rec)"/>
+                <table t-if="subs.length" class="table table-sm sq-co-table mb-1">
+                    <thead><tr><th>Subcomponent</th><th>Serienummer</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="subs" t-as="sub" t-key="sub.id">
+                            <td class="sq-co-label">
+                                <t t-esc="m2oName(sub.product_tmpl_id) || '-'"/>
+                                <small t-if="sub.rack_number" class="text-muted"> (rack <t t-esc="sub.rack_number"/>)</small>
+                            </td>
+                            <td>
+                                <code t-if="sub.lot_id" t-esc="m2oName(sub.lot_id)"/>
+                                <span t-else="" class="text-muted">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div t-else="" class="text-muted small mt-2">Geen subcomponenten.</div>
+            </t>
+        </div>
+    </t>
+
+</templates>

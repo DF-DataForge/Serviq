@@ -276,14 +276,16 @@
          ============================================================ -->
     <template id="intervention_rows" name="Interventies: rijen">
         <t t-set="row_plan_field" t-value="plan_field or request.env['project.task']._serviq_plan_field()"/>
-        <div t-if="rows" class="table-responsive">
-            <table class="table table-sm align-middle mb-0 sq-clickable">
+        <!-- Below 1200px wide (tablet, phone) every row becomes a card with
+             label / value lines (data-label), see portal.css. -->
+        <div t-if="rows" class="sq-responsive-wrap">
+            <table class="table table-sm align-middle mb-0 sq-clickable sq-responsive-table">
                 <thead>
                     <tr>
                         <th>Interventie</th>
                         <th>Type</th>
-                        <th class="d-none d-md-table-cell">Klant</th>
-                        <th class="d-none d-md-table-cell">Installateur</th>
+                        <th>Klant</th>
+                        <th>Installateur</th>
                         <th>Gepland</th>
                         <th class="text-center">Status</th>
                         <th t-if="task_flows" class="text-end"/>
@@ -291,19 +293,21 @@
                 </thead>
                 <tbody>
                     <tr t-foreach="rows" t-as="t">
-                        <td>
+                        <td class="sq-rt-title">
                             <a t-attf-href="/my/installations/intervention/#{t.id}" t-out="t.name"/>
                             <small t-if="t.serviq_installation_id" class="d-block text-muted" t-out="t.serviq_installation_id.name"/>
                         </td>
-                        <td t-out="t.serviq_intervention_type_id.name or '-'"/>
-                        <td class="d-none d-md-table-cell">
-                            <t t-out="t.partner_id.name or '-'"/>
-                            <small t-if="t.partner_id.city" class="d-block text-muted" t-out="t.partner_id.city"/>
+                        <td data-label="Type" t-out="t.serviq_intervention_type_id.name or '-'"/>
+                        <td data-label="Klant">
+                            <span>
+                                <t t-out="t.partner_id.name or '-'"/>
+                                <small t-if="t.partner_id.city" class="d-block text-muted" t-out="t.partner_id.city"/>
+                            </span>
                         </td>
-                        <td class="d-none d-md-table-cell" t-out="t.serviq_installer_id.name or '-'"/>
-                        <td><t t-out="t[row_plan_field]" t-options="{'widget': 'datetime'}"/></td>
-                        <td class="text-center"><t t-call="serviq_portal.task_state_badge"/></td>
-                        <td t-if="task_flows" class="text-end">
+                        <td data-label="Installateur" t-out="t.serviq_installer_id.name or '-'"/>
+                        <td data-label="Gepland"><span><t t-out="t[row_plan_field]" t-options="{'widget': 'datetime'}"/><t t-if="not t[row_plan_field]">-</t></span></td>
+                        <td data-label="Status" class="text-center"><t t-call="serviq_portal.task_state_badge"/></td>
+                        <td t-if="task_flows" class="text-end sq-rt-action">
                             <t t-set="row_flow" t-value="task_flows.get(t.id)"/>
                             <a t-if="row_flow" class="btn btn-sm btn-primary"
                                t-attf-href="/my/installations/intervention/#{t.id}#flow-#{row_flow.code}">
@@ -404,6 +408,14 @@
                     </div>
                 </div>
 
+                <!-- Legend: green when done, else the colour of the intervention type -->
+                <div class="sq-cal-legend mb-2">
+                    <span class="sq-cal-legend-item"><span class="sq-cal-dot sq-chip-done"/>Afgerond</span>
+                    <t t-foreach="legend" t-as="lg">
+                        <span class="sq-cal-legend-item"><span t-attf-class="sq-cal-dot sq-chip-color-#{lg[0] or 0}"/><t t-out="lg[1]"/></span>
+                    </t>
+                </div>
+
                 <div t-if="scope in ('month', 'week')" class="table-responsive card sq-card mb-3">
                     <table class="table table-bordered sq-calendar mb-0">
                         <thead>
@@ -444,7 +456,8 @@
 
     <template id="planning_chip" name="Interventies: kalenderitem">
         <a t-attf-href="/my/installations/intervention/#{item['id']}"
-           t-attf-class="sq-chip d-block #{'sq-chip-done' if item['done'] else ''} #{'sq-chip-current' if item['current'] else ''}">
+           t-attf-class="sq-chip d-block #{'sq-chip-done' if item['done'] else 'sq-chip-color-%s' % (item.get('color') or 0)} #{'sq-chip-current' if item['current'] else ''}">
+            <i t-if="item['done']" class="fa fa-check me-1" title="Afgerond"/>
             <span t-if="item['start']" class="fw-bold">
                 <t t-out="item['start']"/><t t-if="item['end']">-<t t-out="item['end']"/></t>
             </span>
@@ -549,38 +562,83 @@
                     </div>
                 </div>
 
-                <!-- Hours (timesheets) -->
+                <!-- Time and kilometres: ride there ('Heenrit'), time on site and
+                     ride back ('Terugrit'), each logged as a timesheet line in
+                     chronological order. Only the time on site sets the planning. -->
                 <div t-if="timesheets_enabled" class="card sq-card mb-3" id="hours">
                     <div class="card-body">
-                        <h5><i class="fa fa-clock-o me-2"/>Uren</h5>
+                        <h5><i class="fa fa-clock-o me-2"/>Tijd &amp; km</h5>
+                        <p class="text-muted small">
+                            <b>Heenrit</b> (optioneel): vertrek naar de klant &#8594; aankomst.
+                            <b>Interventie</b>: aankomst &#8594; vertrek bij de klant.
+                            <b>Terugrit</b> (optioneel): vertrek bij de klant &#8594; terug aangekomen.
+                            Elk wordt als urenregel op de interventie geboekt, de kilometers op de rit.
+                        </p>
                         <form method="post" t-attf-action="/my/installations/intervention/#{task.id}/hours"
-                              class="row g-2 align-items-end">
+                              class="row g-2 align-items-end sq-time-form">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                            <div class="col-sm-5">
-                                <label class="form-label" for="sq_arrival">Aankomst</label>
-                                <input id="sq_arrival" type="datetime-local" name="arrival" class="form-control" required="required"/>
+                            <div class="col-md-6 col-xl-4">
+                                <label class="form-label" for="sq_travel_start">Vertrek naar klant</label>
+                                <input id="sq_travel_start" type="datetime-local" name="travel_start" class="form-control sq-t-travel"/>
                             </div>
-                            <div class="col-sm-5">
-                                <label class="form-label" for="sq_departure">Vertrek</label>
-                                <input id="sq_departure" type="datetime-local" name="departure" class="form-control" required="required"/>
+                            <div class="col-md-6 col-xl-4">
+                                <label class="form-label" for="sq_arrival">Aankomst bij klant</label>
+                                <input id="sq_arrival" type="datetime-local" name="arrival" class="form-control sq-t-arrival" required="required"/>
                             </div>
-                            <div class="col-sm-2">
-                                <button type="submit" class="btn btn-primary w-100">Loggen</button>
+                            <div class="col-md-6 col-xl-4">
+                                <label class="form-label" for="sq_departure">Vertrek bij klant</label>
+                                <input id="sq_departure" type="datetime-local" name="departure" class="form-control sq-t-departure" required="required"/>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <label class="form-label" for="sq_back_end">Terug aangekomen <span class="text-muted small">(terugrit)</span></label>
+                                <input id="sq_back_end" type="datetime-local" name="back_end" class="form-control sq-t-back"/>
+                            </div>
+                            <div class="col-6 col-md-3 col-xl-2">
+                                <label class="form-label" for="sq_km_out">Km heen</label>
+                                <input id="sq_km_out" type="number" name="km_out" class="form-control"
+                                       min="0" step="0.1" inputmode="decimal" placeholder="bv. 42"/>
+                            </div>
+                            <div class="col-6 col-md-3 col-xl-2">
+                                <label class="form-label" for="sq_km_back">Km terug</label>
+                                <input id="sq_km_back" type="number" name="km_back" class="form-control"
+                                       min="0" step="0.1" inputmode="decimal" placeholder="bv. 42"/>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fa fa-clock-o me-1"/>Loggen
+                                </button>
+                            </div>
+                            <div class="col-12 order-last">
+                                <div class="small text-muted sq-t-summary" aria-live="polite"/>
                             </div>
                         </form>
-                        <table t-if="timesheets" class="table table-sm mt-3 mb-0">
-                            <thead>
-                                <tr><th>Datum</th><th>Werknemer</th><th>Omschrijving</th><th class="text-end">Uren</th></tr>
-                            </thead>
-                            <tbody>
-                                <tr t-foreach="timesheets" t-as="line">
-                                    <td><t t-out="line.date" t-options="{'widget': 'date'}"/></td>
-                                    <td t-out="line.employee_id.name or '-'"/>
-                                    <td t-out="line.name or ''"/>
-                                    <td class="text-end"><t t-out="line.unit_amount" t-options="{'widget': 'float_time'}"/></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div t-if="timesheets" class="table-responsive mt-3">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Datum</th><th>Soort</th><th>Werknemer</th><th>Omschrijving</th>
+                                        <th class="text-end">Km</th><th class="text-end">Uren</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="timesheets" t-as="line">
+                                        <td><t t-out="line.date" t-options="{'widget': 'date'}"/></td>
+                                        <td t-out="time_type_labels.get(line.serviq_time_type) or '-'"/>
+                                        <td t-out="line.employee_id.name or '-'"/>
+                                        <td t-out="line.name or ''"/>
+                                        <td class="text-end"><t t-if="line.serviq_km" t-out="'%.1f' % line.serviq_km"/></td>
+                                        <td class="text-end"><t t-out="line.unit_amount" t-options="{'widget': 'float_time'}"/></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot t-if="task.serviq_km_total">
+                                    <tr>
+                                        <th colspan="4">Totaal km</th>
+                                        <th class="text-end" t-out="'%.1f' % task.serviq_km_total"/>
+                                        <th/>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
                 </div>
 

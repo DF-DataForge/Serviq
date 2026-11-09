@@ -5,13 +5,13 @@
         <field name="name">serviq.installation.list</field>
         <field name="model">serviq.installation</field>
         <field name="arch" type="xml">
-            <list string="Installaties" duplicate="0">
+            <list string="Installaties" duplicate="0" js_class="serviq_installation_list">
                 <field name="code"/>
                 <field name="product_tmpl_id"/>
                 <field name="category_id" optional="show"/>
                 <field name="customer_id" optional="show"/>
                 <field name="distributor_id" optional="show"/>
-                <field name="installer_id" optional="hide"/>
+                <field name="installer_id" optional="show"/>
                 <field name="lot_id" optional="hide"/>
                 <field name="state" widget="badge"
                        decoration-info="state in ('delivered', 'installation', 'commissioning')"
@@ -43,7 +43,7 @@
         <field name="name">serviq.installation.kanban</field>
         <field name="model">serviq.installation</field>
         <field name="arch" type="xml">
-            <kanban class="o_kanban_small_column sq-in-kanban">
+            <kanban class="o_kanban_small_column sq-in-kanban" js_class="serviq_installation_kanban">
                 <header>
                     <button name="%(installation_action_per_distributor)d"
                             type="action" string="Per distributeur"
@@ -75,7 +75,7 @@
                             <field t-if="record.distributor_id.raw_value" name="distributor_id"/>
                             <t t-else="">-</t>
                         </div>
-                        <div class="sq-in-card-line" title="Installateur">
+                        <div class="sq-in-card-line" name="card_installer" title="Installateur">
                             <i class="fa fa-wrench"/>
                             <field t-if="record.installer_id.raw_value" name="installer_id"/>
                             <t t-else="">-</t>
@@ -155,8 +155,7 @@
                     <div class="oe_button_box" name="button_box">
                         <button name="action_plan_intervention" type="object"
                                 class="oe_stat_button" icon="fa-calendar-plus-o"
-                                string="Interventie plannen"
-                                invisible="intervention_count or repair_count or replacement_count"/>
+                                string="Interventie plannen"/>
                         <button name="action_open_interventions" type="object"
                                 class="oe_stat_button" icon="fa-calendar-check-o"
                                 context="{'serviq_intervention_group': 'intervention'}"
@@ -200,9 +199,11 @@
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
-                    <!-- Tiles in the style of the overview dashboard -->
+                    <!-- Tiles in the style of the overview dashboard:
+                         'Productgegevens' on the left, 'Contacten' and
+                         'Serienummers' stacked on the right. -->
                     <div class="sq-in-form-tiles-wrap">
-                    <div class="sq-in-form-tiles">
+                    <div class="sq-in-form-tiles sq-in-form-tiles-split">
                         <div class="sq-in-form-tile sq-in-form-tile-product">
                             <h5><i class="fa fa-cube me-2"/>Productgegevens</h5>
                             <group name="product_info">
@@ -240,10 +241,16 @@
 
                     <notebook>
                         <page string="Componenten" name="components">
-                            <field name="line_ids" readonly="is_locked">
-                                <list string="Componenten" editable="bottom">
+                            <!-- Overview in the style of the installer portal
+                                 (per role / rack, sub-installations as cards),
+                                 with a switch to the list. -->
+                            <field name="line_ids" readonly="is_locked"
+                                   widget="serviq_component_overview">
+                                <list string="Componenten" editable="bottom" limit="500">
                                     <field name="sequence" widget="handle"/>
                                     <field name="sub_installation_id" column_invisible="True"/>
+                                    <field name="role_sequence" column_invisible="True"/>
+                                    <field name="serial_photo_filename" column_invisible="True"/>
                                     <field name="rack_number" optional="hide"/>
                                     <field name="product_tmpl_id"/>
                                     <field name="role_id" optional="show"/>

@@ -1,0 +1,145 @@
+/* Installation form: component overview in the style of the installer
+   portal (serviq_component_overview widget). */
+.sq-co-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0 12px;
+}
+
+.sq-co-row {
+    margin-bottom: 12px;
+}
+
+.sq-co-row-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #6c757d;
+    margin-bottom: 4px;
+}
+
+.sq-co-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sq-co-flex > .sq-co-comp {
+    min-width: 240px;
+    flex: 0 1 320px;
+}
+
+.sq-co-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.sq-co-racks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.sq-co-rack {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 8px;
+    background: #f8f9fa;
+}
+
+.sq-co-rack > .sq-co-comp + .sq-co-comp {
+    margin-top: 6px;
+}
+
+.sq-co-comp {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-left: 3px solid hsl(200, 20%, 70%);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.sq-co-comp-holder {
+    border-top: 3px solid #714b67;
+}
+
+.sq-co-comp-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.sq-co-sn,
+.sq-co-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.sq-co-note {
+    margin-top: 4px;
+}
+
+.sq-co-sn input {
+    max-width: 260px;
+}
+
+.sq-co-photo {
+    height: 28px;
+    width: auto;
+    border-radius: 3px;
+    border: 1px solid #dee2e6;
+}
+
+.sq-co-table {
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.sq-co-table th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6c757d;
+}
+
+.sq-co-table .sq-co-label {
+    width: 55%;
+}
+
+.sq-co-table code {
+    background: hsl(200, 20%, 96%);
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+/* ---------- Installation form: tile layout ---------- */
+/* 'Productgegevens' on the left over two rows, 'Contacten' and
+   'Serienummers' stacked on the right; 1 column on a narrow form. Based on
+   the width of the form (container query of .sq-in-form-tiles-wrap). The
+   doubled class outranks the 4-column rule of the overview dashboard CSS. */
+.sq-in-form-tiles.sq-in-form-tiles-split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sq-in-form-tiles.sq-in-form-tiles-split > .sq-in-form-tile-product {
+    grid-row: span 2;
+}
+
+@container (max-width: 640px) {
+    .sq-in-form-tiles.sq-in-form-tiles-split {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .sq-in-form-tiles.sq-in-form-tiles-split > .sq-in-form-tile-product {
+        grid-row: auto;
+    }
+}

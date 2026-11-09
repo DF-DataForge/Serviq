@@ -10,10 +10,10 @@ zonder klantnamen, logo's of hardgecodeerde producten.
 
 | Module | Verplicht | Inhoud |
 |---|---|---|
-| `serviq_installation` | ja | Installaties met componenten en serienummers, categorieën, componentrollen, types interventie, automatische aanmaak bij levering, status volgens interventies, overzichtsdashboard, planningskalender, slot picker, urenoverzicht |
+| `serviq_installation` | ja | Installaties met componenten en serienummers, categorieën, componentrollen, types interventie, automatische aanmaak bij levering, status volgens interventies, overzichtsdashboard, planningskalender (kleur per type interventie, groen wanneer afgerond), slot picker, urenoverzicht (met gebruikersrechten per installateur), standaardfilters (categorie / installateur / distributeur) gedeeld door dashboard, kaart, kalender, urenoverzicht, kanban en lijst, logboek van vergrendelen en serienummerwijzigingen |
 | `serviq_installation_map` | automatisch, uit te schakelen | Locatie en kaart: op de installatie (klikken / marker verslepen), paneel op het overzicht, volledige kaart, geolocatie van het adres; Leaflet + OpenStreetMap (Community) |
-| `serviq_logistics` | optioneel | Logistieke dashboards: overzicht, voorraad (met Excel-export), beschikbare voorraad, serienummers, inkomende en uitgaande goederen, reserveonderdelen |
-| `serviq_portal` | optioneel | Portaal voor installateurs en distributeurs + het **flow-framework** |
+| `serviq_logistics` | optioneel | Logistieke dashboards: overzicht, voorraad (met Excel-export), beschikbare voorraad, serienummers, inkomende en uitgaande goederen, reserveonderdelen, voorraadstroom (bewerkingen per magazijn als stroom van ontvangst tot levering en retour, met live tellers; optioneel als startpagina van Voorraad) |
+| `serviq_portal` | optioneel | Portaal voor installateurs en distributeurs + het **flow-framework**: heenrit, tijd ter plaatse en terugrit met km in één formulier (de planning volgt de gelogde tijd), werknemer aanmaken voor (externe) installateurs, serienummers scannen met de camera, interventielijsten leesbaar op een tablet, kalender met kleur per type interventie |
 | `serviq_flow_first_installation` | optioneel | Flow: installatie registreren bij de eerste installatie |
 | `serviq_flow_commissioning` | optioneel | Flow: componentgegevens aanvullen en inbedrijfstelling afronden |
 | `serviq_flow_replacement` | optioneel | Flow: component vervangen met historiek |

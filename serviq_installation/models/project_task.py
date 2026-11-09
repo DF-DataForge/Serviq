@@ -139,20 +139,31 @@ class ProjectTask(models.Model):
                 if start else fields.Date.context_today(self)),
         }
 
-    def serviq_set_planned_slot(self, start):
+    def serviq_set_planned_slot(self, start, installer_id=False):
         """Plan the intervention from `start` ('YYYY-MM-DD HH:MM' in the
         user's timezone) for its duration. Without a planned start field
-        (no Planning / Field Service) the start becomes the deadline."""
+        (no Planning / Field Service) the start becomes the deadline. When
+        it is planned in the agenda of a specific installer
+        (`installer_id`), that installer becomes the installer of the
+        task."""
         self.ensure_one()
         tz = pytz.timezone(self.env.user.tz or 'UTC')
         local = tz.localize(datetime.strptime(start, '%Y-%m-%d %H:%M'))
         begin = local.astimezone(pytz.utc).replace(tzinfo=None)
         if 'planned_date_begin' in self._fields:
             hours = self._serviq_planned_hours()
-            self.write({
+            vals = {
                 'planned_date_begin': begin,
                 'date_deadline': begin + timedelta(hours=hours),
-            })
+            }
         else:
-            self.write({'date_deadline': begin})
+            vals = {'date_deadline': begin}
+        # -1 / False: 'Niet ingesteld' / 'Alle installateurs' in the agenda.
+        try:
+            installer_id = int(installer_id or 0)
+        except (TypeError, ValueError):
+            installer_id = 0
+        if installer_id > 0:
+            vals['serviq_installer_id'] = installer_id
+        self.write(vals)
         return True

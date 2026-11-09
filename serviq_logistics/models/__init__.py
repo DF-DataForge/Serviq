@@ -6,5 +6,6 @@ from . import outgoing_dashboard
 from . import spare_parts_dashboard
 from . import stock_cards
 from . import home_dashboard
+from . import stock_flow
 from . import res_users
 from . import res_config_settings

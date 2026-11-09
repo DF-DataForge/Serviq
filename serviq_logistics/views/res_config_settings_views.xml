@@ -11,6 +11,10 @@
                              help="Beperk het dashboard Reserveonderdelen tot deze leveranciers (leeg = alle reserveonderdelen).">
                         <field name="serviq_spare_supplier_ids" widget="many2many_tags"/>
                     </setting>
+                    <setting string="Voorraadstroom als startpagina"
+                             help="Een klik op de app Voorraad opent de Voorraadstroom (bewerkingen per magazijn) in plaats van het standaard overzicht.">
+                        <field name="serviq_flow_landing"/>
+                    </setting>
                 </block>
             </xpath>
         </field>

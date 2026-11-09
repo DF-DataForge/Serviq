@@ -86,12 +86,14 @@ class ReplacementFlow(models.AbstractModel):
         installation = line.installation_id
         old_lot = line.lot_id
 
-        # Through the installation, so the change is traced in its chatter.
-        installation.write({'line_ids': [(1, line.id, {
+        # On the line itself: the swap is logged below as a replacement
+        # (with the original serial), not a second time as a component
+        # change by the installation.
+        line.write({
             'lot_id': new_lot.id,
             'serial_photo': False,
             'serial_photo_filename': False,
-        })]})
+        })
         if old_lot.serviq_installation_id == installation:
             old_lot.serviq_installation_id = False
         replacement = self.env['serviq.installation.replacement'].create({
@@ -103,10 +105,11 @@ class ReplacementFlow(models.AbstractModel):
             'new_lot_id': new_lot.id,
             'note': (post.get('note') or '').strip() or False,
         })
+        self._flow_post(installation, partner,
+                        replacement._installation_log_body(partner))
         body = _('Component vervangen door %(name)s: %(summary)s',
                  name=partner.name, summary=replacement._summary())
         if replacement.note:
             body = _('%(body)s (%(note)s)', body=body, note=replacement.note)
-        self._flow_post(installation, partner, body)
         self._flow_post(task, partner, body)
         return _('Vervanging geregistreerd: %s', replacement._summary()), None

@@ -105,8 +105,10 @@
             <div name="button_box" position="inside">
                 <button name="action_view_serviq_installation" type="object"
                         class="oe_stat_button" icon="fa-cubes"
-                        string="Installatie"
-                        invisible="not serviq_installation_id"/>
+                        invisible="serviq_linked_installation_count == 0">
+                    <field name="serviq_linked_installation_count" widget="statinfo"
+                           string="Installaties"/>
+                </button>
             </div>
             <xpath expr="//field[@name='product_id']" position="after">
                 <field name="serviq_installation_id" readonly="1"
@@ -127,6 +129,31 @@
                 <field name="serviq_partner_id"/>
                 <field name="serviq_is_spare_parts_location"/>
             </field>
+        </field>
+    </record>
+
+    <!-- Location list: whether a location is a spare parts location. -->
+    <record id="stock_location_list_inherit" model="ir.ui.view">
+        <field name="name">stock.location.list.serviq.installation</field>
+        <field name="model">stock.location</field>
+        <field name="inherit_id" ref="stock.view_location_tree2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='complete_name']" position="after">
+                <field name="serviq_is_spare_parts_location" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Location search: a standard filter on the spare parts locations. -->
+    <record id="stock_location_search_inherit" model="ir.ui.view">
+        <field name="name">stock.location.search.serviq.installation</field>
+        <field name="model">stock.location</field>
+        <field name="inherit_id" ref="stock.view_location_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='empty_location']" position="after">
+                <filter name="serviq_spare_parts_locations" string="Locaties reserveonderdelen"
+                        domain="[('serviq_is_spare_parts_location', '=', True)]"/>
+            </xpath>
         </field>
     </record>
 

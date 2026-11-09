@@ -10,6 +10,7 @@ DASHBOARDS = {
     'incoming': ('serviq_logistics.group_dashboard_incoming', 'Inkomende goederen'),
     'outgoing': ('serviq_logistics.group_dashboard_outgoing', 'Uitgaande goederen'),
     'spare': ('serviq_logistics.group_dashboard_spare', 'Reserveonderdelen'),
+    'flow': ('serviq_logistics.group_dashboard_flow', 'Voorraadstroom'),
 }
 
 

@@ -1,0 +1,205 @@
+/* ============================================
+   Voorraadstroom: the operations of a warehouse as a flow.
+   Prefix sq-sf- (sq-flow- is used by the period filter).
+   ============================================ */
+
+.sq-sf-dashboard {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100vh;
+    background: #f8f9fa;
+    overflow: hidden;
+}
+
+.sq-sf-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 24px 32px;
+}
+
+.sq-sf-select {
+    width: auto;
+    min-width: 220px;
+}
+
+.sq-sf-wh {
+    background: #ffffff;
+    border: 1px solid #e2e2e6;
+    border-radius: 12px;
+    padding: 16px 20px 20px;
+    margin-bottom: 20px;
+}
+
+.sq-sf-wh-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 12px;
+}
+
+.sq-sf-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.sq-sf-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    color: #5f5f68;
+    font-size: 22px;
+}
+
+.sq-sf-arrow-back {
+    color: #c2410c;
+}
+
+.sq-sf-arrow-label {
+    font-size: 11px;
+    line-height: 14px;
+}
+
+.sq-sf-card {
+    width: 200px;
+    min-height: 132px;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid #d9d9de;
+    border-radius: 12px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.sq-sf-kicker {
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #6b6b72;
+}
+
+.sq-sf-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #714B67;
+    text-decoration: none;
+}
+
+a.sq-sf-name:hover {
+    color: #4d3346;
+    text-decoration: underline;
+}
+
+.sq-sf-main {
+    margin-top: 4px;
+    background: #714B67;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.sq-sf-main:hover {
+    background: #5a3b52;
+    color: #ffffff;
+}
+
+.sq-sf-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    font-size: 12px;
+    color: #55555d;
+}
+
+.sq-sf-stat {
+    color: #55555d;
+}
+
+.sq-sf-stock {
+    background: #e7f4f4;
+    border: 2px solid #017e84;
+}
+
+.sq-sf-stock .sq-sf-kicker,
+.sq-sf-stock .sq-sf-name,
+.sq-sf-stock .sq-sf-stats {
+    color: #01585c;
+}
+
+.sq-sf-stock-btn {
+    margin-top: 4px;
+    background: #ffffff;
+    border: 1px solid #017e84;
+    color: #01585c;
+    font-weight: 600;
+}
+
+.sq-sf-return,
+.sq-sf-others {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px dashed #f0b48f;
+}
+
+.sq-sf-others {
+    border-top-color: #d9d9de;
+}
+
+.sq-sf-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #c2410c;
+    margin-bottom: 8px;
+}
+
+.sq-sf-card-return {
+    background: #fff7f2;
+    border-color: #f0b48f;
+}
+
+.sq-sf-card-return .sq-sf-name {
+    color: #9a3412;
+}
+
+.sq-sf-card-return .sq-sf-main {
+    background: #c2410c;
+}
+
+.sq-sf-card-return .sq-sf-main:hover {
+    background: #9a3412;
+}
+
+.sq-sf-direct {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #9a3412;
+}
+
+@media (max-width: 768px) {
+    .sq-sf-body {
+        padding: 12px 16px 24px;
+    }
+
+    .sq-sf-card {
+        width: 100%;
+    }
+
+    .sq-sf-arrow {
+        width: 100%;
+        transform: rotate(90deg);
+    }
+
+    .sq-sf-arrow-label {
+        transform: rotate(-90deg);
+    }
+}

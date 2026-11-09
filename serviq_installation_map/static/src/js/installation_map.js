@@ -5,7 +5,7 @@
  * marker in the colour of its status; hovering shows its base
  * information, clicking opens it. The legend filters on status.
  */
-import { Component, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, onWillUpdateProps, useRef, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
@@ -56,25 +56,57 @@ export class InstallationMap extends Component {
                 this.map = null;
             }
         });
+        // On the overview the map follows the dashboard's standard filters.
+        onWillUpdateProps((nextProps) => {
+            if (JSON.stringify(nextProps.filters || {}) !== JSON.stringify(this.props.filters || {})) {
+                this.reload(nextProps.filters);
+            }
+        });
+    }
+
+    loadData(filters) {
+        return this.orm.call("serviq.installation", "get_map_overview_data", [
+            false,
+            filters || {},
+        ]);
+    }
+
+    applyData(data) {
+        this.state.states = data.states;
+        this.state.missing = data.missing;
+        this.state.missingIds = data.missing_ids;
+        const counts = {};
+        for (const inst of data.installations) {
+            counts[inst.state] = (counts[inst.state] || 0) + 1;
+        }
+        this.state.counts = counts;
+    }
+
+    /** The dashboard's filters changed: show the matching installations. */
+    async reload(filters) {
+        try {
+            const data = await this.loadData(filters);
+            if (this.destroyed || !this.map) {
+                return;
+            }
+            this.applyData(data);
+            this.setMarkers(data.installations);
+            this.applyFilter();
+        } catch (error) {
+            console.error("[Serviq] installation map reload failed", error);
+        }
     }
 
     async init() {
         try {
             const [{ L, tiles }, data] = await Promise.all([
                 loadLeaflet(this.orm),
-                this.orm.call("serviq.installation", "get_map_overview_data", []),
+                this.loadData(this.props.filters),
             ]);
             if (this.destroyed) {
                 return;
             }
-            this.state.states = data.states;
-            this.state.missing = data.missing;
-            this.state.missingIds = data.missing_ids;
-            const counts = {};
-            for (const inst of data.installations) {
-                counts[inst.state] = (counts[inst.state] || 0) + 1;
-            }
-            this.state.counts = counts;
+            this.applyData(data);
             this.renderMap(L, tiles, data.installations);
         } catch (error) {
             console.error("[Serviq] installation map failed", error);
@@ -94,6 +126,16 @@ export class InstallationMap extends Component {
         }
         this.map = L.map(el, { scrollWheelZoom: this.fullPage });
         addTileLayer(L, this.map, tiles);
+        this.L = L;
+        this.setMarkers(installations);
+    }
+
+    setMarkers(installations) {
+        const L = this.L;
+        for (const marker of this.markers) {
+            marker.remove();
+        }
+        this.markers = [];
         const points = [];
         for (const inst of installations) {
             const marker = L.marker([inst.latitude, inst.longitude], {

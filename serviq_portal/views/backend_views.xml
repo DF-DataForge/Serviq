@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Timesheets: ride there / time on site / ride back and the km, as
+         logged in the portal. -->
+    <record id="hr_timesheet_line_tree_serviq_time_type" model="ir.ui.view">
+        <field name="name">account.analytic.line.list.serviq.time.type</field>
+        <field name="model">account.analytic.line</field>
+        <field name="inherit_id" ref="hr_timesheet.hr_timesheet_line_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="serviq_time_type" optional="show"/>
+                <field name="serviq_km" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Task timesheets in chronological order (ride there, time on site,
+         ride back) with their type and km. -->
+    <record id="view_task_form_timesheets_serviq" model="ir.ui.view">
+        <field name="name">project.task.form.timesheets.serviq</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="hr_timesheet.view_task_form2_inherited"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='timesheet_ids']/list" position="attributes">
+                <attribute name="default_order">date, serviq_start, id</attribute>
+            </xpath>
+            <xpath expr="//field[@name='timesheet_ids']/list/field[@name='name']" position="after">
+                <field name="serviq_start" column_invisible="True"/>
+                <field name="serviq_time_type" optional="show"/>
+                <field name="serviq_km" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Contact: employee record of an installer (needed to log hours). -->
+    <record id="res_partner_form_serviq_employee" model="ir.ui.view">
+        <field name="name">res.partner.form.serviq.portal.employee</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="serviq_installation.res_partner_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='serviq_can_install_for_ids']" position="after">
+                <field name="serviq_employee_id" readonly="1"
+                       invisible="not serviq_is_installer"/>
+                <div colspan="2" invisible="not serviq_is_installer or serviq_employee_id">
+                    <button name="action_serviq_create_employee" type="object"
+                            string="Werknemer aanmaken" icon="fa-user-plus"
+                            class="btn-secondary"
+                            help="Maak een werknemer (zonder gebruiker) aan voor deze installateur, zodat uren op interventies geregistreerd kunnen worden. Gebeurt ook automatisch bij de eerste uurregistratie in het portaal."/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

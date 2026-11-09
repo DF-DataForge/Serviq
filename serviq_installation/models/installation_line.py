@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from markupsafe import Markup
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -26,6 +28,10 @@ class InstallationLine(models.Model):
              'directly from the component line.')
     role_id = fields.Many2one(
         related='product_tmpl_id.serviq_role_id', string='Rol', store=True)
+    # Used by the component overview widget of the installation form to
+    # order the role groups like the roles.
+    role_sequence = fields.Integer(
+        related='role_id.sequence', string='Volgorde rol')
     lot_id = fields.Many2one('stock.lot', string='Lot/Serienummer', index=True)
     sub_installation_id = fields.Many2one(
         'serviq.installation', string='Subcomponenten', copy=False)
@@ -53,8 +59,51 @@ class InstallationLine(models.Model):
                 rec.lot_id, line=rec,
                 expected_product_tmpl=rec.product_tmpl_id)
 
+    # ------------------------------------------------------------------
+    # Serial number log: every change of a component serial is posted on
+    # the installation, whatever the origin (backend, portal, flows).
+    # serviq.installation.write already logs changes made through its
+    # component list and flags that with 'serviq_line_lot_logged'.
+    # ------------------------------------------------------------------
+    def _serviq_log_serials(self):
+        return not self.env.context.get('serviq_line_lot_logged')
+
+    def _serviq_post_serial_log(self, title, changes):
+        """Post `changes` [(line, old serial, new serial)] on the
+        installations of the lines, one message per installation."""
+        per_installation = {}
+        for line, old, new in changes:
+            if line.installation_id and (old or '') != (new or ''):
+                per_installation.setdefault(line.installation_id, []).append(
+                    (line, old, new))
+        for installation, items in per_installation.items():
+            body = Markup('<b>%s</b><ul>') % title
+            for line, old, new in items:
+                body += Markup(
+                    '<li>%s: <b>%s</b> &#8594; <b>%s</b></li>') % (
+                    line.product_tmpl_id.display_name or '-',
+                    old or '-', new or '-')
+            body += Markup('</ul>')
+            installation.message_post(body=body)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        if lines._serviq_log_serials():
+            self._serviq_post_serial_log(
+                _('Component toegevoegd met serienummer'),
+                [(line, False, line.lot_id.name)
+                 for line in lines if line.lot_id])
+        return lines
+
     def write(self, vals):
+        log = 'lot_id' in vals and self._serviq_log_serials()
+        old = {line.id: line.lot_id.name for line in self} if log else {}
         res = super().write(vals)
+        if log:
+            self._serviq_post_serial_log(
+                _('Serienummer gewijzigd'),
+                [(line, old[line.id], line.lot_id.name) for line in self])
         # The serial of a component holding a sub-installation is the
         # serial of that sub-installation.
         if 'lot_id' in vals \
@@ -63,6 +112,14 @@ class InstallationLine(models.Model):
                 line.sub_installation_id.with_context(
                     call_from_line=True).lot_id = line.lot_id
         return res
+
+    def unlink(self):
+        if self._serviq_log_serials():
+            self._serviq_post_serial_log(
+                _('Component met serienummer verwijderd'),
+                [(line, line.lot_id.name, False)
+                 for line in self if line.lot_id])
+        return super().unlink()
 
     def action_download_serial_photo(self):
         """Return an act_url that downloads the serial-number photo."""

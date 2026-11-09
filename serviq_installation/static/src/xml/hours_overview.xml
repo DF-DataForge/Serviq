@@ -21,6 +21,8 @@
                 </div>
             </div>
 
+            <SystemFilterBar filters="state.filters" onChange.bind="onFiltersChange"/>
+
             <div t-attf-class="sq-in-body {{ state.loading ? 'opacity-50' : '' }}">
                 <t t-set="data" t-value="state.data"/>
                 <div class="sq-in-tiles">
@@ -55,7 +57,15 @@
                             <tbody>
                                 <tr t-foreach="group.rows" t-as="row" t-key="row.key"
                                     role="button" t-on-click="() => this.open(row.action)">
-                                    <td class="sq-in-partner" t-esc="row.name"/>
+                                    <td class="sq-in-partner">
+                                        <t t-esc="row.name"/>
+                                        <button t-if="group.key === 'installer' &amp;&amp; row.key !== '0'"
+                                                type="button" class="btn btn-link btn-sm p-0 ms-2 align-baseline"
+                                                title="Gebruikersrechten van deze installateur"
+                                                t-on-click.stop="() => this.showRights(row)">
+                                            <i class="fa fa-id-card-o"/>
+                                        </button>
+                                    </td>
                                     <td class="text-end fw-semibold" t-esc="row.hours_label"/>
                                     <td class="text-end" t-esc="row.interventions"/>
                                     <td class="sq-hours-share-col">
@@ -74,5 +84,24 @@
                 </div>
             </div>
         </div>
+    </t>
+
+    <t t-name="serviq_installation.InstallerRightsDialog">
+        <Dialog title="'Gebruikersrechten - ' + props.rights.name" size="'md'">
+            <div t-foreach="props.rights.sections" t-as="section" t-key="section_index" class="mb-3">
+                <h6 class="mb-1" t-esc="section.title"/>
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr t-foreach="section.items" t-as="item" t-key="item_index">
+                            <td t-esc="item.label"/>
+                            <td class="text-end fw-semibold" t-esc="item.value"/>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="props.close">Sluiten</button>
+            </t>
+        </Dialog>
     </t>
 </templates>

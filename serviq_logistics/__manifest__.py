@@ -1,6 +1,6 @@
 {
     'name': 'Serviq Logistiek',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'summary': 'Logistieke dashboards: voorraad, serienummers, inkomende en uitgaande goederen, reserveonderdelen',
     'description': """
         Operational dashboards for the logistics of installations:
@@ -15,6 +15,12 @@
           installation status
         - Inkomende goederen: POs grouped by supplier with reception status
         - Uitgaande goederen: SOs grouped by customer with delivery status
+        - Voorraadstroom: per warehouse its operation types as a flow
+          (receipt -> putaway -> stock -> picking -> packing -> delivery,
+          returns directly or through repair, other operations) with their
+          live counters; every card and counter opens exactly the
+          operations it counts. Optionally the landing page of the
+          Inventory app (Voorraad > Instellingen)
         - Reserveonderdelen: deliveries of spare parts (component role
           "Reserveonderdeel") per client, with shipping-list Excel export,
           optionally limited to some suppliers (Voorraad > Instellingen)
@@ -42,6 +48,7 @@
             'serviq_logistics/static/src/css/sn_tracking_dashboard.css',
             'serviq_logistics/static/src/css/home_dashboard.css',
             'serviq_logistics/static/src/css/stock_cards.css',
+            'serviq_logistics/static/src/css/stock_flow.css',
             'serviq_logistics/static/src/js/filter_options.js',
             'serviq_logistics/static/src/js/subgroup_filter.js',
             'serviq_logistics/static/src/js/period_filter.js',
@@ -53,6 +60,7 @@
             'serviq_logistics/static/src/js/incoming_dashboard.js',
             'serviq_logistics/static/src/js/outgoing_dashboard.js',
             'serviq_logistics/static/src/js/spare_parts_dashboard.js',
+            'serviq_logistics/static/src/js/stock_flow.js',
             'serviq_logistics/static/src/xml/product_types.xml',
             'serviq_logistics/static/src/xml/home_dashboard.xml',
             'serviq_logistics/static/src/xml/stock_dashboard.xml',
@@ -61,9 +69,11 @@
             'serviq_logistics/static/src/xml/incoming_dashboard.xml',
             'serviq_logistics/static/src/xml/outgoing_dashboard.xml',
             'serviq_logistics/static/src/xml/spare_parts_dashboard.xml',
+            'serviq_logistics/static/src/xml/stock_flow.xml',
         ],
     },
     'post_init_hook': 'post_init_hook',
+    'uninstall_hook': 'uninstall_hook',
     'installable': True,
     'application': True,
     'license': 'LGPL-3',

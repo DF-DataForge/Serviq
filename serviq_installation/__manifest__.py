@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Serviq Installaties',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'summary': 'Installaties bij klanten: componenten, serienummers, '
                'interventies, planning en overzichtsdashboard',
     'description': """
@@ -52,7 +52,15 @@ numbers, its customer / distributor / installer and its interventions.
     ],
     'assets': {
         'web.assets_backend': [
+            'serviq_installation/static/src/css/system_filters.css',
+            'serviq_installation/static/src/js/system_filters.js',
+            'serviq_installation/static/src/xml/system_filters.xml',
+            'serviq_installation/static/src/js/installation_views.js',
+            'serviq_installation/static/src/xml/installation_views.xml',
             'serviq_installation/static/src/css/installation_overview_dashboard.css',
+            'serviq_installation/static/src/css/component_overview.css',
+            'serviq_installation/static/src/js/component_overview.js',
+            'serviq_installation/static/src/xml/component_overview.xml',
             'serviq_installation/static/src/js/installation_overview_dashboard.js',
             'serviq_installation/static/src/xml/installation_overview_dashboard.xml',
             'serviq_installation/static/src/js/intervention_slot_picker.js',

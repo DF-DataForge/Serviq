@@ -12,6 +12,7 @@
                     <field name="serviq_dash_incoming"/>
                     <field name="serviq_dash_outgoing"/>
                     <field name="serviq_dash_spare"/>
+                    <field name="serviq_dash_flow"/>
                 </group>
             </xpath>
         </field>

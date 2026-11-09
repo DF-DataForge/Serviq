@@ -13,8 +13,8 @@
         </t>
         <t t-else="">
             <p class="text-muted">
-                Vul per component het serienummer en eventueel een opmerking aan. Na het
-                afronden wordt de installatie actief.
+                Vul per component het serienummer (typ of scan het met de camera) en eventueel
+                een opmerking aan. Na het afronden wordt de installatie actief.
             </p>
             <form method="post" t-att-action="flow_action">
                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
@@ -35,7 +35,7 @@
                                     <small t-if="line.role_id" class="d-block text-muted" t-out="line.role_id.name"/>
                                 </td>
                                 <td style="min-width: 12rem;">
-                                    <input type="text" class="form-control form-control-sm"
+                                    <input type="text" class="form-control form-control-sm sq-scan"
                                            t-att-name="'serial_%d' % line.id"
                                            t-att-value="line.lot_id.name or ''"
                                            placeholder="Serienummer" autocomplete="off"/>

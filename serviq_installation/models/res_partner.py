@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 
 class ResPartner(models.Model):
@@ -43,6 +43,34 @@ class ResPartner(models.Model):
                 ('installer_id', 'child_of', commercial),
             ],
             'context': {'default_customer_id': self.id},
+        }
+
+    def serviq_get_installer_rights(self):
+        """Overview of what this installer may do, for the rights popup of
+        the hours overview: {'name', 'sections': [{'title', 'items':
+        [{'label', 'value'}]}]}. Extended by serviq_portal with the portal
+        rights."""
+        self.ensure_one()
+        partner = self.sudo()
+        yes, no = _('Ja'), _('Nee')
+        distributors = partner.serviq_can_install_for_ids.sorted('name')
+        return {
+            'name': partner.display_name,
+            'sections': [{
+                'title': _('Installateur'),
+                'items': [
+                    {'label': _('Is installateur'),
+                     'value': yes if partner.serviq_is_installer else no},
+                    {'label': _('Is distributeur'),
+                     'value': yes if partner.serviq_is_distributor else no},
+                ],
+            }, {
+                'title': _('Mag installeren voor (distributeurs)'),
+                'items': [{'label': d.display_name, 'value': ''}
+                          for d in distributors]
+                or [{'label': _('Geen distributeurs ingesteld'),
+                     'value': ''}],
+            }],
         }
 
     # ------------------------------------------------------------------

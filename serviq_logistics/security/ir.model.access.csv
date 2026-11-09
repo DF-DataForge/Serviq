@@ -31,3 +31,6 @@ access_serviq_logistics_meta_grp_sn,serviq.logistics.meta.dashboard.sn,model_ser
 access_serviq_logistics_meta_grp_incoming,serviq.logistics.meta.dashboard.incoming,model_serviq_logistics_meta,group_dashboard_incoming,1,0,0,0
 access_serviq_logistics_meta_grp_outgoing,serviq.logistics.meta.dashboard.outgoing,model_serviq_logistics_meta,group_dashboard_outgoing,1,0,0,0
 access_serviq_logistics_meta_grp_spare,serviq.logistics.meta.dashboard.spare,model_serviq_logistics_meta,group_dashboard_spare,1,0,0,0
+access_serviq_logistics_flow_user,serviq.logistics.flow.user,model_serviq_logistics_flow,stock.group_stock_user,1,0,0,0
+access_serviq_logistics_flow_manager,serviq.logistics.flow.manager,model_serviq_logistics_flow,stock.group_stock_manager,1,1,1,1
+access_serviq_logistics_flow_grp_flow,serviq.logistics.flow.dashboard.flow,model_serviq_logistics_flow,group_dashboard_flow,1,0,0,0

@@ -78,7 +78,7 @@ class Installation(models.Model):
     contact_person_name = fields.Char(string='Contactpersoon')
     contact_person_phone = fields.Char(string='Telefoon contactpersoon')
     note = fields.Html(string='Notities')
-    is_locked = fields.Boolean(string='Vergrendeld')
+    is_locked = fields.Boolean(string='Vergrendeld', tracking=True)
     delivery_picking_id = fields.Many2one(
         'stock.picking', string='Aangemaakt door levering', readonly=True,
         copy=False, index=True)
@@ -105,17 +105,68 @@ class Installation(models.Model):
         return self._fields['state'].selection
 
     # ------------------------------------------------------------------
+    # Standard installation filters (category / installer / distributor),
+    # shared by the overview dashboard, its map panel and planning
+    # calendar, the hours overview and the kanban and list views.
+    # ------------------------------------------------------------------
+    @api.model
+    def _system_filter_domain(self, filters):
+        """Installation domain of the standard filters: `filters` holds
+        'category' (category id), 'installer' (installer id, or 'none') and
+        'distributor' (id); empty = all."""
+        filters = filters or {}
+        domain = []
+        category = filters.get('category')
+        if category and str(category).isdigit():
+            domain.append(('category_id', '=', int(category)))
+        installer = filters.get('installer')
+        if installer == 'none':
+            domain.append(('installer_id', '=', False))
+        elif installer and str(installer).isdigit():
+            domain.append(('installer_id', '=', int(installer)))
+        distributor = filters.get('distributor')
+        if distributor and str(distributor).isdigit():
+            domain.append(('distributor_id', '=', int(distributor)))
+        return domain
+
+    @api.model
+    def _filtered_installation_ids(self, filters):
+        """Ids of the installations matching `filters`, or None when no
+        filter is set (then nothing needs narrowing)."""
+        domain = self._system_filter_domain(filters)
+        return self.search(domain).ids if domain else None
+
+    @api.model
+    def get_system_filter_options(self):
+        """Choices of the standard filters: the categories, installers and
+        distributors that occur on a top-level installation."""
+        installations = self.search([('parent_line_id', '=', False)])
+
+        def _options(records):
+            return [{'id': r.id, 'name': r.display_name}
+                    for r in records.sorted(
+                        lambda r: (r.display_name or '').lower())]
+
+        return {
+            'categories': _options(installations.category_id),
+            'installers': _options(installations.installer_id),
+            'distributors': _options(installations.distributor_id),
+        }
+
+    # ------------------------------------------------------------------
     # Overview dashboard
     # ------------------------------------------------------------------
     @api.model
-    def get_overview_dashboard_data(self):
+    def get_overview_dashboard_data(self, filters=None):
         """Aggregates for the overview dashboard: overall counts plus the
-        same counts per distributor and per installer."""
+        same counts per distributor and per installer, for the
+        installations matching the standard `filters`."""
         def _bucket():
             return {'total': 0, 'active': 0, 'commissioning': 0,
                     'service': 0, 'not_registered': 0}
 
-        top = [('parent_line_id', '=', False)]
+        top = [('parent_line_id', '=', False)] \
+            + self._system_filter_domain(filters)
         overall = _bucket()
         overall['total'] = self.search_count(top)
         for state, count in self._read_group(
@@ -162,7 +213,10 @@ class Installation(models.Model):
             'per_installer': _per_partner('installer_id'),
             # Counts only: the records behind a tile open with the user's
             # own rights.
-            'sections': self.sudo()._dashboard_sections(),
+            'sections': self.sudo().with_context(
+                serviq_installation_ids=self._filtered_installation_ids(
+                    filters),
+            )._dashboard_sections(),
         }
 
     # ------------------------------------------------------------------
@@ -191,11 +245,13 @@ class Installation(models.Model):
 
     @api.model
     def get_planning_calendar_data(self, scope='month', anchor=False,
-                                   task_id=False, installer_id=False):
+                                   task_id=False, installer_id=False,
+                                   filters=None):
         """Interventions of installations for the month / week / day
         around `anchor` (YYYY-MM-DD, default today), bucketed per day;
         `task_id` is the intervention being planned (slot picker);
-        `installer_id` narrows them to one installer (-1: no installer)."""
+        `installer_id` narrows them to one installer (-1: no installer);
+        `filters` are the standard installation filters."""
         today = fields.Date.context_today(self)
         if scope not in ('month', 'week', 'day'):
             scope = 'month'
@@ -234,6 +290,9 @@ class Installation(models.Model):
         # A first installation has no installation yet: an intervention
         # type is enough.
         domain = Task._serviq_intervention_domain()
+        installation_ids = self._filtered_installation_ids(filters)
+        if installation_ids is not None:
+            domain.append(('serviq_installation_id', 'in', installation_ids))
         if installer_id == -1:
             domain.append(('serviq_installer_id', '=', False))
         elif installer_id:
@@ -244,6 +303,9 @@ class Installation(models.Model):
                 'id': task.id,
                 'name': task.name,
                 'type': task.serviq_intervention_type_id.name or '',
+                # Chip colour: green when done, else the colour of the
+                # intervention type (Odoo colour index 0-11).
+                'color': task.serviq_intervention_type_id.color or 0,
                 'done': bool(task.date_end),
                 'installation': task.serviq_installation_id.name or '',
                 'partner': task.partner_id.name or '',
@@ -254,7 +316,10 @@ class Installation(models.Model):
             }
             day = self._task_plan_date(task)
             if not day:
-                without_date.append(info)
+                # Finished interventions no longer need a date.
+                if not info['done'] \
+                        and task.state not in self.TASK_CLOSED_STATES:
+                    without_date.append(info)
             elif start <= day <= end:
                 tasks_by_day.setdefault(fields.Date.to_string(day), []) \
                     .append(info)
@@ -262,7 +327,11 @@ class Installation(models.Model):
         def iso(day):
             return fields.Date.to_string(day)
 
+        legend = [
+            [itype.color or 0, itype.name]
+            for itype in self.env['serviq.intervention.type'].search([])]
         return {
+            'legend': legend,
             'scope': scope,
             'label': label,
             'today': iso(today),
@@ -406,6 +475,10 @@ class Installation(models.Model):
             })
         return {'key': 'repairs', 'title': _('Producten in reparatie'),
                 'icon': 'fa-wrench', 'tiles': tiles,
+                # Repairs are not linked to an installation: the filters do
+                # not narrow them.
+                'unfiltered': self.env.context.get(
+                    'serviq_installation_ids') is not None,
                 'action': action(_('Producten in reparatie'),
                                  [('state', 'in', list(open_states))])}
 
@@ -420,6 +493,9 @@ class Installation(models.Model):
         week_start, month_start, _today = self._dashboard_periods()
         week_end = week_start + timedelta(days=7)
         base = Task._serviq_intervention_domain() + (domain or [])
+        installation_ids = self.env.context.get('serviq_installation_ids')
+        if installation_ids is not None:
+            base.append(('serviq_installation_id', 'in', installation_ids))
         open_ = [('state', 'not in', list(self.TASK_CLOSED_STATES))]
         planned_this_week = open_ + [
             (plan_field, '>=', self._dashboard_datetime(week_start)),
@@ -459,6 +535,10 @@ class Installation(models.Model):
         week_start, month_start, _today = self._dashboard_periods()
         base = ['|', ('task_id.serviq_installation_id', '!=', False),
                 ('task_id.serviq_intervention_type_id', '!=', False)]
+        installation_ids = self.env.context.get('serviq_installation_ids')
+        if installation_ids is not None:
+            base.append(
+                ('task_id.serviq_installation_id', 'in', installation_ids))
         tiles = []
         for key, label, start in (
                 ('week', _('Deze week'), week_start),
@@ -517,11 +597,11 @@ class Installation(models.Model):
 
     @api.model
     def get_hours_overview_data(self, period='week', date_from=False,
-                                date_to=False):
+                                date_to=False, filters=None):
         """Hours logged on interventions of installations in a period:
-        totals, and per installer, per employee, per distributor and per
-        type of intervention; each group carries the domain of its
-        timesheet lines."""
+        totals, and per installer, per distributor and per type of
+        intervention; each group carries the domain of its timesheet
+        lines."""
         if period not in self.HOURS_PERIODS:
             period = 'week'
         start, end, label = self._hours_period(period, date_from, date_to)
@@ -531,24 +611,29 @@ class Installation(models.Model):
             ('date', '>=', fields.Date.to_string(start)),
             ('date', '<=', fields.Date.to_string(end)),
         ]
+        # Standard installation filters (category / installer /
+        # distributor).
+        installation_ids = self._filtered_installation_ids(filters)
+        if installation_ids is not None:
+            domain.append(
+                ('task_id.serviq_installation_id', 'in', installation_ids))
         Line = self.env['account.analytic.line'].sudo()
-        rows = Line._read_group(domain, ['task_id', 'employee_id'],
-                                ['unit_amount:sum'])
+        rows = Line._read_group(domain, ['task_id'], ['unit_amount:sum'])
         Task = self.env['project.task']
         unset = _('Niet ingesteld')
         groups = {key: {} for key in
-                  ('installer', 'employee', 'distributor', 'type')}
+                  ('installer', 'distributor', 'type')}
 
-        def add(group, key, name, hours, task, domain_part):
+        def add(group, key, name, hours, task):
             entry = groups[group].setdefault(key, {
                 'key': str(key), 'name': name, 'hours': 0.0,
-                'task_ids': set(), 'domain_part': domain_part})
+                'task_ids': set()})
             entry['hours'] += hours
             entry['task_ids'].add(task.id)
 
         total = 0.0
         tasks = Task
-        for task, employee, hours in rows:
+        for task, hours in rows:
             hours = hours or 0.0
             total += hours
             tasks |= task
@@ -558,20 +643,16 @@ class Installation(models.Model):
                 .commercial_partner_id
             itype = task.serviq_intervention_type_id
             add('installer', installer.id or 0, installer.name or unset,
-                hours, task, None)
-            add('employee', employee.id or 0, employee.name or unset,
-                hours, task, [('employee_id', '=', employee.id or False)])
+                hours, task)
             add('distributor', distributor.id or 0,
-                distributor.name or unset, hours, task, None)
-            add('type', itype.id or 0, itype.name or unset, hours, task,
-                None)
+                distributor.name or unset, hours, task)
+            add('type', itype.id or 0, itype.name or unset, hours, task)
 
         def rows_of(group):
             result = []
             for entry in sorted(groups[group].values(),
                                 key=lambda e: -e['hours']):
-                part = entry.pop('domain_part') or [
-                    ('task_id', 'in', sorted(entry['task_ids']))]
+                part = [('task_id', 'in', sorted(entry['task_ids']))]
                 count = len(entry.pop('task_ids'))
                 result.append(dict(
                     entry,
@@ -601,8 +682,6 @@ class Installation(models.Model):
             'groups': [
                 {'key': 'installer', 'title': _('Per installateur'),
                  'icon': 'fa-wrench', 'rows': rows_of('installer')},
-                {'key': 'employee', 'title': _('Per medewerker'),
-                 'icon': 'fa-user', 'rows': rows_of('employee')},
                 {'key': 'distributor', 'title': _('Per distributeur'),
                  'icon': 'fa-truck', 'rows': rows_of('distributor')},
                 {'key': 'type', 'title': _('Per type interventie'),
@@ -1179,7 +1258,11 @@ class Installation(models.Model):
                     vals['product_tmpl_id']).serviq_category_id
                 if category:
                     vals['category_id'] = category.id
-        records = super().create(vals_list)
+        # Components created with the installation are summarized by
+        # _post_creation_summary; they skip their own serial log.
+        records = super(
+            Installation, self.with_context(serviq_line_lot_logged=True)
+        ).create(vals_list).with_env(self.env)
         for record in records:
             for line in record.line_ids:
                 record._process_sub_bom_for_line(line)
@@ -1205,7 +1288,11 @@ class Installation(models.Model):
             }
             for line in self.line_ids
         } if 'line_ids' in vals else {}
-        res = super().write(vals)
+        # Serial changes made through the component list are logged by
+        # _log_line_changes; the component lines then skip their own log.
+        this = self.with_context(serviq_line_lot_logged=True) \
+            if 'line_ids' in vals else self
+        res = super(Installation, this).write(vals)
         if 'product_tmpl_id' in vals or 'line_ids' in vals:
             for rec in self:
                 for line in rec.line_ids:
