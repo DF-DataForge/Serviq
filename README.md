@@ -29,7 +29,16 @@ zonder klantnamen, logo's of hardgecodeerde producten.
 
 Alle optionele modules zijn aan of uit te zetten via
 **Installaties > Configuratie > Instellingen** (aanvinken installeert de
-module, uitvinken verwijdert ze). Geïnstalleerde flows kunnen daarnaast
+module, uitvinken verwijdert ze).
+
+Ook **werken met distributeurs** is optioneel (Instellingen, blok
+*Distributeurs*; standaard aan). Uitgevinkt werkt de installateur
+rechtstreeks voor zijn eigen klanten: de distributeur verdwijnt van de
+installaties, interventies, contacten, dashboards en het portaal, er
+wordt geen distributeur ingevuld bij levering, de controle op en de
+klantlocaties per distributeur vallen weg, en de serienummers voor de
+eerste installatie komen uit de klantlocatie van de klant in plaats van
+die van de distributeur. Geïnstalleerde flows kunnen daarnaast
 per flow geactiveerd/gedeactiveerd en aan types interventie gekoppeld worden
 in **Installaties > Configuratie > Flows**.
 

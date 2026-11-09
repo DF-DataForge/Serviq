@@ -15,7 +15,8 @@ class SnRegistrationWizard(models.TransientModel):
     1. is the serial known in the system (stock.lot)?
     2. is the serial currently in a customer location?
     3. is it in the *correct* customer location, i.e. the customer-specific
-       location of the system's distributor?
+       location of the system's distributor (without distributors: the
+       customer location of the customer)?
 
     Only serials in the correct customer location can be accepted. Unknown
     serials can be created directly in that location; serials sitting in
@@ -90,11 +91,16 @@ class SnRegistrationWizard(models.TransientModel):
             res['line_id'] = lines[0].id
         return res
 
-    @api.depends('installation_id.distributor_id')
+    @api.depends('installation_id.distributor_id',
+                 'installation_id.customer_id')
     def _compute_correct_location(self):
+        use_distributors = self.env['res.partner'] \
+            ._serviq_distributors_enabled()
         for wiz in self:
             wiz.correct_location_id = \
-                wiz.distributor_id.property_stock_customer
+                wiz.distributor_id.property_stock_customer \
+                if use_distributors \
+                else wiz.installation_id.customer_id.property_stock_customer
 
     @api.depends('installation_id.line_ids.lot_id',
                  'installation_id.line_ids.serial_photo')
@@ -184,6 +190,14 @@ class SnRegistrationWizard(models.TransientModel):
     # ------------------------------------------------------------------
     def _get_correct_location(self):
         self.ensure_one()
+        if not self.env['res.partner']._serviq_distributors_enabled():
+            customer = self.installation_id.customer_id
+            location = customer.property_stock_customer
+            if not location:
+                raise UserError(_(
+                    'Klant "%s" heeft geen klantlocatie gekoppeld.',
+                    customer.display_name or '-'))
+            return location
         distributor = self.installation_id.distributor_id
         if not distributor:
             raise UserError(_(
@@ -303,8 +317,7 @@ class SnRegistrationWizard(models.TransientModel):
                         'Serienummer "%(serial)s" bevindt zich nog in de '
                         'interne voorraad ("%(current)s"). Controleer de '
                         'levering: een serienummer kan niet geïnstalleerd '
-                        'worden zolang het niet aan de distributeur geleverd '
-                        'is.',
+                        'worden zolang het niet geleverd is.',
                         serial=serial, current=current.display_name))
             else:
                 vals.update(

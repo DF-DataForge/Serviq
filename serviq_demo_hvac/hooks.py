@@ -170,14 +170,18 @@ def _setup_company(env):
 
 def _enable_features(env):
     """Turn on the settings the demo relies on: serial numbers and
-    storage locations (spare parts shelf, service vans)."""
+    storage locations (spare parts shelf, service vans). Frisair sells to
+    its own customers: "Werken met distributeurs" is turned off."""
     groups = [
         'stock.group_production_lot',
         'stock.group_stock_multi_locations',
     ]
+    distributors = env.ref('serviq_installation.group_serviq_distributor')
     env.ref('base.group_user').write({
-        'implied_ids': [Command.link(env.ref(xid).id) for xid in groups],
+        'implied_ids': [Command.link(env.ref(xid).id) for xid in groups]
+        + [Command.unlink(distributors.id)],
     })
+    distributors.user_ids = [Command.clear()]
 
 
 def _setup_warehouse(env, company):

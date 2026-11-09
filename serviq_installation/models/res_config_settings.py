@@ -26,6 +26,12 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='serviq_installation.intervention_project_id',
         help='Project new interventions are created in. Empty: the field '
              'service project when Field Service is installed.')
+    group_serviq_distributor = fields.Boolean(
+        string='Werken met distributeurs',
+        implied_group='serviq_installation.group_serviq_distributor',
+        help='Installations are sold through distributors: distributor on '
+             'the installations and interventions, distributor role in the '
+             'portal, serial numbers from the stock of the distributor.')
     serviq_check_distributor_stock = fields.Boolean(
         string='Serienummers controleren in distributeur-stock',
         config_parameter='serviq_installation.check_distributor_stock',

@@ -119,9 +119,12 @@ class StockPicking(models.Model):
         if sale:
             origin = _('levering %(picking)s (order %(order)s)',
                        picking=self.name, order=sale.name)
+        use_distributors = self.env['res.partner'] \
+            ._serviq_distributors_enabled()
         base_vals = {
             'distributor_id': distributor.id
-            if distributor.serviq_is_distributor else False,
+            if use_distributors and distributor.serviq_is_distributor
+            else False,
             'customer_id': customer.id,
             'state': 'delivered',
             'delivery_picking_id': self.id,

@@ -11,7 +11,7 @@
             </p>
         </t>
         <t t-elif="not fi_products">
-            <p class="text-muted mb-0">
+            <p t-if="fi_use_distributors" class="text-muted mb-0">
                 <t t-if="fi_has_distributor_stock">
                     Er is geen installatieproduct met een serienummer beschikbaar in de voorraad
                     van de distributeur.
@@ -20,6 +20,10 @@
                     Er is geen voorraadlocatie van een distributeur gekend voor deze interventie.
                 </t>
                 Neem contact op met uw distributeur.
+            </p>
+            <p t-else="" class="text-muted mb-0">
+                Er is geen installatieproduct met een serienummer geleverd aan deze klant.
+                Controleer de levering.
             </p>
         </t>
         <t t-else="">

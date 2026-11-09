@@ -26,17 +26,26 @@ class ServiqPortal(CustomerPortal):
     # Who is the user
     # ------------------------------------------------------------------
     @staticmethod
-    def _serviq_user_info():
+    def _serviq_use_distributors():
+        """Setting "Werken met distributeurs" is on."""
+        return request.env['res.partner'].sudo() \
+            ._serviq_distributors_enabled()
+
+    @classmethod
+    def _serviq_user_info(cls):
         """(partner, commercial partner, is_internal, is_distributor,
         is_installer) of the current user. The roles are read on the
-        commercial partner (the company) as well as on the contact."""
+        commercial partner (the company) as well as on the contact; there
+        are no distributors without the setting "Werken met
+        distributeurs"."""
         user = request.env.user
         partner = user.partner_id.sudo()
         commercial = partner.commercial_partner_id
         return (
             partner, commercial, not user.share,
-            bool(partner.serviq_is_distributor
-                 or commercial.serviq_is_distributor),
+            cls._serviq_use_distributors()
+            and bool(partner.serviq_is_distributor
+                     or commercial.serviq_is_distributor),
             bool(partner.serviq_is_installer
                  or commercial.serviq_is_installer),
         )
@@ -135,6 +144,7 @@ class ServiqPortal(CustomerPortal):
             'is_internal': is_internal,
             'is_distributor': is_distributor,
             'is_installer': is_installer,
+            'use_distributors': self._serviq_use_distributors(),
             'state_labels': dict(request.env['serviq.installation']
                                  ._fields['state'].selection),
             'task_state_labels': dict(request.env['project.task']

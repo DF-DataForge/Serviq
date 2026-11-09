@@ -17,7 +17,9 @@ class StockLot(models.Model):
         installation yet, in the distributor's customer stock location
         (unless 'serviq_outside_stock' is in context) and of the product
         template in context ('serviq_product_tmpl'), when given. Empty when
-        no distributor is in context."""
+        no distributor is in context or without distributors (settings)."""
+        if not self.env['res.partner']._serviq_distributors_enabled():
+            return []
         distributor_id = self.env.context.get('serviq_distributor')
         try:
             distributor_id = int(distributor_id or 0)
@@ -61,7 +63,8 @@ class StockLot(models.Model):
         ('serviq_create_lot_in_stock' in context), make it available in the
         distributor's customer stock location so it passes the component
         validation."""
-        if not self.env.context.get('serviq_create_lot_in_stock'):
+        if not self.env.context.get('serviq_create_lot_in_stock') \
+                or not self.env['res.partner']._serviq_distributors_enabled():
             return
         try:
             distributor_id = int(

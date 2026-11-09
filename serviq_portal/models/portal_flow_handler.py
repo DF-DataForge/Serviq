@@ -77,8 +77,11 @@ class PortalFlowHandler(models.AbstractModel):
         """Distributors whose customer stock the user can use for this
         intervention: the distributor of the installation / task, else the
         distributors the installer works for, the distributor itself, or
-        every distributor for internal users."""
+        every distributor for internal users. None without the setting
+        "Werken met distributeurs"."""
         Partner = self.env['res.partner']
+        if not Partner._serviq_distributors_enabled():
+            return Partner.browse()
         distributor = task.serviq_installation_id.distributor_id \
             or task.serviq_distributor_id
         if distributor:
@@ -97,12 +100,25 @@ class PortalFlowHandler(models.AbstractModel):
         return result
 
     @api.model
-    def _flow_available_lots(self, distributors, product_tmpls=None):
-        """Serials in stock in the customer location of `distributors`, not
-        linked to an installation nor used on a component, optionally of
-        one of `product_tmpls`."""
+    def _flow_lot_locations(self, task, partner, is_internal):
+        """Customer stock locations the serials of an intervention come
+        from: those of the distributors of the user (_flow_distributors),
+        or without distributors (settings) the customer location of the
+        customer of the intervention."""
+        if self.env['res.partner']._serviq_distributors_enabled():
+            return self._flow_distributors(task, partner, is_internal) \
+                .mapped('property_stock_customer')
+        return task.partner_id.commercial_partner_id.property_stock_customer
+
+    @api.model
+    def _flow_available_lots(self, locations, product_tmpls=None):
+        """Serials in stock in the customer stock `locations` (see
+        _flow_lot_locations), not linked to an installation nor used on a
+        component, optionally of one of `product_tmpls`. A recordset of
+        distributors is accepted too, for their customer locations."""
         Lot = self.env['stock.lot']
-        locations = distributors.mapped('property_stock_customer')
+        if locations._name == 'res.partner':
+            locations = locations.mapped('property_stock_customer')
         if not locations:
             return Lot
         domain = [('location_id', 'in', locations.ids),

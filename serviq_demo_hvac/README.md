@@ -7,6 +7,9 @@ herstellingen); de logistiek erachter (inkoop, assemblage, fulfilment) is
 weggelaten en de voorraad start vanuit een beginvoorraad. Alles wordt bij
 de installatie van de module aangemaakt door `hooks.py` (geen XML-data).
 
+Frisair verkoopt rechtstreeks aan zijn klanten: de instelling *Werken met
+distributeurs* staat uit.
+
 Niet installeren op een productiedatabase: de module wijzigt het
 hoofdbedrijf en maakt een magazijn, producten, partners en orders aan.
 

@@ -107,6 +107,8 @@ class Installation(models.Model):
         domain = [('parent_line_id', '=', False)] + list(domain or [])
         installations = self.search(domain)
         located = installations.filtered('has_location')
+        use_distributors = self.env['res.partner'] \
+            ._serviq_distributors_enabled()
         return {
             'installations': [{
                 'id': rec.id,
@@ -119,7 +121,8 @@ class Installation(models.Model):
                 'longitude': rec.longitude,
                 'state': rec.state or '',
                 'stateLabel': states.get(rec.state, ''),
-                'distributor': rec.distributor_id.name or '',
+                'distributor': rec.distributor_id.name or ''
+                if use_distributors else '',
                 'installer': rec.installer_id.name or '',
             } for rec in located],
             'missing': len(installations) - len(located),

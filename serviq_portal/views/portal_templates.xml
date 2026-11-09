@@ -96,7 +96,7 @@
             <div class="sq-portal py-5">
                 <h2>Geen toegang</h2>
                 <p class="text-muted">
-                    Deze pagina is enkel beschikbaar voor installateurs en distributeurs,
+                    Deze pagina is enkel beschikbaar voor installateurs<t t-if="use_distributors"> en distributeurs</t>,
                     voor hun eigen installaties en interventies. Neem contact op met uw
                     beheerder als u denkt dat dit niet klopt.
                 </p>
@@ -141,7 +141,7 @@
                             <tr>
                                 <th>Installatie</th>
                                 <th>Klant</th>
-                                <th class="d-none d-md-table-cell">Distributeur</th>
+                                <th t-if="use_distributors" class="d-none d-md-table-cell">Distributeur</th>
                                 <th class="d-none d-md-table-cell">Installateur</th>
                                 <th>Serienummer</th>
                                 <th class="text-end">Status</th>
@@ -154,7 +154,7 @@
                                     <t t-out="rec.customer_id.name or '-'"/>
                                     <small t-if="rec.customer_id.city" class="d-block text-muted" t-out="rec.customer_id.city"/>
                                 </td>
-                                <td class="d-none d-md-table-cell" t-out="rec.distributor_id.name or '-'"/>
+                                <td t-if="use_distributors" class="d-none d-md-table-cell" t-out="rec.distributor_id.name or '-'"/>
                                 <td class="d-none d-md-table-cell" t-out="rec.installer_id.name or '-'"/>
                                 <td><code t-if="rec.lot_id" t-out="rec.lot_id.name"/></td>
                                 <td class="text-end"><t t-call="serviq_portal.installation_state_badge"/></td>
@@ -187,7 +187,9 @@
                                 <dt class="col-5">Product</dt><dd class="col-7" t-out="installation.product_tmpl_id.display_name"/>
                                 <dt class="col-5">Serienummer</dt>
                                 <dd class="col-7"><code t-if="installation.lot_id" t-out="installation.lot_id.name"/><t t-else="">-</t></dd>
-                                <dt class="col-5">Distributeur</dt><dd class="col-7" t-out="installation.distributor_id.name or '-'"/>
+                                <t t-if="use_distributors">
+                                    <dt class="col-5">Distributeur</dt><dd class="col-7" t-out="installation.distributor_id.name or '-'"/>
+                                </t>
                                 <dt class="col-5">Installateur</dt><dd class="col-7" t-out="installation.installer_id.name or '-'"/>
                             </dl>
                         </div></div>
@@ -481,7 +483,9 @@
                                 <dt class="col-5">Gepland</dt>
                                 <dd class="col-7"><t t-out="task[plan_field]" t-options="{'widget': 'datetime'}"/><t t-if="not task[plan_field]">-</t></dd>
                                 <dt class="col-5">Installateur</dt><dd class="col-7" t-out="task.serviq_installer_id.name or '-'"/>
-                                <dt class="col-5">Distributeur</dt><dd class="col-7" t-out="task.serviq_distributor_id.name or '-'"/>
+                                <t t-if="use_distributors">
+                                    <dt class="col-5">Distributeur</dt><dd class="col-7" t-out="task.serviq_distributor_id.name or '-'"/>
+                                </t>
                                 <dt class="col-5">Fase</dt><dd class="col-7" t-out="task.stage_id.name or '-'"/>
                                 <t t-if="task.date_end">
                                     <dt class="col-5">Afgerond op</dt>

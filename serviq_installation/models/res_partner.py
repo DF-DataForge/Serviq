@@ -49,9 +49,16 @@ class ResPartner(models.Model):
     # Customer-specific stock location of distributors
     # ------------------------------------------------------------------
     @api.model
+    def _serviq_distributors_enabled(self):
+        """Setting "Werken met distributeurs" is on."""
+        return self.env['res.groups']._is_feature_enabled(
+            'serviq_installation.group_serviq_distributor')
+
+    @api.model
     def _serviq_use_distributor_locations(self):
-        return bool(self.env['ir.config_parameter'].sudo().get_param(
-            'serviq_installation.distributor_locations'))
+        return self._serviq_distributors_enabled() and bool(
+            self.env['ir.config_parameter'].sudo().get_param(
+                'serviq_installation.distributor_locations'))
 
     def _serviq_get_or_create_location(self):
         self.ensure_one()

@@ -156,9 +156,13 @@ class Installation(models.Model):
                 data.values(),
                 key=lambda d: (-d['total'], (d['name'] or '').lower()))
 
+        use_distributors = self.env['res.partner'] \
+            ._serviq_distributors_enabled()
         return {
             'overall': overall,
-            'per_distributor': _per_partner('distributor_id'),
+            'use_distributors': use_distributors,
+            'per_distributor': _per_partner('distributor_id')
+            if use_distributors else [],
             'per_installer': _per_partner('installer_id'),
             # Counts only: the records behind a tile open with the user's
             # own rights.
@@ -587,6 +591,19 @@ class Installation(models.Model):
             return result
 
         count = len(tasks)
+        groups = [
+            {'key': 'installer', 'title': _('Per installateur'),
+             'icon': 'fa-wrench', 'rows': rows_of('installer')},
+            {'key': 'employee', 'title': _('Per medewerker'),
+             'icon': 'fa-user', 'rows': rows_of('employee')},
+        ]
+        if self.env['res.partner']._serviq_distributors_enabled():
+            groups.append(
+                {'key': 'distributor', 'title': _('Per distributeur'),
+                 'icon': 'fa-truck', 'rows': rows_of('distributor')})
+        groups.append(
+            {'key': 'type', 'title': _('Per type interventie'),
+             'icon': 'fa-tags', 'rows': rows_of('type')})
         return {
             'period': period,
             'label': label,
@@ -598,16 +615,7 @@ class Installation(models.Model):
             'action': self._dashboard_action(
                 _('Gelogde uren interventies - %s', label),
                 'account.analytic.line', domain, self._timesheet_views()),
-            'groups': [
-                {'key': 'installer', 'title': _('Per installateur'),
-                 'icon': 'fa-wrench', 'rows': rows_of('installer')},
-                {'key': 'employee', 'title': _('Per medewerker'),
-                 'icon': 'fa-user', 'rows': rows_of('employee')},
-                {'key': 'distributor', 'title': _('Per distributeur'),
-                 'icon': 'fa-truck', 'rows': rows_of('distributor')},
-                {'key': 'type', 'title': _('Per type interventie'),
-                 'icon': 'fa-tags', 'rows': rows_of('type')},
-            ],
+            'groups': groups,
         }
 
     @api.model
@@ -842,8 +850,9 @@ class Installation(models.Model):
                 actual=lot.product_id.product_tmpl_id.display_name,
                 expected=expected_product_tmpl.display_name))
 
-        check_stock = self.env['ir.config_parameter'].sudo().get_param(
-            'serviq_installation.check_distributor_stock')
+        check_stock = self.env['res.partner']._serviq_distributors_enabled() \
+            and self.env['ir.config_parameter'].sudo().get_param(
+                'serviq_installation.check_distributor_stock')
         outside_stock = bool(line and line.search_outside_stock)
         if check_stock and not outside_stock and self.distributor_id \
                 and self.distributor_id.property_stock_customer:
