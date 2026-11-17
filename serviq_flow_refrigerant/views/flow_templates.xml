@@ -216,8 +216,8 @@
                         </thead>
                         <tbody>
                             <tr t-foreach="rf_logs" t-as="log">
-                                <td t-out="log.date" t-options="{'widget': 'date'}"/>
-                                <td t-field="log.entry_type"/>
+                                <td><span t-out="log.date" t-options="{'widget': 'date'}"/></td>
+                                <td><span t-field="log.entry_type"/></td>
                                 <td class="text-end"><t t-if="log.direction != 'none'" t-out="log.quantity_kg"/></td>
                                 <td>
                                     <span t-if="log.origin" t-field="log.origin"/>

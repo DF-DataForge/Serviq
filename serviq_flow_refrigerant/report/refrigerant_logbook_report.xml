@@ -35,7 +35,7 @@
                                 <td><strong>Nominale inhoud</strong></td>
                                 <td><t t-out="o.refrigerant_charge_kg"/> kg - <t t-out="o.refrigerant_co2_eq"/> ton CO2-eq</td>
                                 <td><strong>Ingebruikname</strong></td>
-                                <td t-out="o.refrigerant_commissioning_date" t-options="{'widget': 'date'}"/>
+                                <td><span t-out="o.refrigerant_commissioning_date" t-options="{'widget': 'date'}"/></td>
                             </tr>
                             <tr>
                                 <td><strong>Hermetisch gesloten</strong></td><td t-out="'Ja' if o.refrigerant_hermetic else 'Nee'"/>
@@ -63,7 +63,7 @@
                             </thead>
                             <tbody>
                                 <tr t-foreach="o.refrigerant_log_ids.sorted('date')" t-as="log">
-                                    <td t-out="log.date" t-options="{'widget': 'date'}"/>
+                                    <td><span t-out="log.date" t-options="{'widget': 'date'}"/></td>
                                     <td>
                                         <span t-field="log.entry_type"/>
                                         <div t-if="log.description" class="small text-muted" t-out="log.description"/>
