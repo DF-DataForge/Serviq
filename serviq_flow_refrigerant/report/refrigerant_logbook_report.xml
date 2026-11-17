@@ -25,7 +25,7 @@
                             </tr>
                             <tr>
                                 <td><strong>Adres</strong></td>
-                                <td colspan="3" t-out="o.customer_id._display_address(without_company=True).replace('\n', ', ') if o.customer_id else '-'"/>
+                                <td colspan="3" t-out="', '.join(line.strip() for line in o.customer_id._display_address(without_company=True).split('\n') if line.strip()) if o.customer_id else '-'"/>
                             </tr>
                             <tr>
                                 <td><strong>Koudemiddel</strong></td><td t-out="o.refrigerant_id.name or '-'"/>
